@@ -51,7 +51,6 @@ I've also built a LangGraph voice assistant, which listens, transcribes and talk
 
 The voice assistant will be built into my Jetson part of the project.
 
-
   <h2 align='center'>
   A basic front end til I get round
   </h2>
@@ -83,6 +82,27 @@ The voice assistant will be built into my Jetson part of the project.
 <p align="center">
   <img src="./Langsmith_trace_viewer_5.png" alt="example 3">
 </p>
+
+## BUT! I've had 'Hugging Face - Sheets', and it's able to do all the same work as the forge
+## From locally hosted models
+
+  <h2 align='center'>
+  llama
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Sheets-09-08-2025_10_01_PM.png" alt="llama">
+</p>
+
+  <h2 align='center'>
+  llama vs gpt (plus I have a third model ready to score the battle)
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Sheets-09-08-2025_10_18_PM.png" alt="llama">
+</p>
+
+I'll be keeping LangGraph since it's better for scaling, but 'Sheets' is an S-Tier data tool.
 
 ---
 >###  ⛔ Please Review and Consider Example 'Risk Register' Schema before implementing anything beyond Dev phase, found at bottom of document⛔'**.
