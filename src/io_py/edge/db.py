@@ -1,6 +1,9 @@
+import os
 import duckdb
 import os
 import duckdb
+from dataclasses import dataclass
+
 
 class DeviceManager:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:

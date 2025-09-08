@@ -1,17 +1,17 @@
-import dotenv
+import asyncio
 import os
-
 import typer
 from fastmcp import FastMCP
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_ollama import ChatOllama
-from ..databases.db import register_device_manager_tools, initialise_database, DeviceManager, populate_database
-
+from src.io_py.edge.db import register_device_manager_tools, initialise_database, DeviceManager, populate_database
+from pathlib import Path
+from dotenv import load_dotenv
 
 load_dotenv()
 
 app = typer.Typer()
 console = Console()
+root_dir = ROOT_DIR
 
 def initialise_server(db_path: os.PathLike) -> FastMCP:
     """Initialise the server.
