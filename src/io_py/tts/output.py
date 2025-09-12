@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from kokoro import KPipeline
+import pyaudio
 
 class Speech():
     def __init__(
@@ -57,7 +58,11 @@ class KokoroSpeech(Speech):
 
     def convert_text_to_speech(self, text: str) -> list[np.ndarray]:
         """Convert text to speech and return the waveform as frames."""
-        generator = self.pipeline(text, voice=self.speak)
+        p = pyaudio.PyAudio()
+        print(f"Input device: {p.get_default_input_device_info()}")
+        print(f"Output device: {p.get_default_output_device_info()}")
+
+        generator = self.pipeline(text, voice='af_heart')
         frames = []
         for i, (_, _, audio) in enumerate(generator):
             for start in range(0, len(audio), self.chunk_size):
@@ -67,3 +72,13 @@ class KokoroSpeech(Speech):
 
 
 
+
+
+# input_msg = "The time is 03:47AM"
+"""generator = pipeline(input_msg, voice='af_heart')
+for i, (gs, ps, audio) in enumerate(generator):
+    print(i, gs, ps)
+
+    for start in range(0, len(audio), CHUNK_SIZE):
+        chunk = audio[start:start + CHUNK_SIZE]
+        output_stream.write(chunk.numpy().astype(np.float32).tobytes())"""

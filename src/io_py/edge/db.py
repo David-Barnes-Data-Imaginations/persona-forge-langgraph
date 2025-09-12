@@ -1,12 +1,30 @@
 import os
 import duckdb
 from fastmcp import FastMCP
+from dataclasses import dataclass
+import logging as logger
 
+@dataclass
+class TableSchema:
+    name:str
+    columns:dict[str, str]
+    primary_key:list[str]
+
+
+def get_device_table_schema():
+    return TableSchema(
+        name="device",
+        columns={
+            "device_id" : "VARCHAR",
+            "name": "VARCHAR",
+            "ip_address": "VARCHAR",
+        },
+        primary_key=["device_id"],
+    )
 class DeviceManager:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 
-    ...
 
     async def turn_on_device(self, device_name: str) -> str:
         """Turn on a device.

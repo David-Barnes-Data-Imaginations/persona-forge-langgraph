@@ -1,13 +1,12 @@
 import asyncio
 import os
 import typer
-from fastmcp import FastMCP
+from fastmcp import FastMCP, settings
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from src.io_py.edge.db import register_device_manager_tools, initialise_database, DeviceManager, populate_database
 from pathlib import Path
-from dotenv import load_dotenv
+from ../../../../settings import config
 import logging as logger
-load_dotenv()
 
 app = typer.Typer()
 root_dir = ROOT_DIR
@@ -32,7 +31,6 @@ def initialise_server(db_path: os.PathLike) -> FastMCP:
         name="smarthome-mcp-server",
         instructions="This server is for finding and controlling smart devices.",
     )
-
     register_device_manager_tools(mcp, device_manager)
     return mcp
 

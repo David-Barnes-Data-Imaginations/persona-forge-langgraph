@@ -4,12 +4,12 @@ from langgraph.store.sqlite.aio import AsyncSqliteStore
 from RealtimeSTT import AudioToTextRecorder
 from src.graphs.agent import get_new_agent
 from src.io_py.tts.output import KokoroSpeech, OutputChunkBuilder, Speech
+from langgraph.prebuilt import chat_agent_executor # add possibly later for STT
 # Dependant on the python version used
 try:
     from collections.abc import AsyncGenerator
 except ImportError:
     from typing import AsyncGenerator
-
 
 async def stream_speech(
     msg_stream: AsyncGenerator,
@@ -31,22 +31,25 @@ async def stream_speech(
         speech.convert_text_to_speech(output_chunk_builder.get_output_chunk())
 
 # Can handle other tasks while waiting for complete LLM response
-# Placeholder until I add the local llm. Might not be an AsyncGenerator
+# Placeholder until I add the local llm. Might not be an AsyncGenerator or AudioToTextRecorder
 async def survey_mode(
-    local_tts: AsyncGenerator,
-    speech: KokoroSpeech
-):
+        local_tts: AsyncGenerator,
+        recorder: AudioToTextRecorder,
+        speech: KokoroSpeech,
+        agent_executor: chat_agent_executor
+    ):
+
     messages = await agent_executor.ainvoke(...)  # async complete response
     await local_tts.speak(messages[-1].content)
-    user_response = await stt.transcribe_until_silence()
+    # add this later
+ #   user_response = await stt.transcribe_until_silence()
 
 async def main():
-    conf = load_config()
+    conf = Speech
     speech = KokoroSpeech(**conf.KokoroSpeech)
     output_chunk_builder = OutputChunkBuilder()
-    thread_config = {"configurable": {"thread_id": "abc123"}}
+    conf= {"configurable": {"thread_id": "abc123"}}
 
-    agent_executor=get_new_agent()
 
     user_query = "Hello world!"
     user_query_formatted = {
@@ -65,6 +68,7 @@ async def main():
 
 
 # AsyncSqliteStore classes from the checkpoint and store modules in langgraph
+# SQL databases to store our short and long term memory
     # short term memory
     async with AsyncSqliteSaver.from_conn_string(conf.Agent.memory.checkpointer) as saver:
 
@@ -97,4 +101,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main()
+    asyncio.run(main())
