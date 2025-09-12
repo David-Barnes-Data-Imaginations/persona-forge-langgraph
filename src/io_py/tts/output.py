@@ -1,5 +1,6 @@
 from __future__ import annotations
 import numpy as np
+from kokoro import KPipeline
 
 class Speech():
     def __init__(
@@ -44,12 +45,8 @@ class OutputChunkBuilder:
         self._reset_message()
         return msg
 
-
-from kokoro import KPipeline
-
-
-class KokoroVoice(Speech):
-    def __init__(self, voice: str, sample_rate: int = 24000, chunk_size: int = 2048):
+class KokoroSpeech(Speech):
+    def __init__(self, speech: str, sample_rate: int = 24000, chunk_size: int = 2048):
         """Initialise the model to use for TTS.
 
         Args:
@@ -62,7 +59,7 @@ class KokoroVoice(Speech):
             chunk_size (int, optional):
                 The chunk size to use. Defaults to 2048.
         """
-        self.voice = voice
+        self.speech = speech
         super().__init__(sample_rate, chunk_size)
 
     def initialise_model(self):
@@ -71,7 +68,7 @@ class KokoroVoice(Speech):
 
     def convert_text_to_speech(self, text: str) -> list[np.ndarray]:
         """Convert text to speech and return the waveform as frames."""
-        generator = self.pipeline(text, voice=self.voice)
+        generator = self.pipeline(text, voice=self.speech)
         frames = []
         for i, (_, _, audio) in enumerate(generator):
             for start in range(0, len(audio), self.chunk_size):
@@ -79,21 +76,3 @@ class KokoroVoice(Speech):
                 frames.append(chunk.numpy().astype(np.float32))
         return frames
 
-async def stream_speech(
-    msg_stream: AsyncGenerator,
-    output_chunk_builder: OutputChunkBuilder,
-    voice: Speech
-):
-    """Stream messages from the agent to the voice output."""
-    async for chunk, metadata in msg_stream:
-        if metadata["langgraph_node"] == "agent":
-            # build up message chunks until a full sentence is received.
-            if chunk.content != "":
-                output_chunk_builder.add_chunk(chunk.content)
-
-            if output_chunk_builder.output_chunk_ready():
-                voice.speak(output_chunk_builder.get_output_chunk())
-
-    # if we have anything left in the buffer, speak it.
-    if output_chunk_builder.current_message_length() > 0:
-        voice.speak(output_chunk_builder.get_output_chunk())

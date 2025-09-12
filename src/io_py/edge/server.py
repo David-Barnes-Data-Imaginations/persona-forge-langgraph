@@ -6,11 +6,10 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from src.io_py.edge.db import register_device_manager_tools, initialise_database, DeviceManager, populate_database
 from pathlib import Path
 from dotenv import load_dotenv
-
+import logging as logger
 load_dotenv()
 
 app = typer.Typer()
-console = Console()
 root_dir = ROOT_DIR
 
 def initialise_server(db_path: os.PathLike) -> FastMCP:
@@ -31,13 +30,13 @@ def initialise_server(db_path: os.PathLike) -> FastMCP:
 
     mcp = FastMCP(
         name="smarthome-mcp-server",
-        instructions="This server is for finding and controlling smarthome devices.",
+        instructions="This server is for finding and controlling smart devices.",
     )
 
     register_device_manager_tools(mcp, device_manager)
     return mcp
 
-def get_new_mcp_client() -> MultiServerMCPClient
+def get_new_mcp_client() -> MultiServerMCPClient:
     return MultiServerMCPClient(
         {
             "smarthome-mcp-server": {
@@ -48,13 +47,13 @@ def get_new_mcp_client() -> MultiServerMCPClient
         }
     )
 
-def get_mcp_server_tools():
+async def get_mcp_server_tools():
     mcp_client = get_new_mcp_client()
     tools = await mcp_client.get_tools()
     return tools
 
 @app.command()
-def main():
+async def main():
     config = load_config()
 
     # set up server data directory

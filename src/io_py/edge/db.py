@@ -1,9 +1,6 @@
 import os
 import duckdb
-import os
-import duckdb
-from dataclasses import dataclass
-
+from fastmcp import FastMCP
 
 class DeviceManager:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:

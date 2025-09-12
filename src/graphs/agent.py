@@ -1,9 +1,9 @@
 from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
-from sympy import false
 from ..io_py.edge.server import get_mcp_server_tools
 from ..utils.voice_tools import get_tools as get_datetime_tools
-
+from langchain_ollama import ChatOllama
+from ..io_py.edge.config import LLMConfigVoice
 # This builds the cookie-cutter (copy paste) LangGraph agent
 # The ReactAgent is new with 1.0, so not implemented in the other graph til i test it
 
@@ -15,14 +15,27 @@ def get_new_agent(
 
     # initialise the LLM
     model = ChatOllama(
-        model="gemma3:1b",
-        temperature=0,
-        reasoning=false
+        model=LLMConfigVoice.model_name,
+        temperature=LLMConfigVoice.temperature,
+        reasoning=LLMConfigVoice.reasoning
     )
+    user_query = "Hello world!"
+    user_query_formatted = {
+        "role": "user",
+        "content": user_query
+    }
 
+    system_prompt_formatted = {
+        "role": "system",
+        "content": (
+            "You are a voice assistant called Delamain."
+            + " Keep your responses as short as possible."
+            + "Do not format your responses using markdown, such as **bold** or _italics. ",
+        )
+    }
 
     # initialise the tools that the agent will use
-    server_tools = await get_mcp_server_tools()
+    server_tools = get_mcp_server_tools()
 
     tools = (
         get_datetime_tools()
@@ -39,26 +52,3 @@ def get_new_agent(
 
     return agent_executor
 
-user_query = "Hello world!"
-user_query_formatted = {
-    "role": "user",
-    "content": user_query
-}
-
-system_prompt_formatted = {
-    "role": "system",
-    "content": (
-        "You are a voice assistant called Delamain."
-        + " Keep your responses as short as possible."
-        + "Do not format your responses using markdown, such as **bold** or _italics. ",
-    )
-}
-
-response = agent_executor.invoke(
-    {"messages" : [system_prompt_formatted, user_query_formatted]},
-)
-
-output_stream = agent_executor.stream(
-    {"messages" : [system_prompt_formatted, user_query_formatted]},
-    stream_mode="messages"
-)

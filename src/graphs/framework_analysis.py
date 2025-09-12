@@ -4,7 +4,6 @@ import pandas as pd
 import requests
 from typing import Annotated, Optional
 from typing_extensions import TypedDict
-
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig, RunnableLambda
