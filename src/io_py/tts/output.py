@@ -10,20 +10,6 @@ class Speech():
     ):
         self.sample_rate = sample_rate
         self.chunk_size = chunk_size
-        self.initialise_model()
-
-    def model_init(self):
-        pass
-
-    def tts(self, text:str) -> list[np.ndarray]:
-        """Converts tts then returns the waveform as frames."""
-        pass
-
-    def speak(self, text:str):
-        """Speak the provided text through device output."""
-        frames = self.tts(self, text)
-        for frame in frames:
-            self.output_stream.write(frame.tobytes())
 
 # chunker for collating the message output
 class OutputChunkBuilder:
@@ -45,6 +31,9 @@ class OutputChunkBuilder:
         self._reset_message()
         return msg
 
+    def current_message_length(self) -> int:
+        return len(self._msg)
+
 class KokoroSpeech(Speech):
     def __init__(self, speech: str, sample_rate: int = 24000, chunk_size: int = 2048):
         """Initialise the model to use for TTS.
@@ -59,7 +48,7 @@ class KokoroSpeech(Speech):
             chunk_size (int, optional):
                 The chunk size to use. Defaults to 2048.
         """
-        self.speech = speech
+        self.speak = speech
         super().__init__(sample_rate, chunk_size)
 
     def initialise_model(self):
@@ -68,11 +57,13 @@ class KokoroSpeech(Speech):
 
     def convert_text_to_speech(self, text: str) -> list[np.ndarray]:
         """Convert text to speech and return the waveform as frames."""
-        generator = self.pipeline(text, voice=self.speech)
+        generator = self.pipeline(text, voice=self.speak)
         frames = []
         for i, (_, _, audio) in enumerate(generator):
             for start in range(0, len(audio), self.chunk_size):
                 chunk = audio[start: start + self.chunk_size]
                 frames.append(chunk.numpy().astype(np.float32))
         return frames
+
+
 

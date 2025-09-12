@@ -19,20 +19,6 @@ def get_new_agent(
         temperature=LLMConfigVoice.temperature,
         reasoning=LLMConfigVoice.reasoning
     )
-    user_query = "Hello world!"
-    user_query_formatted = {
-        "role": "user",
-        "content": user_query
-    }
-
-    system_prompt_formatted = {
-        "role": "system",
-        "content": (
-            "You are a voice assistant called Delamain."
-            + " Keep your responses as short as possible."
-            + "Do not format your responses using markdown, such as **bold** or _italics. ",
-        )
-    }
 
     # initialise the tools that the agent will use
     server_tools = get_mcp_server_tools()
@@ -51,4 +37,7 @@ def get_new_agent(
     )
 
     return agent_executor
+
+#  def get_response_stream(agent_executor: object, system_prompt_formatted: dict, user_query_formatted: dict):
+
 

@@ -2,14 +2,19 @@ from RealtimeSTT import AudioToTextRecorder
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.store.sqlite.aio import AsyncSqliteStore
 from RealtimeSTT import AudioToTextRecorder
-from src.graphs.agent import get_new_agent, get_response_stream
+from src.graphs.agent import get_new_agent
 from src.io_py.tts.output import KokoroSpeech, OutputChunkBuilder, Speech
-from settings import load_config
+# Dependant on the python version used
+try:
+    from collections.abc import AsyncGenerator
+except ImportError:
+    from typing import AsyncGenerator
+
 
 async def stream_speech(
     msg_stream: AsyncGenerator,
     output_chunk_builder: OutputChunkBuilder,
-    speech: Speech
+    speech: KokoroSpeech
 ):
     """Stream messages from the agent to the voice output."""
     async for chunk, metadata in msg_stream:
@@ -19,28 +24,46 @@ async def stream_speech(
                 output_chunk_builder.add_chunk(chunk.content)
 
             if output_chunk_builder.output_chunk_ready():
-                speech.speak(output_chunk_builder.get_output_chunk())
+                speech.convert_text_to_speech(output_chunk_builder.get_output_chunk())
 
     # if we have anything left in the buffer, speak it.
     if output_chunk_builder.current_message_length() > 0:
-        speech.speak(output_chunk_builder.get_output_chunk())
+        speech.convert_text_to_speech(output_chunk_builder.get_output_chunk())
+
+# Can handle other tasks while waiting for complete LLM response
+# Placeholder until I add the local llm. Might not be an AsyncGenerator
+async def survey_mode(
+    local_tts: AsyncGenerator,
+    speech: KokoroSpeech
+):
+    messages = await agent_executor.ainvoke(...)  # async complete response
+    await local_tts.speak(messages[-1].content)
+    user_response = await stt.transcribe_until_silence()
 
 async def main():
     conf = load_config()
-    voice = KokoroSpeech(**conf.KokoroSpeech)
+    speech = KokoroSpeech(**conf.KokoroSpeech)
     output_chunk_builder = OutputChunkBuilder()
     thread_config = {"configurable": {"thread_id": "abc123"}}
 
     agent_executor=get_new_agent()
 
-    response_stream = agent_executor.invoke(
-        {"messages": [system_prompt_formatted, user_query_formatted]},
-    )
+    user_query = "Hello world!"
+    user_query_formatted = {
+        "role": "user",
+        "content": user_query
+    }
 
-    output_stream = agent_executor.stream(
-        {"messages": [system_prompt_formatted, user_query_formatted]},
-        stream_mode="messages"
-    )
+    system_prompt_formatted = {
+        "role": "system",
+        "content": (
+            "You are a voice assistant called Delamain."
+            + " Keep your responses as short as possible."
+            + "Do not format your responses using markdown, such as **bold** or _italics. ",
+        )
+    }
+
+
 # AsyncSqliteStore classes from the checkpoint and store modules in langgraph
     # short term memory
     async with AsyncSqliteSaver.from_conn_string(conf.Agent.memory.checkpointer) as saver:
@@ -48,7 +71,7 @@ async def main():
         # long term memory
         async with AsyncSqliteStore.from_conn_string(conf.Agent.memory.store) as store:
 
-            agent_executor = await get_new_agent(conf, saver, store)
+            agent_executor = get_new_agent(conf, saver, store)
 
             with AudioToTextRecorder(
                     model='tiny',
@@ -64,12 +87,12 @@ async def main():
                     query = recorder.text()
                     if (query is not None) and (query != ""):
                         # get response from the langgraph agent
-                        response_stream = await get_response_stream(
-                            query, agent_executor, thread_config
+                        output_stream = agent_executor.stream(
+                            {"messages": [system_prompt_formatted, user_query_formatted]},
+                            stream_mode="messages"
                         )
-
                         # output the response to device audio
-                        await stream_speech(response_stream, output_chunk_builder, voice)
+                        await stream_speech(output_stream, output_chunk_builder, speech)
 
 
 
