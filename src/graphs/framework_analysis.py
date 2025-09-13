@@ -12,7 +12,7 @@ from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 
 from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_PROMPT
-from ..utils.json_tools import submit_analysis
+from ..utils.text_graph_tools import submit_analysis
 
 # LLM
 llm = ChatOllama(
@@ -169,7 +169,7 @@ def process_qa_pair(qa_pair: dict) -> dict:
         Answer: {qa_pair['answer']}
         Message ID: {qa_pair['message_id']}
         
-        Analyze ONLY the Client's answer and return the psychological analysis as JSON.
+        Analyze ONLY the Client's answer and return the psychological analysis on its own without the Question and Answer.
         """
         
         # Initial state with the prompt

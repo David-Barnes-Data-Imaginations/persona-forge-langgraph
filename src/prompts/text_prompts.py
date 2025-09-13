@@ -12,6 +12,8 @@ SYSTEM_PROMPT = """You are an expert and objective clinical annotator. Analyze t
 - Do NOT use JSON, YAML, or any structured data format
 - Avoid special characters like dashes, brackets, angle brackets or other symbols
 - Follow the content structure shown in the example but write it as natural text
+- Do not repeat or add the Therapist and Client utterances in the analysis
+- Do not specify a filename when calling the tool - it will be generated automatically
 
 ## Psychology Frameworks to Apply
 - Russell's Circumplex of Valence and Arousal
@@ -53,9 +55,6 @@ Score each trait from 0.0 to 1.0: openness, conscientiousness, extraversion, agr
 - Remove any personally identifiable information
 
 ## Output Format Example
-
-Question: How do you feel about your current job situation?
-Answer: I love the creative aspects but I'm constantly worried I'm not good enough and will get fired.
 
 Analysis:
 
@@ -105,27 +104,56 @@ CYPHER_PROMPT="""You are a Cypher query generator. Your task is to take a JSON a
 
 The graph has the following schema:
 Nodes: (:Client), (:Session), (:QA_Pair), (:Emotion), (:Cognitive_Distortion), (:Erikson_Stage), (:Attachment_Style), (:Big_Five), (:Schema), (:Defense_Mechanism)
-Relationships: (:Client)-[:PARTICIPATED_IN]->(:Session), (:Session)-[:INCLUDES]->(:QA_Pair), (:QA_Pair)-[:REVEALS_EMOTION {valence, arousal, confidence}]->(:Emotion), (:QA_Pair)-[:EXHIBITS_DISTORTION {confidence}]->(:Cognitive_Distortion), (:QA_Pair)-[:EXHIBITS_STAGE {confidence}]->(:Erikson_Stage), (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {confidence}]->(:Attachment_Style), (:QA_Pair)-[:SHOWS_BIG_FIVE {confidence}]->(:Big_Five), (:QA_Pair)-[:REVEALS_SCHEMA {confidence}]->(:Schema), (:QA_Pair)-[:USES_DEFENSE_MECHANISM {confidence}]->(:Defense_Mechanism)
+Relationships: (:Client)-[:PARTICIPATED_IN]->(:Session), (:Session)-[:INCLUDES]->(:QA_Pair), (:QA_Pair)-[:REVEALS_EMOTION {{valence, arousal, confidence}}]->(:Emotion), (:QA_Pair)-[:EXHIBITS_DISTORTION {{confidence}}]->(:Cognitive_Distortion), (:QA_Pair)-[:EXHIBITS_STAGE {{confidence}}]->(:Erikson_Stage), (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {{confidence}}]->(:Attachment_Style), (:QA_Pair)-[:SHOWS_BIG_FIVE {{confidence}}]->(:Big_Five), (:QA_Pair)-[:REVEALS_SCHEMA {{confidence}}]->(:Schema), (:QA_Pair)-[:USES_DEFENSE_MECHANISM {{confidence}}]->(:Defense_Mechanism)
 
 You will be given a text analysis of a clients therapy responses. Return only the Cypher query. Do not include any other text, comments, or explanations. The query should use MERGE to avoid creating duplicate nodes for things like 'anger' or 'dissociation'.
 
-Example JSON:
-{
-  "analysis": {
-    "valence_arousal": [
-      { "emotion": "happiness", "valence": 0.5, "arousal": 0.5, "confidence": 0.8 }
-    ],
-    ... (rest of your JSON)
-  }
-}
+Example Input Format:
+Analysis:
 
-Example Cypher for the above JSON:
-MATCH (c:Client {id: 'client_id'}), (s:Session {session_id: 'session_1'})
-CREATE (qa:QA_Pair {id: 'qa_pair_1'})
+Valence and Arousal:
+Excitement: valence 0.9, arousal 0.8, confidence 0.9
+Evidence: "emotional excitement for me"
+
+Curiosity: valence 0.8, arousal 0.7, confidence 0.8
+Evidence: "novelty, creativity"
+
+Thrill: valence 0.8, arousal 0.8, confidence 0.8
+Evidence: "adrenaline or dopamine involved"
+
+Anticipation: valence 0.7, arousal 0.6, confidence 0.7
+Evidence: "suddenly deciding to travel"
+
+Cognitive Distortions:
+None clearly identified
+
+Erikson Developmental Stage:
+Initiative vs guilt, confidence 0.7
+Evidence: "actively engaged in building something new"
+
+Attachment Style:
+Secure, confidence 0.7
+Evidence: "comfortable with novelty and spontaneous activities"
+
+Defense Mechanisms:
+None clearly identified
+
+Schema Therapy:
+None clearly identified
+
+Big Five Personality Traits:
+Openness 0.9, Conscientiousness 0.6, Extraversion 0.8, Agreeableness 0.7, Neuroticism 0.3
+Overall confidence 0.8
+
+Summary: The client displays a strong positive affective response to novelty, creativity,
+
+# Example Cypher for the above:
+MATCH (c:Client {{id: 'client_id'}}), (s:Session {{session_id: 'session_1'}})
+CREATE (qa:QA_Pair {{id: 'qa_pair_1'}})
 CREATE (c)-[:PARTICIPATED_IN]->(s)
 CREATE (s)-[:INCLUDES]->(qa)
-MERGE (e:Emotion {name: 'happiness'})
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.5, confidence: 0.8}]->(e);
+MERGE (e:Emotion {{name: 'happiness'}})
+CREATE (qa)-[:REVEALS_EMOTION {{valence: 0.5, arousal: 0.5, confidence: 0.8}}]->(e);
 (and so on for all the other nodes and relationships)
 
 """

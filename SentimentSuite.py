@@ -16,6 +16,7 @@ from src.analysis.distortion_detection import detect_distortions
 from fastapi.responses import HTMLResponse
 from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
+from src.graphs.create_kg import process_kg_creation
 import math
 
 # Removed torch configuration - focusing on gpt-oss only
@@ -488,6 +489,7 @@ async def upload_form():
                         <div class="button-container">
                             <button type="submit" class="submit-btn">Upload and Analyze</button>
                             <a href="/dashboard_all" class="view-dashboard">View Dashboard</a>
+                            <button type="button" class="submit-btn" onclick="createGraph()" style="background-color: #FF6B35;">Create Graph</button>
                         </div>
                     </form>
                     <div id="results"></div>
@@ -518,6 +520,33 @@ async def upload_form():
                                 '<p style="color: red;">Error: ' + error.message + '</p>';
                         }
                     };
+
+                    async function createGraph() {
+                        // Show loading message
+                        document.getElementById('results').innerHTML = '<p style="color: #FF6B35;">Creating knowledge graph... This may take several minutes.</p>';
+                        
+                        try {
+                            const response = await fetch('/create-graph', {
+                                method: 'POST'
+                            });
+                            const data = await response.json();
+                            
+                            if (data.status === 'completed') {
+                                document.getElementById('results').innerHTML = 
+                                    `<p style="color: #4CAF50;">Knowledge graph creation completed!</p>
+                                     <p>Total Analyses: ${data.total_analyses}</p>
+                                     <p>Successful: ${data.successful}</p>
+                                     <p>Errors: ${data.errors}</p>
+                                     <a href="/graph-results" style="color: #2196F3; text-decoration: underline;">View graph results</a>`;
+                            } else {
+                                document.getElementById('results').innerHTML = 
+                                    '<p style="color: red;">Graph creation failed: ' + (data.error || 'Unknown error') + '</p>';
+                            }
+                        } catch (error) {
+                            document.getElementById('results').innerHTML =
+                                '<p style="color: red;">Error: ' + error.message + '</p>';
+                        }
+                    }
                 </script>
             </body>
         </html>
@@ -673,6 +702,7 @@ async def upload_therapy_form():
                         <div class="button-container">
                             <button type="submit" class="submit-btn">Upload and Analyze</button>
                             <a href="/psychological-results" class="view-dashboard">View Results</a>
+                            <button type="button" class="submit-btn" onclick="createGraph()" style="background-color: #FF6B35;">Create Graph</button>
                             <a href="/upload-csv" class="view-dashboard">Regular Analysis</a>
                         </div>
                     </form>
@@ -710,6 +740,33 @@ async def upload_therapy_form():
                                 '<p style="color: red;">Error: ' + error.message + '</p>';
                         }
                     };
+
+                    async function createGraph() {
+                        // Show loading message
+                        document.getElementById('results').innerHTML = '<p style="color: #FF6B35;">Creating knowledge graph... This may take several minutes.</p>';
+                        
+                        try {
+                            const response = await fetch('/create-graph', {
+                                method: 'POST'
+                            });
+                            const data = await response.json();
+                            
+                            if (data.status === 'completed') {
+                                document.getElementById('results').innerHTML = 
+                                    `<p style="color: #4CAF50;">Knowledge graph creation completed!</p>
+                                     <p>Total Analyses: ${data.total_analyses}</p>
+                                     <p>Successful: ${data.successful}</p>
+                                     <p>Errors: ${data.errors}</p>
+                                     <a href="/graph-results" style="color: #2196F3; text-decoration: underline;">View graph results</a>`;
+                            } else {
+                                document.getElementById('results').innerHTML = 
+                                    '<p style="color: red;">Graph creation failed: ' + (data.error || 'Unknown error') + '</p>';
+                            }
+                        } catch (error) {
+                            document.getElementById('results').innerHTML =
+                                '<p style="color: red;">Error: ' + error.message + '</p>';
+                        }
+                    }
                 </script>
             </body>
         </html>
@@ -875,6 +932,140 @@ Errors: {results.get('errors', 0)}
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
     return response
+
+@app.post("/create-graph")
+async def create_knowledge_graph():
+    """
+    Process the psychological analysis master file and create knowledge graph Cypher queries.
+    """
+    try:
+        results = process_kg_creation()
+        
+        # Store results in analysis_store for later viewing
+        analysis_store.results['knowledge_graph'] = results
+        analysis_store.timestamp = datetime.now()
+        
+        return results
+    
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }
+
+@app.get("/graph-results", response_class=HTMLResponse)
+async def graph_results():
+    """
+    Display knowledge graph creation results.
+    """
+    if 'knowledge_graph' not in analysis_store.results or not analysis_store.results['knowledge_graph']:
+        return HTMLResponse(content='''
+            <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #1a1a1a; color: white; }
+                        .error { background: #3d2d2d; padding: 20px; border-radius: 10px; border-left: 4px solid #ff4444; }
+                        .button { display: inline-block; margin: 10px 0; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="error">
+                        <h2>No Graph Results Found</h2>
+                        <p>No knowledge graph creation results available. Please create a graph first.</p>
+                        <a href="/upload-csv" class="button">Create Knowledge Graph</a>
+                    </div>
+                </body>
+            </html>
+        ''')
+    
+    results = analysis_store.results['knowledge_graph']
+    timestamp_str = analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S") if analysis_store.timestamp else "Unknown"
+    
+    # Generate summary statistics
+    summary_html = f"""
+        <div class="summary">
+            <h3>Graph Creation Summary</h3>
+            <p><strong>Total Analyses:</strong> {results.get('total_analyses', 0)}</p>
+            <p><strong>Successfully Processed:</strong> {results.get('successful', 0)}</p>
+            <p><strong>Errors:</strong> {results.get('errors', 0)}</p>
+            <p><strong>Processing Time:</strong> {timestamp_str}</p>
+        </div>
+    """
+    
+    # Generate results table
+    results_html = "<div class='results-table'><h3>Individual Results</h3>"
+    if 'results' in results:
+        for i, result in enumerate(results['results'][:10]):  # Show first 10
+            status_color = "#4CAF50" if result['status'] == 'success' else "#ff4444"
+            results_html += f"""
+                <div class="result-item">
+                    <h4>Analysis {result.get('analysis_id', i+1)} <span style="color: {status_color};">({result['status']})</span></h4>
+                    <p><strong>Content:</strong> {result.get('content', 'N/A')}</p>
+                </div>
+            """
+        if len(results['results']) > 10:
+            results_html += f"<p><em>... and {len(results['results']) - 10} more results</em></p>"
+    results_html += "</div>"
+    
+    return HTMLResponse(content=f'''
+        <html>
+            <head>
+                <title>Knowledge Graph Results</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: #1a1a1a;
+                        color: white;
+                    }}
+                    .summary {{
+                        background: #2d2d2d;
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin-bottom: 20px;
+                        border-left: 4px solid #FF6B35;
+                    }}
+                    .results-table {{
+                        background: #2d2d2d;
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin-bottom: 20px;
+                    }}
+                    .result-item {{
+                        background: #3d3d3d;
+                        padding: 15px;
+                        margin: 10px 0;
+                        border-radius: 5px;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        margin: 10px 5px;
+                        padding: 10px 20px;
+                        background-color: #2196F3;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                    }}
+                    .button.orange {{ background-color: #FF6B35; }}
+                    .button-container {{ margin: 20px 0; }}
+                </style>
+            </head>
+            <body>
+                <h1>Knowledge Graph Creation Results</h1>
+                
+                {summary_html}
+                
+                <div class="button-container">
+                    <a href="/upload-csv" class="button orange">Create New Graph</a>
+                    <a href="/dashboard_all" class="button">Sentiment Dashboard</a>
+                </div>
+                
+                {results_html}
+            </body>
+        </html>
+    ''')
 
 
 def create_sentiment_dashboard(data):
