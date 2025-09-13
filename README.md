@@ -37,6 +37,12 @@ _Eric Schmidt_ July 2025
 
 
 # TODO's
+1. Finish 'stage one' of the voicebot - I'm building it as a 'home assistant' initially
+2. Tune the 'cypher' graph workflow and check for errors
+3. Build the workflow to graph system (i'm still deciding but I might use Postgres and 'Apache AGE' as i've not used the latter before)
+4. Build the Graph Neural Network (GNN) - One of the fastest approaches to a dataset like this is 'Hybrid Graph-RAG', which utilises a combination of embeddings and knowledge graphs.
+5. Adjust the voice workflow to deliver surveys and forms - This is a small addition to what i've already built, and allows the patient to complete forms vocally with the llm.
+
 
 # Project Update
 The forge has been built, albeit still under testing. 
