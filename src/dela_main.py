@@ -5,11 +5,14 @@ from RealtimeSTT import AudioToTextRecorder
 from src.graphs.agent import get_new_agent
 from src.io_py.tts.output import KokoroSpeech, OutputChunkBuilder, Speech
 from langgraph.prebuilt import chat_agent_executor # add possibly later for STT
+from settings import load_config
+
 # Dependant on the python version used
 try:
     from collections.abc import AsyncGenerator
 except ImportError:
     from typing import AsyncGenerator
+
 
 async def stream_speech(
     msg_stream: AsyncGenerator,
@@ -45,11 +48,9 @@ async def survey_mode(
  #   user_response = await stt.transcribe_until_silence()
 
 async def main():
-    conf = Speech
+    conf = load_config()
     speech = KokoroSpeech(**conf.KokoroSpeech)
     output_chunk_builder = OutputChunkBuilder()
-    conf= {"configurable": {"thread_id": "abc123"}}
-
 
     user_query = "Hello world!"
     user_query_formatted = {

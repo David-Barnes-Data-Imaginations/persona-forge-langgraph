@@ -69,16 +69,3 @@ class KokoroSpeech(Speech):
                 chunk = audio[start: start + self.chunk_size]
                 frames.append(chunk.numpy().astype(np.float32))
         return frames
-
-
-
-
-
-# input_msg = "The time is 03:47AM"
-"""generator = pipeline(input_msg, voice='af_heart')
-for i, (gs, ps, audio) in enumerate(generator):
-    print(i, gs, ps)
-
-    for start in range(0, len(audio), CHUNK_SIZE):
-        chunk = audio[start:start + CHUNK_SIZE]
-        output_stream.write(chunk.numpy().astype(np.float32).tobytes())"""

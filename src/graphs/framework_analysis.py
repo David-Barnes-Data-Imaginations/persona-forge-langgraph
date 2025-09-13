@@ -9,15 +9,12 @@ from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
-from langchain_core.tools import tool
-
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 
-from ..prompts.text_prompts import SYSTEM_PROMPT
+from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_PROMPT
 from ..utils.json_tools import submit_analysis
 
 # LLM

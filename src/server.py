@@ -5,11 +5,14 @@ from fastmcp import FastMCP, settings
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from src.io_py.edge.db import register_device_manager_tools, initialise_database, DeviceManager, populate_database
 from pathlib import Path
-from ../../../../settings import config
+from src.settings import load_config
 import logging as logger
+from dotenv import load_dotenv
+import platformdirs
 
+import typer
 app = typer.Typer()
-root_dir = ROOT_DIR
+root_dir = os.getenv("ROOT_DIR")
 
 def initialise_server(db_path: os.PathLike) -> FastMCP:
     """Initialise the server.

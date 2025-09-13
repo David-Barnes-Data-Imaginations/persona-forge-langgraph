@@ -1,6 +1,6 @@
 from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
-from ..io_py.edge.server import get_mcp_server_tools
+from src.server import get_mcp_server_tools
 from ..utils.voice_tools import get_tools as get_datetime_tools
 from langchain_ollama import ChatOllama
 from ..io_py.edge.config import LLMConfigVoice

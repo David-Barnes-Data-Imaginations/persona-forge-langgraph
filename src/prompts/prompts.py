@@ -104,14 +104,32 @@ You will be given (per row): question (string), answer (string), message_id (str
 \n\n""")
 
 
-CYPHER_PROMPT_Placeholder="""You are an expert clinical annotator. Populate `graph_edges` to Generate a Cypher File that maps out the contents of the JSON into a .cypher file.
-Once the cypher is written, submit it using the 'submit_cypher' tool.
-Use these relation types:
-- ("Utterance", qa_id) -[:HAS_SENTIMENT]-> ("Sentiment", "valence,arousal")
-- ("Utterance", qa_id) -[:HAS_DISTORTION]-> ("Distortion", type)
-- ("Utterance", qa_id) -[:REFLECTS_STAGE]-> ("EriksonStage", stage)
-- ("Persona", patient_id) -[:HAS_ATTACHMENT]-> ("AttachmentStyle", style)
-- ("Persona", patient_id) -[:HAS_TRAIT]-> ("Trait", name, score)
-- ("Utterance", qa_id) -[:REFLECTS_SCHEMA]-> ("Schema", name)
-- ("Utterance", qa_id) -[:SHOWS_DEFENSE]-> ("DefenseMechanism", type)
+CYPHER_PROMPT_Placeholder="""You are a Cypher query generator. Your task is to take a JSON analysis of a therapy QA Pair and create a single Cypher query to create nodes and relationships in a graph.
+
+The graph has the following schema:
+Nodes: (:Client), (:Session), (:QA_Pair), (:Emotion), (:Cognitive_Distortion), (:Erikson_Stage), (:Attachment_Style), (:Big_Five), (:Schema), (:Defense_Mechanism)
+Relationships: (:Client)-[:PARTICIPATED_IN]->(:Session), (:Session)-[:INCLUDES]->(:QA_Pair), (:QA_Pair)-[:REVEALS_EMOTION {valence, arousal, confidence}]->(:Emotion), (:QA_Pair)-[:EXHIBITS_DISTORTION {confidence}]->(:Cognitive_Distortion), (:QA_Pair)-[:EXHIBITS_STAGE {confidence}]->(:Erikson_Stage), (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {confidence}]->(:Attachment_Style), (:QA_Pair)-[:SHOWS_BIG_FIVE {confidence}]->(:Big_Five), (:QA_Pair)-[:REVEALS_SCHEMA {confidence}]->(:Schema), (:QA_Pair)-[:USES_DEFENSE_MECHANISM {confidence}]->(:Defense_Mechanism)
+
+You will be given a JSON object. Return only the Cypher query. Do not include any other text, comments, or explanations. The query should use MERGE to avoid creating duplicate nodes for things like 'anger' or 'dissociation'.
+
+Example JSON:
+{
+  "analysis": {
+    "valence_arousal": [
+      { "emotion": "happiness", "valence": 0.5, "arousal": 0.5, "confidence": 0.8 }
+    ],
+    ... (rest of your JSON)
+  }
+}
+
+Example Cypher for the above JSON:
+MATCH (c:Client {id: 'client_id'}), (s:Session {session_id: 'session_1'})
+CREATE (qa:QA_Pair {id: 'qa_pair_1'})
+CREATE (c)-[:PARTICIPATED_IN]->(s)
+CREATE (s)-[:INCLUDES]->(qa)
+MERGE (e:Emotion {name: 'happiness'})
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.5, confidence: 0.8}]->(e);
+(and so on for all the other nodes and relationships)
+
+Now, generate the Cypher query for this JSON:
 """

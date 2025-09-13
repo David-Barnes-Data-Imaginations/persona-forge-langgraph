@@ -2,7 +2,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 # Project root directory
-ROOT_DIR=Path(__file__).parent.parent
+ROOT_DIR=Path(__file__).parent
 
 # Server configuration
 SERVER_HOST="127.0.0.1"
