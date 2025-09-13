@@ -30,5 +30,6 @@ dependencies = [
     "omegaconf>=2.3.0",
     "langchain-mcp-adapters>=0.1.9",
     "langgraph-checkpoint-sqlite>=2.0.11",
+    "platformdirs>=4.4.0",
 ]
 

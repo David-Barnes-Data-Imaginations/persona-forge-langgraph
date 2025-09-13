@@ -1,7 +1,4 @@
-import os
-import json
 import pandas as pd
-import requests
 from typing import Annotated, Optional
 from typing_extensions import TypedDict
 from langchain_ollama import ChatOllama
@@ -33,8 +30,6 @@ class Assistant:
     def __call__(self, state: State, config: RunnableConfig):
         while True:
             configuration = config.get("configurable", {})
-            passenger_id = configuration.get("passenger_id", None)
-            state = {**state, "user_info": passenger_id}
             result = self.runnable.invoke(state)
             # If the LLM happens to return an empty response, we will re-prompt it
             # for an actual response.
@@ -43,7 +38,7 @@ class Assistant:
                 or isinstance(result.content, list)
                 and not result.content[0].get("text")
             ):
-                messages = state["messages"] + [("user", "Respond with a real output.")]
+                messages = state["messages"] + [("user", "")]
                 state = {**state, "messages": messages}
             else:
                 break
@@ -55,7 +50,7 @@ def handle_tool_error(state) -> dict:
     return {
         "messages": [
             ToolMessage(
-                content=f"Error: {repr(error)}\n please fix your mistakes.",
+                content=f"Error: {repr(error)}\n please retry, make sure not to include any erroneous characters as that can trip the error. Thanks!",
                 tool_call_id=tc["id"],
             )
             for tc in tool_calls
@@ -107,7 +102,7 @@ builder.add_edge("tools", "assistant")
 
 # The checkpointer lets the graph persist its state
 # this is a complete memory for the entire graph.
-part_1_graph = builder.compile()
+framework_graph = builder.compile()
 
 # Set configuration for recursion limit
 graph_config = {
@@ -183,7 +178,7 @@ def process_qa_pair(qa_pair: dict) -> dict:
         }
         
         # Run the graph with increased recursion limit
-        result = part_1_graph.invoke(initial_state, config=graph_config)
+        result = framework_graph.invoke(initial_state, config=graph_config)
         
         return {
             "qa_id": qa_pair['message_id'],
