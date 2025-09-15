@@ -57,25 +57,30 @@ def submit_cypher(cypher_data: str) -> str:
     """
     try:
         # Create output directory if it doesn't exist
-        output_dir = os.path.join(os.getcwd(), "output", "cypher_queries")
+        output_dir = os.path.join(os.getcwd(), "output", "psychological_analysis", "graph_output")
         os.makedirs(output_dir, exist_ok=True)
         
-        # Generate filename
+        # Single master Cypher file
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"graph_import_{timestamp}.cypher"
-        
-        # Ensure .cypher extension
-        if not filename.endswith('.cypher'):
-            filename += '.cypher'
-        
-        # Full path
+        filename = f"psychological_graph_{timestamp[:8]}.cypher"  # Use date only for filename
         filepath = os.path.join(output_dir, filename)
         
-        # Write the cypher file
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(cypher_data)
+        # Get current timestamp for entry
+        entry_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        return f"Cypher query successfully saved to: {filepath}"
+        # Append to the master Cypher file with separator
+        with open(filepath, 'a', encoding='utf-8') as f:
+            f.write(f"\n// ============================================================================\n")
+            f.write(f"// CYPHER ENTRY - {entry_timestamp}\n")
+            f.write(f"// ============================================================================\n\n")
+            f.write(str(cypher_data))
+            f.write(f"\n\n// ============================================================================\n")
+        
+        # Count entries by counting separators
+        with open(filepath, 'r', encoding='utf-8') as f:
+            entry_count = f.read().count("CYPHER ENTRY")
+        
+        return f"Cypher query #{entry_count} successfully appended to: {filepath}"
     
     except Exception as e:
         return f"Error saving Cypher query: {str(e)}"

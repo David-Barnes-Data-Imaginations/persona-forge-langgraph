@@ -100,60 +100,77 @@ Remember: Call the submit_analysis tool with your complete analysis formatted as
 
 
 
-CYPHER_PROMPT="""You are a Cypher query generator. Your task is to take a JSON analysis of a therapy QA Pair and create a single Cypher query to create nodes and relationships in a graph.
+CYPHER_PROMPT = """You are a Cypher query generator. Your task is to take a plain text psychological analysis and create a single Cypher query to create nodes and relationships in a Neo4j graph database.
+1. When finished, call the submit_cypher tool with your cypher code as plain text
+2. This saves your work
 
-The graph has the following schema:
+## Graph Schema
 Nodes: (:Client), (:Session), (:QA_Pair), (:Emotion), (:Cognitive_Distortion), (:Erikson_Stage), (:Attachment_Style), (:Big_Five), (:Schema), (:Defense_Mechanism)
-Relationships: (:Client)-[:PARTICIPATED_IN]->(:Session), (:Session)-[:INCLUDES]->(:QA_Pair), (:QA_Pair)-[:REVEALS_EMOTION {{valence, arousal, confidence}}]->(:Emotion), (:QA_Pair)-[:EXHIBITS_DISTORTION {{confidence}}]->(:Cognitive_Distortion), (:QA_Pair)-[:EXHIBITS_STAGE {{confidence}}]->(:Erikson_Stage), (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {{confidence}}]->(:Attachment_Style), (:QA_Pair)-[:SHOWS_BIG_FIVE {{confidence}}]->(:Big_Five), (:QA_Pair)-[:REVEALS_SCHEMA {{confidence}}]->(:Schema), (:QA_Pair)-[:USES_DEFENSE_MECHANISM {{confidence}}]->(:Defense_Mechanism)
 
-You will be given a text analysis of a clients therapy responses. Return only the Cypher query. Do not include any other text, comments, or explanations. The query should use MERGE to avoid creating duplicate nodes for things like 'anger' or 'dissociation'.
+Relationships:
+- (:Client)-[:PARTICIPATED_IN]->(:Session)
+- (:Session)-[:INCLUDES]->(:QA_Pair)
+- (:QA_Pair)-[:REVEALS_EMOTION {{valence, arousal, confidence}}]->(:Emotion)
+- (:QA_Pair)-[:EXHIBITS_DISTORTION {{confidence}}]->(:Cognitive_Distortion)
+- (:QA_Pair)-[:EXHIBITS_STAGE {{confidence}}]->(:Erikson_Stage)
+- (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {{confidence}}]->(:Attachment_Style)
+- (:QA_Pair)-[:SHOWS_BIG_FIVE {{openness, conscientiousness, extraversion, agreeableness, neuroticism, confidence}}]->(:Big_Five)
+- (:QA_Pair)-[:REVEALS_SCHEMA {{confidence}}]->(:Schema)
+- (:QA_Pair)-[:USES_DEFENSE_MECHANISM {{confidence}}]->(:Defense_Mechanism)
 
-Example Input Format:
+## Instructions
+- Return ONLY the Cypher query with no additional text, comments, or explanations
+- Use MERGE for all nodes to avoid duplicates
+- If any category shows "None clearly identified" or similar, skip creating those relationships
+- Use proper Cypher syntax with semicolons to separate statements
+
+## Input Format
+You will receive plain text analysis in this format:
+---
 Analysis:
-
 Valence and Arousal:
-Excitement: valence 0.9, arousal 0.8, confidence 0.9
-Evidence: "emotional excitement for me"
-
-Curiosity: valence 0.8, arousal 0.7, confidence 0.8
-Evidence: "novelty, creativity"
-
-Thrill: valence 0.8, arousal 0.8, confidence 0.8
-Evidence: "adrenaline or dopamine involved"
-
-Anticipation: valence 0.7, arousal 0.6, confidence 0.7
-Evidence: "suddenly deciding to travel"
-
+[Emotion]: valence [number], arousal [number], confidence [number]
+Evidence: "[quote]"
 Cognitive Distortions:
-None clearly identified
-
+[Type], confidence [number]
+Evidence: "[quote]"
 Erikson Developmental Stage:
-Initiative vs guilt, confidence 0.7
-Evidence: "actively engaged in building something new"
-
+[Stage], confidence [number]
+Evidence: "[quote]"
 Attachment Style:
-Secure, confidence 0.7
-Evidence: "comfortable with novelty and spontaneous activities"
-
-Defense Mechanisms:
-None clearly identified
-
-Schema Therapy:
-None clearly identified
-
+[Style], confidence [number]
 Big Five Personality Traits:
-Openness 0.9, Conscientiousness 0.6, Extraversion 0.8, Agreeableness 0.7, Neuroticism 0.3
-Overall confidence 0.8
+Openness [number], Conscientiousness [number], Extraversion [number], Agreeableness [number], Neuroticism [number]
+Overall confidence [number]
+Schema Therapy:
+[Schema], confidence [number]
+Evidence: "[quote]"
+Defense Mechanisms:
+[Mechanism], confidence [number]
+Evidence: "[quote]"
+Summary: [summary text]
+---
 
-Summary: The client displays a strong positive affective response to novelty, creativity,
-
-# Example Cypher for the above:
-MATCH (c:Client {{id: 'client_id'}}), (s:Session {{session_id: 'session_1'}})
-CREATE (qa:QA_Pair {{id: 'qa_pair_1'}})
-CREATE (c)-[:PARTICIPATED_IN]->(s)
-CREATE (s)-[:INCLUDES]->(qa)
-MERGE (e:Emotion {{name: 'happiness'}})
-CREATE (qa)-[:REVEALS_EMOTION {{valence: 0.5, arousal: 0.5, confidence: 0.8}}]->(e);
-(and so on for all the other nodes and relationships)
-
+## Example Output Format
+```
+MERGE (c:Client {{id: 'client_123'}});
+MERGE (s:Session {{session_id: 'session_001'}});
+CREATE (qa:QA_Pair {{id: 'qa_pair_001', question: 'How do you feel about work?', answer: 'I love creative projects but worry about deadlines'}});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {{name: 'excitement'}});
+CREATE (qa)-[:REVEALS_EMOTION {{valence: 0.8, arousal: 0.7, confidence: 0.9}}]->(e1);
+MERGE (e2:Emotion {{name: 'anxiety'}});
+CREATE (qa)-[:REVEALS_EMOTION {{valence: -0.4, arousal: 0.6, confidence: 0.8}}]->(e2);
+MERGE (cd:Cognitive_Distortion {{type: 'catastrophizing'}});
+CREATE (qa)-[:EXHIBITS_DISTORTION {{confidence: 0.7}}]->(cd);
+MERGE (es:Erikson_Stage {{stage: 'industry_vs_inferiority'}});
+CREATE (qa)-[:EXHIBITS_STAGE {{confidence: 0.8}}]->(es);
+MERGE (as:Attachment_Style {{style: 'anxious_preoccupied'}});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {{confidence: 0.7}}]->(as);
+MERGE (bf:Big_Five {{profile: 'individual'}});
+CREATE (qa)-[:SHOWS_BIG_FIVE {{openness: 0.8, conscientiousness: 0.6, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.7}}]->(bf);
+```
+Remember: Only output the Cypher query as a string to the 'submit_cypher' tool. No explanations or additional text.
+The file will be named for you.
 """
