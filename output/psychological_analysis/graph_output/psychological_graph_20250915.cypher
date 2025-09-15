@@ -1,43 +1,32 @@
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:09:26
-// ============================================================================
-
-MERGE (c:Client {id: 'client_001'});
-MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_001', question: 'N/A', answer: 'N/A'});
+MERGE (c:Client {id:'client_001'});
+MERGE (s:Session {session_id:'session_001'});
+MERGE (qa:QA_Pair {id:'qa_pair_001', question:'N/A', answer:'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'Empathy'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.2, arousal: 0.3, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'Anger visualization'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.7, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'Sadness when others sad'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.4, confidence: 0.7}]->(e3);
-MERGE (cd:Cognitive_Distortion {type: 'Rationalization'});
-CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
-CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
-CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (bf:Big_Five {profile: 'individual'});
-CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.4, agreeableness: 0.5, neuroticism: 0.5, confidence: 0.7}]->(bf);
-MERGE (sch:Schema {name: 'Emotional deprivation'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
-MERGE (dm1:Defense_Mechanism {name: 'Denial'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm1);
-MERGE (dm2:Defense_Mechanism {name: 'Intellectualization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:12:13
-// ============================================================================
+MERGE (e1:Emotion {name:'Empathy'});
+CREATE (qa)-[:REVEALS_EMOTION {valence:0.2, arousal:0.3, confidence:0.8}]->(e1);
+MERGE (e2:Emotion {name:'Anger visualization'});
+CREATE (qa)-[:REVEALS_EMOTION {valence:0.5, arousal:0.7, confidence:0.7}]->(e2);
+MERGE (e3:Emotion {name:'Sadness when others sad'});
+CREATE (qa)-[:REVEALS_EMOTION {valence:-0.4, arousal:0.4, confidence:0.7}]->(e3);
+MERGE (cd:Cognitive_Distortion {type:'Rationalization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence:0.7}]->(cd);
+MERGE (es:Erikson_Stage {name:'Identity vs role confusion'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence:0.7}]->(es);
+MERGE (as:Attachment_Style {name:'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence:0.7}]->(as);
+MERGE (bf:Big_Five {profile:'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness:0.8, conscientiousness:0.6, extraversion:0.4, agreeableness:0.5, neuroticism:0.5, confidence:0.7}]->(bf);
+MERGE (sch:Schema {name:'Emotional deprivation'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence:0.7}]->(sch);
+MERGE (dm1:Defense_Mechanism {name:'Denial'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence:0.6}]->(dm1);
+MERGE (dm2:Defense_Mechanism {name:'Intellectualization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence:0.6}]->(dm2);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_002'});
+MERGE (qa:QA_Pair {id: 'qa_pair_002', question: 'Analysis Entry #2', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Calm'});
@@ -52,24 +41,18 @@ MERGE (cd1:Cognitive_Distortion {type: 'Minimization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'All or nothing thinking'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Intimacy vs isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Dismissive avoidant'});
+MERGE (as:Attachment_Style {name: 'Dismissive avoidant'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Denial'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-MERGE (sch:Schema {name: 'Self‑sacrifice'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.3, agreeableness: 0.7, neuroticism: 0.2, confidence: 0.7}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:13:23
-// ============================================================================
+MERGE (sch:Schema {name: 'Self‑sacrifice'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
+MERGE (dm1:Defense_Mechanism {name: 'Denial'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
+MERGE (dm2:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
@@ -88,71 +71,52 @@ MERGE (cd1:Cognitive_Distortion {type: 'Labeling'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Generativity vs stagnation'});
+MERGE (es:Erikson_Stage {name: 'Generativity vs stagnation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Suppression'});
+MERGE (dm:Defense_Mechanism {name: 'Suppression'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
-MERGE (sch:Schema {schema: 'Defectiveness shame'});
+MERGE (sch:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.7, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:16:00
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_004', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_004'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Enthusiasm'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.7, confidence: 0.9}]->(e1);
 MERGE (e2:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.2, arousal: 0.3, confidence: 0.6}]->(e2);
-MERGE (es:Erikson_Stage {stage: 'initiative_vs_guilt'});
+MERGE (es:Erikson_Stage {name: 'Initiative vs guilt'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
-CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (bf:Big_Five {profile: 'custom'});
-CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.6, extraversion: 0.7, agreeableness: 0.6, neuroticism: 0.3, confidence: 0.8}]->(bf);
-
-// ============================================================================
-
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:16:49
-// ============================================================================
-
-MERGE (c:Client {id: 'client_001'});
-MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_005', question: 'N/A', answer: 'N/A'});
-MERGE (c)-[:PARTICIPATED_IN]->(s);
-MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'Enthusiasm'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.7, confidence: 0.9}]->(e1);
-MERGE (e2:Emotion {name: 'Anxiety'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: -0.2, arousal: 0.3, confidence: 0.6}]->(e2);
-MERGE (es:Erikson_Stage {stage: 'Initiative_vs_guilt'});
-CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.6, extraversion: 0.7, agreeableness: 0.6, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:17:06
-// ============================================================================
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_005', question: 'N/A', answer: 'N/A'});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Enthusiasm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.7, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.2, arousal: 0.3, confidence: 0.6}]->(e2);
+MERGE (es:Erikson_Stage {name: 'Initiative vs guilt'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
+MERGE (as:Attachment_Style {name: 'Secure'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (bf:Big_Five {profile: 'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.6, extraversion: 0.7, agreeableness: 0.6, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_006'});
+MERGE (qa:QA_Pair {id: 'qa_pair_006', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Empathy'});
@@ -161,22 +125,16 @@ MERGE (e2:Emotion {name: 'Fulfillment'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.3, confidence: 0.8}]->(e2);
 MERGE (e3:Emotion {name: 'Amusement'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.2, confidence: 0.7}]->(e3);
-MERGE (es:Erikson_Stage {stage: 'intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (bf:Big_Five {profile: 'individual'});
+MERGE (bf:Big_Five {profile: 'client_001'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.8, neuroticism: 0.3, confidence: 0.8}]->(bf);
-
-// ============================================================================
-=
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:17:54
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_007', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_007', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Amusement'});
@@ -191,26 +149,20 @@ MERGE (cd1:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
+MERGE (sch:Schema {name: 'Defectiveness shame'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.5, extraversion: 0.6, agreeableness: 0.4, neuroticism: 0.7, confidence: 0.7}]->(bf);
-MERGE (sc:Schema {name: 'Defectiveness shame'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sc);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:18:28
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_008', question: 'N/A', answer: 'N/A'});
+MERGE (qa:QA_Pair {id: 'qa_pair_008', question: 'Analysis Entry #8', answer: 'Analysis'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Curiosity'});
@@ -223,26 +175,20 @@ MERGE (cd1:Cognitive_Distortion {type: 'Labeling'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Should statements'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
 MERGE (sch:Schema {name: 'Approval seeking'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.8, extraversion: 0.5, agreeableness: 0.8, neuroticism: 0.4, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:19:16
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_009'});
+CREATE (qa:QA_Pair {id: 'qa_pair_009', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Pride'});
@@ -257,28 +203,22 @@ MERGE (cd1:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Should statements'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Generativity_vs_stagnation'});
+MERGE (es:Erikson_Stage {name: 'Generativity vs stagnation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Humor (intellectualization)'});
+MERGE (dm:Defense_Mechanism {name: 'Humor (intellectualization)'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
 MERGE (sch1:Schema {name: 'Self‑sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch1);
 MERGE (sch2:Schema {name: 'Approval seeking'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
-MERGE (bf:Big_Five {profile: 'qa_pair_009'});
+MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.4, confidence: 0.7}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:19:41
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_010', question: 'Analysis Entry #10', answer: 'The client reflects on a vivid, imaginative childhood that shaped a strong sense of identity and purpose. The narrative is largely positive, highlighting pride in training and role models, yet interspersed with self‑deprecating remarks that suggest a tendency to minimize personal achievements. Cognitive distortions such as minimization and all‑or‑nothing thinking are evident. The client appears to have a secure attachment base, supported by parental permissiveness and mentorship. Personality analysis indicates high openness and conscientiousness, moderate extraversion and agreeableness, and low neuroticism, suggesting a disciplined, creative individual who may occasionally undervalue their own accomplishments.'});
+MERGE (qa:QA_Pair {id: 'qa_pair_010', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Nostalgia'});
@@ -293,24 +233,18 @@ MERGE (cd1:Cognitive_Distortion {type: 'Minimization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'All or nothing thinking'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.9}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Minimization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.9, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.4, confidence: 0.8}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:20:06
-// ============================================================================
+MERGE (dm:Defense_Mechanism {name: 'Minimization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_011', question: '...', answer: '...'});
+CREATE (qa:QA_Pair {id: 'qa_pair_011', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Anxiety'});
@@ -327,26 +261,20 @@ MERGE (cd2:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
 MERGE (cd3:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
-MERGE (sch:Schema {schema: 'Self‑sacrifice'});
+MERGE (sch:Schema {name: 'Self‑sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.9, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:21:08
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_012', question: 'N/A', answer: 'N/A'});
+MERGE (qa:QA_Pair {id: 'qa_pair_012', question: 'How do you feel about feedback?', answer: 'I prefer critical feedback because it helps me improve'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Enthusiasm'});
@@ -361,9 +289,9 @@ MERGE (cd1:Cognitive_Distortion {type: 'Minimization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Rationalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Generativity_vs_stagnation'});
+MERGE (es:Erikson_Stage {name: 'Generativity vs stagnation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (dm1:Defense_Mechanism {name: 'Humor'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm1);
@@ -371,80 +299,62 @@ MERGE (dm2:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm2);
 MERGE (dm3:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm3);
-MERGE (sc:Schema {name: 'Approval_seeking'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sc);
+MERGE (sch:Schema {name: 'Approval seeking'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.9, extraversion: 0.6, agreeableness: 0.8, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:21:44
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_013', question: 'Analysis Entry #13', answer: 'The client displays a strong orientation toward objective service and detachment, which yields contentment and determination. However, the same detachment creates anxiety about burnout and self‑criticism, reflecting all‑or‑nothing and catastrophizing distortions. The focus on generativity and service aligns with Erikson’s generativity stage, while anxious preoccupied attachment and emotional inhibition suggest a need for supportive self‑care. Intellectualization and suppression serve as defense mechanisms to manage emotional intensity. High openness and conscientiousness support creative problem‑solving, but moderate neuroticism indicates vulnerability to stress. Overall, the client balances a constructive, service‑oriented identity with underlying anxieties about self‑worth and burnout.'});
+MERGE (qa:QA_Pair {id: 'qa_pair_013', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'contentment'});
+MERGE (e1:Emotion {name: 'Contentment'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.9}]->(e1);
-MERGE (e2:Emotion {name: 'anxiety'});
+MERGE (e2:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.8}]->(e2);
-MERGE (e3:Emotion {name: 'determination'});
+MERGE (e3:Emotion {name: 'Determination'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.5, confidence: 0.8}]->(e3);
-MERGE (e4:Emotion {name: 'self_criticism'});
+MERGE (e4:Emotion {name: 'Self‑criticism'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.7}]->(e4);
-MERGE (cd1:Cognitive_Distortion {type: 'all_or_nothing_thinking'});
+MERGE (cd1:Cognitive_Distortion {type: 'All or nothing thinking'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd1);
-MERGE (cd2:Cognitive_Distortion {type: 'catastrophizing'});
+MERGE (cd2:Cognitive_Distortion {type: 'Catastrophizing'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (cd3:Cognitive_Distortion {type: 'emotional_reasoning'});
+MERGE (cd3:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'generativity_vs_stagnation'});
+MERGE (es:Erikson_Stage {name: 'Generativity vs stagnation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'intellectualization'});
+MERGE (dm1:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'suppression'});
+MERGE (dm2:Defense_Mechanism {name: 'Suppression'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-MERGE (sc1:Schema {name: 'vulnerability_to_harm'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sc1);
-MERGE (sc2:Schema {name: 'emotional_inhibition'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sc2);
+MERGE (sch1:Schema {name: 'Vulnerability to harm'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch1);
+MERGE (sch2:Schema {name: 'Emotional inhibition'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.6, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:32:19
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_014'});
+MERGE (qa:QA_Pair {id: 'qa_pair_014', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e:Emotion {name: 'enthusiasm'});
+MERGE (e:Emotion {name: 'Enthusiasm'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.6, confidence: 0.9}]->(e);
-MERGE (es:Erikson_Stage {stage: 'identity_vs_role_confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.8, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:32:53
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_015'});
+MERGE (qa:QA_Pair {id: 'qa_pair_015', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e:Emotion {name: 'Optimism'});
@@ -453,28 +363,22 @@ MERGE (cd1:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Minimization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Industry_vs_inferiority'});
+MERGE (es:Erikson_Stage {name: 'Industry vs inferiority'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.5, neuroticism: 0.3, confidence: 0.8}]->(bf);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm1:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Intellectualization'});
+MERGE (dm2:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:33:22
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_016', question: '...', answer: '...'});
-CREATE (c)-[:PARTICIPATED_IN]->(s);
-CREATE (s)-[:INCLUDES]->(qa);
+MERGE (qa:QA_Pair {id: 'qa_pair_016', question: 'Analysis Entry #16', answer: 'Summary: The client displays high levels of frustration, anger, anxiety, and distrust stemming from a perceived lack of transparency and support during a stressful admission experience. Cognitive distortions such as catastrophizing, overgeneralization, and personalization amplify negative affect. The client’s attachment style appears anxious‑preoccupied, reflected in a strong need for reassurance and fear of abandonment. Defensive strategies include denial of AI job‑loss risk and rationalization of the situation. Schema analysis highlights a mistrust‑abuse core belief. Personality assessment indicates high openness and neuroticism, moderate conscientiousness and extraversion, and low agreeableness, suggesting a creative yet emotionally reactive individual who struggles with interpersonal trust.'});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Anger'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.8, arousal: 0.9, confidence: 0.9}]->(e1);
 MERGE (e2:Emotion {name: 'Frustration'});
@@ -489,70 +393,88 @@ MERGE (cd2:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
 MERGE (cd3:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd3);
-MERGE (cd4:Cognitive_Distortion {type: 'Mind_reading'});
+MERGE (cd4:Cognitive_Distortion {type: 'Mind reading'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd4);
-MERGE (cd5:Cognitive_Distortion {type: 'Emotional_reasoning'});
+MERGE (cd5:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd5);
-MERGE (es:Erikson_Stage {stage: 'Intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Denial'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm2);
-MERGE (sch1:Schema {name: 'Mistrust_abuse'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
-MERGE (sch2:Schema {name: 'Emotional_inhibition'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.6, extraversion: 0.7, agreeableness: 0.4, neuroticism: 0.8, confidence: 0.8}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:39:54
-// ============================================================================
+MERGE (sch1:Schema {name: 'Mistrust abuse'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
+MERGE (sch2:Schema {name: 'Emotional inhibition'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
+MERGE (dm1:Defense_Mechanism {name: 'Denial'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
+MERGE (dm2:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm2);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_017', question: '...', answer: '...'});
+MERGE (qa:QA_Pair {id: 'qa_pair_017', question: 'Analysis Entry #17', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'anxiety'});
+MERGE (e1:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.8, arousal: 0.7, confidence: 0.9}]->(e1);
-MERGE (e2:Emotion {name: 'hope'});
+MERGE (e2:Emotion {name: 'Hope'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.4, confidence: 0.8}]->(e2);
-MERGE (e3:Emotion {name: 'sadness'});
+MERGE (e3:Emotion {name: 'Sadness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.3, confidence: 0.7}]->(e3);
-MERGE (cd1:Cognitive_Distortion {type: 'catastrophizing'});
+MERGE (cd1:Cognitive_Distortion {type: 'Catastrophizing'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
-MERGE (cd2:Cognitive_Distortion {type: 'all_or_nothing_thinking'});
+MERGE (cd2:Cognitive_Distortion {type: 'All or nothing thinking'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (cd3:Cognitive_Distortion {type: 'emotional_reasoning'});
+MERGE (cd3:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'identity_vs_role_confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.5, extraversion: 0.3, agreeableness: 0.6, neuroticism: 0.9, confidence: 0.8}]->(bf);
-MERGE (sch1:Schema {name: 'defectiveness_shame'});
+MERGE (sch1:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
-MERGE (sch2:Schema {name: 'failure'});
+MERGE (sch2:Schema {name: 'Failure'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
-MERGE (dm:Defense_Mechanism {name: 'intellectualization'});
+MERGE (dm:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:40:08
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_018', question: 'N/A', answer: 'N/A'});
+MERGE (qa:QA_Pair {id: 'qa_pair_017', question: 'Analysis Entry #17', answer: ''});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.8, arousal: 0.7, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Hope'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.4, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Sadness'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.3, confidence: 0.7}]->(e3);
+MERGE (cd1:Cognitive_Distortion {type: 'Catastrophizing'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
+MERGE (cd2:Cognitive_Distortion {type: 'All or nothing thinking'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
+MERGE (cd3:Cognitive_Distortion {type: 'Emotional reasoning'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (bf:Big_Five {profile: 'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.9, conscientiousness: 0.5, extraversion: 0.3, agreeableness: 0.6, neuroticism: 0.9, confidence: 0.8}]->(bf);
+MERGE (sch1:Schema {name: 'Defectiveness shame'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
+MERGE (sch2:Schema {name: 'Failure'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
+MERGE (dm:Defense_Mechanism {name: 'Intellectualization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
+
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_018', question: '...', answer: '...'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Calm'});
@@ -567,13 +489,13 @@ MERGE (cd1:Cognitive_Distortion {type: 'Mind reading'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Integrity vs despair'});
+MERGE (es:Erikson_Stage {name: 'Integrity vs despair'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm1:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Intellectualization'});
+MERGE (dm2:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm2);
 MERGE (sch1:Schema {name: 'Self-sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
@@ -582,18 +504,11 @@ CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.3, agreeableness: 0.8, neuroticism: 0.5, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:40:39
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_019', question: 'Analysis', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_019', question: 'Analysis Entry #19', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-
 MERGE (e1:Emotion {name: 'Empathy'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.4, confidence: 0.9}]->(e1);
 MERGE (e2:Emotion {name: 'Guilt'});
@@ -602,7 +517,6 @@ MERGE (e3:Emotion {name: 'Sadness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.5, confidence: 0.7}]->(e3);
 MERGE (e4:Emotion {name: 'Relief'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.3, confidence: 0.8}]->(e4);
-
 MERGE (cd1:Cognitive_Distortion {type: 'Should statements'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Personalization'});
@@ -611,23 +525,18 @@ MERGE (cd3:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
 MERGE (cd4:Cognitive_Distortion {type: 'Catastrophizing'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.5}]->(cd4);
-
-MERGE (es:Erikson_Stage {stage: 'intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.8, confidence: 0.7}]->(bf);
-
 MERGE (sch1:Schema {name: 'Self-sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
 MERGE (sch2:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
 MERGE (sch3:Schema {name: 'Approval seeking'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch3);
-
 MERGE (dm1:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
 MERGE (dm2:Defense_Mechanism {name: 'Denial'});
@@ -635,18 +544,11 @@ CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
 MERGE (dm3:Defense_Mechanism {name: 'Suppression'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm3);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:41:31
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_020', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_020', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-
 MERGE (e1:Emotion {name: 'Gratitude'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.5, confidence: 0.9}]->(e1);
 MERGE (e2:Emotion {name: 'Sadness'});
@@ -655,72 +557,54 @@ MERGE (e3:Emotion {name: 'Awe/Relief'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.4, confidence: 0.8}]->(e3);
 MERGE (e4:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.7}]->(e4);
-
 MERGE (cd1:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Emotional Reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-
-MERGE (es:Erikson_Stage {stage: 'Identity_vs_Role_Confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs Role Confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-
-MERGE (as:Attachment_Style {style: 'Anxious_Preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious Preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-
 MERGE (dm:Defense_Mechanism {name: 'Intellectualization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm);
-
-MERGE (sch:Schema {name: 'Defectiveness_Shame'});
+MERGE (sch:Schema {name: 'Defectiveness/ Shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
-
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.5, agreeableness: 0.8, neuroticism: 0.7, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:41:54
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_021', question: '...', answer: '...'});
+MERGE (qa:QA_Pair {id: 'qa_pair_021', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'nostalgia'});
+MERGE (e1:Emotion {name: 'Nostalgia'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.5, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'gratitude'});
+MERGE (e2:Emotion {name: 'Gratitude'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.4, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'sadness'});
+MERGE (e3:Emotion {name: 'Sadness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.8}]->(e3);
-MERGE (e4:Emotion {name: 'loneliness'});
+MERGE (e4:Emotion {name: 'Loneliness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.7}]->(e4);
-MERGE (cd1:Cognitive_Distortion {type: 'emotional_reasoning'});
+MERGE (cd1:Cognitive_Distortion {type: 'Emotional reasoning'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
-MERGE (cd2:Cognitive_Distortion {type: 'personalization'});
+MERGE (cd2:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
-MERGE (sch1:Schema {name: 'abandonment'});
+MERGE (sch1:Schema {name: 'Abandonment'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch1);
-MERGE (sch2:Schema {name: 'social_isolation_alienation'});
+MERGE (sch2:Schema {name: 'Social isolation alienation'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.7, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:42:52
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_022'});
+MERGE (qa:QA_Pair {id: 'qa_pair_022', question: 'Analysis Entry #22', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Sadness'});
@@ -737,60 +621,64 @@ MERGE (cd2:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
 MERGE (cd3:Cognitive_Distortion {type: 'Catastrophizing'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'Intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
 MERGE (sch1:Schema {name: 'Abandonment'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
-MERGE (sch2:Schema {name: 'Defectiveness_shame'});
+MERGE (sch2:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
-MERGE (sch3:Schema {name: 'Social_isolation_alienation'});
+MERGE (sch3:Schema {name: 'Social isolation alienation'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch3);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:44:31
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_024', question: 'N/A', answer: 'N/A'});
+CREATE (qa:QA_Pair {id: 'qa_pair_023', question: '...', answer: '...'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'Boredom'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: -0.3, arousal: 0.1, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'Amusement'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.4, arousal: 0.2, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'Contentment'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.3, arousal: 0.1, confidence: 0.6}]->(e3);
-MERGE (cd:Cognitive_Distortion {type: 'Emotional reasoning'});
-CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd);
-MERGE (es:Erikson_Stage {stage: 'Intimacy vs isolation'});
+MERGE (e1:Emotion {name: 'Negative affect'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.3, confidence: 0.8}]->(e1);
+MERGE (e2:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.4, confidence: 0.7}]->(e2);
+MERGE (e3:Emotion {name: 'Curiosity/novelty'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.4, arousal: 0.5, confidence: 0.6}]->(e3);
+MERGE (cd1:Cognitive_Distortion {type: 'Overgeneralization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
+MERGE (cd2:Cognitive_Distortion {type: 'Mind reading'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
+MERGE (cd3:Cognitive_Distortion {type: 'Emotional reasoning'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
+MERGE (cd4:Cognitive_Distortion {type: 'Personalization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd4);
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
-CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (as:Attachment_Style {name: 'Fearful-avoidant'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
+MERGE (dm1:Defense_Mechanism {name: 'Denial'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
+MERGE (dm2:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
+MERGE (dm3:Defense_Mechanism {name: 'Projection'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.5}]->(dm3);
+MERGE (sch1:Schema {name: 'Abandonment'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
+MERGE (sch2:Schema {name: 'Defectiveness shame'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
+MERGE (sch3:Schema {name: 'Emotional deprivation'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch3);
 MERGE (bf:Big_Five {profile: 'individual'});
-CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.5, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.7}]->(bf);
-MERGE (sch:Schema {name: 'Social isolation alienation'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
-MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm);
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.4, extraversion: 0.5, agreeableness: 0.3, neuroticism: 0.8, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:44:56
-// ============================================================================
+MERGE (c:Client {id: 'client_001'}); MERGE (s:Session {session_id: 'session_001'}); MERGE (qa:QA_Pair {id: 'qa_pair_024', question: '', answer: ''}); MERGE (c)-[:PARTICIPATED_IN]->(s); MERGE (s)-[:INCLUDES]->(qa); MERGE (e1:Emotion {name: 'Boredom'}); CREATE (qa)-[:REVEALS_EMOTION {valence: -0.3, arousal: 0.1, confidence: 0.8}]->(e1); MERGE (e2:Emotion {name: 'Amusement'}); CREATE (qa)-[:REVEALS_EMOTION {valence: 0.4, arousal: 0.2, confidence: 0.7}]->(e2); MERGE (e3:Emotion {name: 'Contentment'}); CREATE (qa)-[:REVEALS_EMOTION {valence: 0.3, arousal: 0.1, confidence: 0.6}]->(e3); MERGE (cd:Cognitive_Distortion {type: 'Emotional reasoning'}); CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd); MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'}); CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es); MERGE (as:Attachment_Style {name: 'Secure'}); CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as); MERGE (dm:Defense_Mechanism {name: 'Rationalization'}); CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm); MERGE (sch:Schema {name: 'Social isolation alienation'}); CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch); MERGE (bf:Big_Five {profile: 'individual'}); CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.5, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.7}]->(bf);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_025'});
+MERGE (qa:QA_Pair {id: 'qa_pair_025', question: 'Analysis Entry #25', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Sadness'});
@@ -807,75 +695,64 @@ MERGE (cd2:Cognitive_Distortion {type: 'Personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
 MERGE (cd3:Cognitive_Distortion {type: 'Labeling'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'Intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.9}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Denial'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-MERGE (sch1:Schema {schema: 'Abandonment'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
-MERGE (sch2:Schema {schema: 'Social_isolation_alienation'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
-MERGE (sch3:Schema {schema: 'Self-sacrifice'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch3);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.8, extraversion: 0.3, agreeableness: 0.5, neuroticism: 0.8, confidence: 0.7}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:45:30
-// ============================================================================
+MERGE (sch1:Schema {name: 'Abandonment'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
+MERGE (sch2:Schema {name: 'Social isolation alienation'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch2);
+MERGE (sch3:Schema {name: 'Self-sacrifice'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch3);
+MERGE (dm1:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm1);
+MERGE (dm2:Defense_Mechanism {name: 'Denial'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_026', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_026', question: 'Analysis Entry #26', answer: 'The client displays a cautious, conflict‑avoiding stance with a tendency toward all‑or‑nothing thinking and overgeneralization. They exhibit signs of anxious preoccupation in relationships, rationalizing their avoidance and projecting others’ feelings onto themselves. Schema themes of defectiveness shame and self‑sacrifice emerge, alongside a high neuroticism profile and moderate conscientiousness. The client’s pattern suggests a need to explore underlying self‑worth beliefs and develop healthier conflict engagement strategies.'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'Anxiety'});
+MERGE (e1:Emotion {name: 'anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.7, arousal: 0.6, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'Resignation'});
+MERGE (e2:Emotion {name: 'resignation'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.4, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'Self‑justification'});
+MERGE (e3:Emotion {name: 'self-justification'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.0, arousal: 0.3, confidence: 0.6}]->(e3);
-MERGE (cd1:Cognitive_Distortion {type: 'All or nothing thinking'});
+MERGE (cd1:Cognitive_Distortion {type: 'all_or_nothing_thinking'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
-MERGE (cd2:Cognitive_Distortion {type: 'Overgeneralization'});
+MERGE (cd2:Cognitive_Distortion {type: 'overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (cd3:Cognitive_Distortion {type: 'Mind reading'});
+MERGE (cd3:Cognitive_Distortion {type: 'mind_reading'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
-MERGE (cd4:Cognitive_Distortion {type: 'Personalization'});
+MERGE (cd4:Cognitive_Distortion {type: 'personalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd4);
-MERGE (es:Erikson_Stage {stage: 'Intimacy vs isolation'});
+MERGE (es:Erikson_Stage {name: 'intimacy_vs_isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'anxious_preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm1:Defense_Mechanism {name: 'rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Denial'});
+MERGE (dm2:Defense_Mechanism {name: 'denial'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-MERGE (dm3:Defense_Mechanism {mechanism: 'Projection'});
+MERGE (dm3:Defense_Mechanism {name: 'projection'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.5}]->(dm3);
-MERGE (sch1:Schema {name: 'Defectiveness shame'});
+MERGE (sch1:Schema {name: 'defectiveness_shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch1);
-MERGE (sch2:Schema {name: 'Self‑sacrifice'});
+MERGE (sch2:Schema {name: 'self-sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.7, extraversion: 0.3, agreeableness: 0.5, neuroticism: 0.8, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:46:03
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_027', question: 'Analysis Entry #27', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
-MERGE (s)-[:INCLUDES]->(qa:QA_Pair {id: 'qa_pair_027'});
+MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Contentment'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.3, confidence: 0.9}]->(e1);
 MERGE (e2:Emotion {name: 'Humor'});
@@ -888,28 +765,22 @@ MERGE (cd1:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
 MERGE (cd2:Cognitive_Distortion {type: 'Labeling'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'Industry vs Inferiority'});
+MERGE (es:Erikson_Stage {name: 'Industry vs Inferiority'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'Humor'});
+MERGE (dm1:Defense_Mechanism {name: 'Humor'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'Avoidance'});
+MERGE (dm2:Defense_Mechanism {name: 'Avoidance'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm2);
 MERGE (sch:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.8}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.5, agreeableness: 0.6, neuroticism: 0.5, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:46:50
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_028'});
+MERGE (qa:QA_Pair {id: 'qa_pair_028', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Enthusiasm'});
@@ -918,96 +789,126 @@ MERGE (e2:Emotion {name: 'Calm'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.2, confidence: 0.8}]->(e2);
 MERGE (e3:Emotion {name: 'Sociability'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.6, confidence: 0.8}]->(e3);
-MERGE (es:Erikson_Stage {stage: 'identity_vs_role_confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
-MERGE (sc:Schema {name: 'approval_seeking'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sc);
+MERGE (sch:Schema {name: 'Approval seeking'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 1.0, conscientiousness: 1.0, extraversion: 0.57, agreeableness: 1.0, neuroticism: 0.14, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:47:16
-// ============================================================================
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_028', question: '', answer: ''});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Enthusiasm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.9, arousal: 0.7, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Calm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.2, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Sociability'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.6, confidence: 0.8}]->(e3);
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
+MERGE (sch:Schema {name: 'Approval seeking'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
+MERGE (bf:Big_Five {profile: 'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 1.0, conscientiousness: 1.0, extraversion: 0.57, agreeableness: 1.0, neuroticism: 0.14, confidence: 0.7}]->(bf);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_029', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_029', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'contentment'});
+MERGE (e1:Emotion {name: 'Contentment'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'determination'});
+MERGE (e2:Emotion {name: 'Determination'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.6, confidence: 0.8}]->(e2);
-MERGE (e3:Emotion {name: 'guilt'});
+MERGE (e3:Emotion {name: 'Guilt'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.5, confidence: 0.7}]->(e3);
-MERGE (e4:Emotion {name: 'anxiety'});
+MERGE (e4:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.7}]->(e4);
-MERGE (cd:Cognitive_Distortion {type: 'rationalization'});
+MERGE (cd:Cognitive_Distortion {type: 'Rationalization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd);
-MERGE (es:Erikson_Stage {stage: 'intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
-MERGE (sch:Schema {name: 'self_sacrifice'});
+MERGE (sch:Schema {name: 'Self sacrifice'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.5, agreeableness: 0.8, neuroticism: 0.5, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:47:41
-// ============================================================================
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_029', question: '', answer: ''});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Contentment'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.8}]->(e1);
+MERGE (e2:Emotion {name: 'Determination'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.6, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Guilt'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.5, confidence: 0.7}]->(e3);
+MERGE (e4:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.7}]->(e4);
+MERGE (cd:Cognitive_Distortion {type: 'Rationalization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd);
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.8}]->(dm);
+MERGE (sch:Schema {name: 'Self sacrifice'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch);
+MERGE (bf:Big_Five {profile: 'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.8, extraversion: 0.5, agreeableness: 0.8, neuroticism: 0.5, confidence: 0.7}]->(bf);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_030', question: 'Analysis Entry #30', answer: 'The client displays a pronounced threat‑driven arousal pattern marked by anger, frustration, and anxiety, often managed through suppression and avoidance. Their low mood states are tied to empathy for suffering and intentional sleep deprivation to control idea flow. Attachment analysis points to anxious preoccupation, with a reliance on external cues (music, visualizations) to regulate affect. Schema work may focus on emotional inhibition and vulnerability to harm. High openness and conscientiousness suggest creative and organized tendencies, while elevated neuroticism indicates emotional volatility. This profile highlights a need for emotion regulation strategies that address both hyperarousal and empathic distress.'});
+MERGE (qa:QA_Pair {id: 'qa_pair_030', question: 'N/A', answer: 'N/A'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'anger'});
+MERGE (e1:Emotion {name: 'Anger'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.7, arousal: 0.8, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'frustration'});
+MERGE (e2:Emotion {name: 'Frustration'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.7, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'sadness'});
+MERGE (e3:Emotion {name: 'Sadness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.8, arousal: 0.3, confidence: 0.8}]->(e3);
-MERGE (e4:Emotion {name: 'anxiety'});
+MERGE (e4:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.7}]->(e4);
-MERGE (cd1:Cognitive_Distortion {type: 'jumping_to_conclusions'});
+MERGE (cd1:Cognitive_Distortion {type: 'Jumping to conclusions'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd1);
-MERGE (cd2:Cognitive_Distortion {type: 'overgeneralization'});
+MERGE (cd2:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
-MERGE (es:Erikson_Stage {stage: 'intimacy_vs_isolation'});
+MERGE (es:Erikson_Stage {name: 'Intimacy vs isolation'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (dm1:Defense_Mechanism {mechanism: 'suppression'});
+MERGE (dm1:Defense_Mechanism {name: 'Suppression'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm1);
-MERGE (dm2:Defense_Mechanism {mechanism: 'avoidance'});
+MERGE (dm2:Defense_Mechanism {name: 'Avoidance'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm2);
-MERGE (sch1:Schema {name: 'emotional_inhibition'});
+MERGE (sch1:Schema {name: 'Emotional inhibition'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch1);
-MERGE (sch2:Schema {name: 'vulnerability_to_harm'});
+MERGE (sch2:Schema {name: 'Vulnerability to harm'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.7}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:48:25
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_031'});
+MERGE (qa:QA_Pair {id: 'qa_pair_031', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Contentment'});
@@ -1018,48 +919,16 @@ MERGE (e3:Emotion {name: 'Calm'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
 MERGE (e4:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
-MERGE (es:Erikson_Stage {stage: 'Autonomy_vs_shame/doubt'});
+MERGE (es:Erikson_Stage {name: 'Autonomy vs shame/doubt'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
-CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (bf:Big_Five {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8});
-CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:49:06
-// ============================================================================
-
-MERGE (c:Client {id: 'client_001'});
-MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_032', question: '', answer: ''});
-MERGE (c)-[:PARTICIPATED_IN]->(s);
-MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'Contentment'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.9}]->(e1);
-MERGE (e2:Emotion {name: 'Motivation'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.5, confidence: 0.8}]->(e2);
-MERGE (e3:Emotion {name: 'Calm'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
-MERGE (e4:Emotion {name: 'Anxiety'});
-CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
-MERGE (es:Erikson_Stage {stage: 'Autonomy vs shame/doubt'});
-CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'Secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:50:08
-// ============================================================================
-
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_033', question: 'N/A', answer: 'N/A'});
+MERGE (qa:QA_Pair {id: 'qa_pair_031', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Contentment'});
@@ -1070,76 +939,142 @@ MERGE (e3:Emotion {name: 'Calm'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
 MERGE (e4:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
-MERGE (es:Erikson_Stage {stage: 'autonomy_vs_shame_doubt'});
+MERGE (es:Erikson_Stage {name: 'Autonomy vs shame/doubt'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
-MERGE (as:Attachment_Style {style: 'secure'});
+MERGE (as:Attachment_Style {name: 'Secure'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:50:29
-// ============================================================================
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+CREATE (qa:QA_Pair {id: 'qa_pair_032', question: 'Analysis Entry #32', answer: 'Summary: The client demonstrates a proactive, health‑oriented coping repertoire, indicating high openness and conscientiousness. The mention of over‑working suggests a mild awareness of potential self‑exhaustion, but overall emotional tone is positive and calm. No significant cognitive distortions or defense mechanisms are evident. Attachment appears secure, and the client’s strategies align with autonomy and self‑efficacy.'});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Contentment'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Motivation'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.5, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Calm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
+MERGE (e4:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
+MERGE (es:Erikson_Stage {name: 'Autonomy vs shame/doubt'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Secure'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (bf:Big_Five {profile: 'client_001'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_034'});
+MERGE (qa:QA_Pair {id: 'qa_pair_033', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e:Emotion {name: 'negative_valence'});
+MERGE (e1:Emotion {name: 'Contentment'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Motivation'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.5, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Calm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
+MERGE (e4:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
+MERGE (es:Erikson_Stage {name: 'Autonomy vs shame/doubt'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Secure'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (bf:Big_Five {profile: 'client_001'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
+
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_033', question: '', answer: ''});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Contentment'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.7, arousal: 0.4, confidence: 0.9}]->(e1);
+MERGE (e2:Emotion {name: 'Motivation'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.8, arousal: 0.5, confidence: 0.8}]->(e2);
+MERGE (e3:Emotion {name: 'Calm'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.6, arousal: 0.3, confidence: 0.8}]->(e3);
+MERGE (e4:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.6, confidence: 0.7}]->(e4);
+MERGE (es:Erikson_Stage {name: 'Autonomy vs shame/doubt'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Secure'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (bf:Big_Five {profile: 'client_001'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.6, extraversion: 0.5, agreeableness: 0.7, neuroticism: 0.3, confidence: 0.8}]->(bf);
+
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_034'});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e:Emotion {name: 'Negative Valence'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.8}]->(e);
-MERGE (cd:Cognitive_Distortion {type: 'magnification'});
+MERGE (cd:Cognitive_Distortion {type: 'Magnification'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd);
-MERGE (es:Erikson_Stage {stage: 'industry_vs_inferiority'});
+MERGE (es:Erikson_Stage {name: 'Industry vs inferiority'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.5}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
+MERGE (sch:Schema {name: 'Defectiveness shame'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
 MERGE (bf:Big_Five {profile: 'individual'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.5, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.7, confidence: 0.7}]->(bf);
-MERGE (sch:Schema {name: 'defectiveness_shame'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:51:29
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_035', question: '', answer: ''});
+MERGE (qa:QA_Pair {id: 'qa_pair_035'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {name: 'anxiety'});
+MERGE (e1:Emotion {name: 'Anxiety'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.7, confidence: 0.8}]->(e1);
-MERGE (e2:Emotion {name: 'sadness'});
+MERGE (e2:Emotion {name: 'Sadness'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.5, confidence: 0.7}]->(e2);
-MERGE (e3:Emotion {name: 'relief'});
+MERGE (e3:Emotion {name: 'Relief'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.3, confidence: 0.7}]->(e3);
-MERGE (e4:Emotion {name: 'negative_valence'});
+MERGE (e4:Emotion {name: 'Negative Valence'});
 CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.8}]->(e4);
-MERGE (cd:Cognitive_Distortion {type: 'magnification'});
+MERGE (cd:Cognitive_Distortion {type: 'Magnification'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd);
-MERGE (es:Erikson_Stage {stage: 'industry_vs_inferiority'});
+MERGE (es:Erikson_Stage {name: 'Industry vs inferiority'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.5}]->(es);
-MERGE (as:Attachment_Style {style: 'anxious_preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
-MERGE (bf:Big_Five {profile: 'individual'});
+MERGE (bf:Big_Five {profile: 'client_profile'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.5, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.7, confidence: 0.7}]->(bf);
-MERGE (sch:Schema {name: 'defectiveness_shame'});
+MERGE (sch:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:52:02
-// ============================================================================
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-CREATE (qa:QA_Pair {id: 'qa_pair_036', question: 'N/A', answer: 'N/A'});
+MERGE (qa:QA_Pair {id: 'qa_pair_035'});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.7, confidence: 0.8}]->(e1);
+MERGE (e2:Emotion {name: 'Sadness'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.6, arousal: 0.5, confidence: 0.7}]->(e2);
+MERGE (e3:Emotion {name: 'Relief'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.5, arousal: 0.3, confidence: 0.7}]->(e3);
+MERGE (e4:Emotion {name: 'Negative Valence'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.8}]->(e4);
+MERGE (cd:Cognitive_Distortion {type: 'Magnification'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd);
+MERGE (es:Erikson_Stage {name: 'Industry vs inferiority'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.5}]->(es);
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.7}]->(as);
+MERGE (bf:Big_Five {profile: 'client_profile'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.5, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.7, confidence: 0.7}]->(bf);
+MERGE (sch:Schema {name: 'Defectiveness shame'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
+
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+CREATE (qa:QA_Pair {id: 'qa_pair_036', question: 'Analysis Entry #36', answer: 'Summary: The client expresses frustration and disappointment over a significant decline in training intensity and strength, indicating a negative affective state with moderate arousal. Cognitive distortions such as all‑or‑nothing thinking and catastrophizing are evident, reflecting a tendency to view the loss of athletic performance as a total failure. Erikson’s identity stage is implicated, as the client’s self‑concept as a dedicated athlete is challenged. An anxious preoccupied attachment pattern emerges, with concerns about future resources and self‑worth. The client employs rationalization to explain the shift to cardio training. Schema themes of defectiveness shame and failure are present, underscoring feelings of inadequacy. Personality assessment suggests moderate openness and extraversion, lower conscientiousness, and elevated neuroticism, aligning with the reported emotional distress and self‑critical perspective.'});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Frustration'});
@@ -1156,28 +1091,22 @@ MERGE (cd2:Cognitive_Distortion {type: 'Catastrophizing'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd2);
 MERGE (cd3:Cognitive_Distortion {type: 'Overgeneralization'});
 CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.5}]->(cd3);
-MERGE (es:Erikson_Stage {stage: 'Identity vs role confusion'});
+MERGE (es:Erikson_Stage {name: 'Identity vs role confusion'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.7}]->(es);
-MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.6}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm);
+MERGE (bf:Big_Five {profile: 'individual'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.4, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.7, confidence: 0.7}]->(bf);
 MERGE (sch1:Schema {name: 'Defectiveness shame'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.7}]->(sch1);
 MERGE (sch2:Schema {name: 'Failure'});
 CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch2);
-MERGE (bf:Big_Five {profile: 'individual'});
-CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.6, conscientiousness: 0.4, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.7, confidence: 0.7}]->(bf);
-
-// ============================================================================
-
-// ============================================================================
-// CYPHER ENTRY - 2025-09-15 18:52:29
-// ============================================================================
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.6}]->(dm);
 
 MERGE (c:Client {id: 'client_001'});
 MERGE (s:Session {session_id: 'session_001'});
-MERGE (qa:QA_Pair {id: 'qa_pair_037'});
+MERGE (qa:QA_Pair {id: 'qa_pair_037', question: '', answer: ''});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 MERGE (s)-[:INCLUDES]->(qa);
 MERGE (e1:Emotion {name: 'Frustration'});
@@ -1198,11 +1127,41 @@ MERGE (es:Erikson_Stage {stage: 'Industry vs Inferiority'});
 CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
 MERGE (as:Attachment_Style {style: 'Anxious preoccupied'});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
-MERGE (dm:Defense_Mechanism {mechanism: 'Rationalization'});
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
 CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
-MERGE (sc:Schema {name: 'Emotional deprivation'});
-CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sc);
-MERGE (bf:Big_Five {profile: 'individual'});
+MERGE (sch:Schema {name: 'Emotional deprivation'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
+MERGE (bf:Big_Five {profile: 'highly_structured_conscientious'});
+CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.9, extraversion: 0.5, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.8}]->(bf);
+
+MERGE (c:Client {id: 'client_001'});
+MERGE (s:Session {session_id: 'session_001'});
+MERGE (qa:QA_Pair {id: 'qa_pair_037', question: '', answer: ''});
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+MERGE (s)-[:INCLUDES]->(qa);
+MERGE (e1:Emotion {name: 'Frustration'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.4, arousal: 0.5, confidence: 0.8}]->(e1);
+MERGE (e2:Emotion {name: 'Anxiety'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.5, arousal: 0.6, confidence: 0.9}]->(e2);
+MERGE (e3:Emotion {name: 'Relief'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: 0.3, arousal: 0.4, confidence: 0.7}]->(e3);
+MERGE (e4:Emotion {name: 'Confusion'});
+CREATE (qa)-[:REVEALS_EMOTION {valence: -0.2, arousal: 0.3, confidence: 0.7}]->(e4);
+MERGE (cd1:Cognitive_Distortion {type: 'Catastrophizing'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.8}]->(cd1);
+MERGE (cd2:Cognitive_Distortion {type: 'Overgeneralization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.7}]->(cd2);
+MERGE (cd3:Cognitive_Distortion {type: 'Personalization'});
+CREATE (qa)-[:EXHIBITS_DISTORTION {confidence: 0.6}]->(cd3);
+MERGE (es:Erikson_Stage {name: 'Industry vs Inferiority'});
+CREATE (qa)-[:EXHIBITS_STAGE {confidence: 0.8}]->(es);
+MERGE (as:Attachment_Style {name: 'Anxious preoccupied'});
+CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: 0.8}]->(as);
+MERGE (dm:Defense_Mechanism {name: 'Rationalization'});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {confidence: 0.7}]->(dm);
+MERGE (sch:Schema {name: 'Emotional deprivation'});
+CREATE (qa)-[:REVEALS_SCHEMA {confidence: 0.6}]->(sch);
+MERGE (bf:Big_Five {profile: 'highly_structured_conscientious'});
 CREATE (qa)-[:SHOWS_BIG_FIVE {openness: 0.8, conscientiousness: 0.9, extraversion: 0.5, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.8}]->(bf);
 
 // ============================================================================

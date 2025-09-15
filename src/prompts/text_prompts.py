@@ -125,6 +125,17 @@ Relationships:
 - Use proper Cypher syntax with semicolons to separate statements
 - IMPORTANT: Use consistent IDs - client_001 and session_001 for all entries, only qa_pair ID should increment
 
+## Node Key Standardization
+- Use the **name** property for the following nodes:
+  - Emotion
+  - Schema
+  - Defense_Mechanism
+  - Attachment_Style
+  - Erikson_Stage
+- Use the **type** property for the Cognitive_Distortion node.
+- Use the **profile** property for the Big_Five node.
+
+
 ## Input Format
 You will receive plain text analysis in this format:
 ---
@@ -171,6 +182,10 @@ MERGE (as:Attachment_Style {{style: 'anxious_preoccupied'}});
 CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {{confidence: 0.7}}]->(as);
 MERGE (bf:Big_Five {{profile: 'individual'}});
 CREATE (qa)-[:SHOWS_BIG_FIVE {{openness: 0.8, conscientiousness: 0.6, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.7}}]->(bf);
+MERGE (sch:Schema {{name: 'Defectiveness shame'}});
+CREATE (qa)-[:REVEALS_SCHEMA {{confidence: 0.8}}]->(sch);
+MERGE (dm:Defense_Mechanism {{name: 'Denial'}});
+CREATE (qa)-[:USES_DEFENSE_MECHANISM {{confidence: 0.7}}]->(dm);
 ```
 Remember: Only output the Cypher query as a string to the 'submit_cypher' tool. No explanations or additional text.
 The file will be named for you.
