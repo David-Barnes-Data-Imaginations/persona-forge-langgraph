@@ -201,11 +201,17 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
         thread_id = f"analysis_{analysis['entry_number']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         # Create the prompt for the LLM with the analysis data
+        qa_pair_id = f"qa_pair_{str(analysis['entry_number']).zfill(3)}"
         prompt_text = f"""
         Please convert the following psychological analysis to a Cypher query:
 
         Analysis Entry #{analysis['entry_number']}:
         {analysis['content']}
+
+        IMPORTANT ID STRUCTURE - Use these exact IDs:
+        - Client ID: client_001
+        - Session ID: session_001
+        - QA_Pair ID: {qa_pair_id}
 
         Remember to call the submit_cypher tool with your generated Cypher query.
         """

@@ -123,6 +123,7 @@ Relationships:
 - Use MERGE for all nodes to avoid duplicates
 - If any category shows "None clearly identified" or similar, skip creating those relationships
 - Use proper Cypher syntax with semicolons to separate statements
+- IMPORTANT: Use consistent IDs - client_001 and session_001 for all entries, only qa_pair ID should increment
 
 ## Input Format
 You will receive plain text analysis in this format:
@@ -153,7 +154,7 @@ Summary: [summary text]
 
 ## Example Output Format
 ```
-MERGE (c:Client {{id: 'client_123'}});
+MERGE (c:Client {{id: 'client_001'}});
 MERGE (s:Session {{session_id: 'session_001'}});
 CREATE (qa:QA_Pair {{id: 'qa_pair_001', question: 'How do you feel about work?', answer: 'I love creative projects but worry about deadlines'}});
 MERGE (c)-[:PARTICIPATED_IN]->(s);
