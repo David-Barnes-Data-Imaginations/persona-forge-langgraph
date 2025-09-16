@@ -180,11 +180,11 @@ This transforms text into a cognitive-emotional knowledge graph that can be quer
 Detects irrational thought patterns like catastrophising, emotional reasoning, or overgeneralisation.
 
 Graph:
-
+```
 (:Utterance)-[:HAS_DISTORTION]->(:Distortion {type:"Overgeneralisation"})
 (:Distortion)-[:CAN_REPHRASE_USING]->(:Strategy {method:"Specific Reattribution"})
 
-
+```
 Clinical Value: High
 
 2. Erikson’s Psychosocial Stages
@@ -192,11 +192,11 @@ Clinical Value: High
 Anchors utterances in life-stage challenges (identity, intimacy, generativity, etc.).
 
 Graph:
-
+```
 (:Persona)-[:IN_LIFE_STAGE]->(:Stage {name:"Identity vs Role Confusion"})
 (:Utterance)-[:REFLECTS_STAGE]->(:Stage)
 
-
+```
 Clinical Value: Moderate–High
 
 3. Sentiment2D Layer (Russell Circumplex)
@@ -204,11 +204,11 @@ Clinical Value: Moderate–High
 Every utterance mapped to valence–arousal coordinates.
 
 Graph:
-
+```
 (:Utterance)-[:HAS_SENTIMENT]->(:Sentiment {valence:-0.7, arousal:0.6})
 (:Sentiment)-[:CORRELATED_WITH]->(:Distortion)
 
-
+```
 Clinical Value: High for emotion tracking
 
 4. Attachment Theory
@@ -216,11 +216,11 @@ Clinical Value: High for emotion tracking
 Tracks bonding patterns (secure, anxious, avoidant, disorganised).
 
 Graph:
-
+```
 (:Persona)-[:HAS_ATTACHMENT]->(:AttachmentStyle {style:"Anxious"})
 (:Utterance)-[:INDICATES]->(:AttachmentStyle)
 
-
+```
 Clinical Value: Very High
 
 5. Big Five Personality Traits (OCEAN)
@@ -228,10 +228,10 @@ Clinical Value: Very High
 Stable behavioural lens for long-term patterns.
 
 Graph:
-
+```
 (:Persona)-[:HAS_TRAIT]->(:Trait {name:"Neuroticism", score:0.82})
 
-
+```
 Clinical Value: High
 
 6. Schema Therapy (Core Beliefs)
@@ -239,10 +239,10 @@ Clinical Value: High
 Identifies entrenched maladaptive schemas (e.g. abandonment, defectiveness).
 
 Graph:
-
+```
 (:Utterance)-[:REFLECTS_SCHEMA]->(:Schema {name:"Abandonment"})
 
-
+```
 Clinical Value: High
 
 7. Psychodynamic Frameworks
@@ -250,11 +250,11 @@ Clinical Value: High
 Maps unconscious defenses, transference, and symbolic content.
 
 Graph:
-
+```
 (:Utterance)-[:SHOWS_DEFENSE]->(:DefenseMechanism {type:"Denial"})
 (:Utterance)-[:INDICATES]->(:Transference {target:"Therapist"})
 
-
+```
 Clinical Value: High (if carefully interpreted)
 
 🔄 Fusion Example
@@ -264,14 +264,14 @@ Utterance:
 "I always mess things up. Everyone probably thinks I’m a failure."
 
 Graph view:
-
+```
 (:Utterance {text:"I always mess things up"})
 -[:HAS_DISTORTION]->(:Distortion {type:"Overgeneralisation"})
 -[:TRIGGERS_EMOTION]->(:Emotion {label:"Shame"})
 -[:REFLECTS_STAGE]->(:Stage {name:"Identity vs Role Confusion"})
 -[:HAS_SENTIMENT]->(:Sentiment {valence:-0.7, arousal:0.6})
 -[:HAS_ATTACHMENT]->(:AttachmentStyle {style:"Anxious"})
-
+```
 
 Now the model can understand this not as “just a sad sentence”, but as a multi-layered signal: a distorted self-assessment, anxiety-laden attachment style, adolescent-stage vulnerability, and emotional tone of shame.
 
@@ -279,6 +279,7 @@ Now the model can understand this not as “just a sad sentence”, but as a mul
 
 Over time, patterns emerge:
 
+```
 (:Persona)-[:HAS_PATTERN]->(:PatternSummary {
    overgeneralisation_rate:0.32,
    avg_valence:-0.2,
@@ -286,6 +287,7 @@ Over time, patterns emerge:
    dominant_attachment:"Anxious",
    schema:"Abandonment"
 })
+```
 
 
 These summaries can then power dashboards, narrative arcs, or adaptive character AIs.
