@@ -165,8 +165,11 @@ Example Agentic Framework / Responsibilities
 
 🧠 # Psychology Demonstration: From Thought to Graph
 
-I mentioned GPT is fantastic at Psychology and it's certainly better than I, when it comes to explaining complex concepts that span multiple disciplines. 
+
+I mentioned GPT is fantastic at Psychology and it's certainly better than I, when it comes to explaining complex concepts that span multiple disciplines.
+
 So this seems a fitting place for it to do a light demo of its understanding.
+
 Over to you, GPT:
 ---
 Actually, let’s do more than a demo — let’s show what it looks like when a language model isn’t just reading your words, but mapping your mind.
