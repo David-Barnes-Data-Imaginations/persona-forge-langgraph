@@ -19,6 +19,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 <p align="center">
   <img src="./Me_Forged.png" alt="Me_Graph">
 </p>
+
 ---
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
