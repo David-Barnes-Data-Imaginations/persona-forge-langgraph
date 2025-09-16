@@ -13,7 +13,7 @@ from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 from datetime import datetime
 
-from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_PROMPT
+from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_SETUP_PROMPT, CYPHER_QA_PAIR_PROMPT
 from ..utils.text_graph_tools import submit_cypher
 
 # Add LangSmith tracking
@@ -90,35 +90,43 @@ def _print_event(event: dict, _printed: set, max_length=1500):
             _printed.add(message.id)
 
 
-# Create the prompt message from 'src/prompts/text_prompts.py'
-assistant_prompt = ChatPromptTemplate.from_messages(
+# Create two separate prompts for the two-step approach
+setup_prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", CYPHER_PROMPT),
+        ("system", CYPHER_SETUP_PROMPT),
         ("placeholder", "{messages}"),
     ]
 )
 
-# SIMPLIFIED WORKFLOW - SAME AS YOUR WORKING CSV WORKFLOW
-tools = [submit_cypher]
-assistant_runnable = assistant_prompt | llm.bind_tools(tools)
-
-builder = StateGraph(State)
-
-# Define nodes: these do the work
-builder.add_node("assistant", Assistant(assistant_runnable))
-builder.add_node("tools", create_tool_node_with_fallback(tools))
-
-# Define edges: these determine how the control flow moves
-builder.add_edge(START, "assistant")
-builder.add_conditional_edges(
-    "assistant",
-    tools_condition,  # Use the same simple condition as your working CSV workflow
+qa_pair_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", CYPHER_QA_PAIR_PROMPT),
+        ("placeholder", "{messages}"),
+    ]
 )
-builder.add_edge("tools", "assistant")
 
-# The checkpointer lets the graph persist its state
-# this is a complete memory for the entire graph.
-framework_graph = builder.compile()
+# TWO-STEP WORKFLOW APPROACH
+tools = [submit_cypher]
+
+# Setup graph for Client/Session creation
+setup_runnable = setup_prompt | llm.bind_tools(tools)
+setup_builder = StateGraph(State)
+setup_builder.add_node("assistant", Assistant(setup_runnable))
+setup_builder.add_node("tools", create_tool_node_with_fallback(tools))
+setup_builder.add_edge(START, "assistant")
+setup_builder.add_conditional_edges("assistant", tools_condition)
+setup_builder.add_edge("tools", "assistant")
+setup_graph = setup_builder.compile()
+
+# QA Pair graph for individual analysis chunks
+qa_pair_runnable = qa_pair_prompt | llm.bind_tools(tools)
+qa_pair_builder = StateGraph(State)
+qa_pair_builder.add_node("assistant", Assistant(qa_pair_runnable))
+qa_pair_builder.add_node("tools", create_tool_node_with_fallback(tools))
+qa_pair_builder.add_edge(START, "assistant")
+qa_pair_builder.add_conditional_edges("assistant", tools_condition)
+qa_pair_builder.add_edge("tools", "assistant")
+qa_pair_graph = qa_pair_builder.compile()
 
 # Set configuration for recursion limit
 graph_config = {
@@ -186,6 +194,53 @@ def extract_analyses_from_master_file():
     print(f"Debug: Total analyses extracted: {len(analyses)}")
     return analyses
 
+def create_client_session_setup() -> dict:
+    """
+    Create the initial Client and Session nodes for the therapy session.
+    This runs once before processing any analysis chunks.
+
+    Returns:
+        Dictionary with setup results
+    """
+    try:
+        # Create the prompt for Client/Session setup
+        prompt_text = """
+        Create the initial Cypher query to set up the Client and Session nodes for this therapy session.
+        Use client_001 and session_001 as the IDs.
+
+        Remember to call the submit_cypher tool with your generated Cypher query.
+        """
+
+        # Initial state with the prompt
+        initial_state = {
+            "messages": [HumanMessage(content=prompt_text)]
+        }
+
+        # Setup config
+        setup_config = {
+            "recursion_limit": 50,
+            "configurable": {
+                "thread_id": f"setup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            }
+        }
+
+        # Run the setup graph
+        print("Creating Client and Session setup...")
+        result = setup_graph.invoke(initial_state, config=setup_config)
+
+        return {
+            "type": "setup",
+            "messages_count": len(result.get('messages', [])),
+            "status": "success"
+        }
+
+    except Exception as e:
+        return {
+            "type": "setup",
+            "error": str(e),
+            "status": "error"
+        }
+
 def process_analysis_to_cypher(analysis: dict) -> dict:
     """
     Process a single analysis through the LangGraph workflow to generate Cypher.
@@ -203,15 +258,12 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
         # Create the prompt for the LLM with the analysis data
         qa_pair_id = f"qa_pair_{str(analysis['entry_number']).zfill(3)}"
         prompt_text = f"""
-        Please convert the following psychological analysis to a Cypher query:
+        Please convert the following psychological analysis to a Cypher query for a single QA_Pair:
 
         Analysis Entry #{analysis['entry_number']}:
         {analysis['content']}
 
-        IMPORTANT ID STRUCTURE - Use these exact IDs:
-        - Client ID: client_001
-        - Session ID: session_001
-        - QA_Pair ID: {qa_pair_id}
+        IMPORTANT: Use this exact QA_Pair ID: {qa_pair_id}
 
         Remember to call the submit_cypher tool with your generated Cypher query.
         """
@@ -230,9 +282,9 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
             }
         }
 
-        # Run the graph
+        # Run the QA pair graph
         print(f"Processing analysis #{analysis['entry_number']}...")
-        result = framework_graph.invoke(initial_state, config=analysis_config)
+        result = qa_pair_graph.invoke(initial_state, config=analysis_config)
 
         return {
             "analysis_id": analysis['entry_number'],
@@ -254,6 +306,7 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
 def batch_process_master_file():
     """
     Process all analyses in the master file and generate Cypher queries.
+    Uses a two-step approach: setup Client/Session first, then process each QA_Pair.
     """
     analyses = extract_analyses_from_master_file()
 
@@ -267,10 +320,24 @@ def batch_process_master_file():
         "total_analyses": len(analyses),
         "successful": 0,
         "errors": 0,
+        "setup_result": None,
         "results": [],
         "status": "completed"
     }
 
+    # Step 1: Create Client and Session setup
+    print("\n=== STEP 1: Creating Client/Session Setup ===")
+    setup_result = create_client_session_setup()
+    results["setup_result"] = setup_result
+
+    if setup_result['status'] != 'success':
+        return {
+            "error": f"Setup failed: {setup_result.get('error', 'Unknown error')}",
+            "status": "failed"
+        }
+
+    # Step 2: Process each analysis chunk
+    print(f"\n=== STEP 2: Processing {len(analyses)} Analysis Chunks ===")
     for analysis in analyses:
         result = process_analysis_to_cypher(analysis)
         results["results"].append(result)

@@ -11,7 +11,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 
-from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_PROMPT
+from ..prompts.text_prompts import SYSTEM_PROMPT
 from ..utils.text_graph_tools import submit_analysis
 
 # LLM
