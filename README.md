@@ -1,139 +1,39 @@
 # Intro
 
----
-### This 'README' is more of a collation of various notes from my Logseq files that I write during breaks from testing, whilst the project is WIP. Therefore don't expect too much coherence or fancy writing, i'll do that once its finished.
+# The Persona-Forge
+- The Persona-Forge is a multi-agent Psychological Analysis tool, with a built in transcription workflow to transcribe 'Clinician/Client' therapy sessions.
+- Optionally, a text-based therapy script can be used, as it was for my testing purposes.
+- A wider project is being built to house automation workflows to expand upon this, and for now the details of that are included here.
+The Persona-Forge has been a project of mine for close to two years, 'evolving' as I have 'pivoted' towards new tech and ideas.
 
-- If you're really bored you can also read my first blog (whilst my website is WIP) [here](https://github.com/David-Barnes-Data-Imaginations/blog.github.io/blob/main/_posts/2025-08-10-titles.md).
+It began as a simple idea to map personalities of anything from video games, to my own persona, using 'Knowledge Graphs' to map out 'Personality Constructs', or 'Persona'. Mapping include 'speaking tone' & 'vocabulary', profiling frameworks (e.g. 'Myers Briggs', history (e.g. key events in a persons life, and the emotions they trigger) and even metaphor or common phrase types that the character uses.
 
+My lifelong passion for Psychology, the pace of AI, and my preference for 'altruistic projects' caused me to pivot to a more specific goal.
+
+- My work on 'the perfect' Psychology model continues. However, Training a model doesn't make a good github repo, as it would be thousands of page of collected psychology data.
+
+  <h2 align='center'>
+  My Brain mapped out into Graph Form
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Me_Forged.png" alt="Me_Graph">
+</p>
 ---
 **For Clinicians / Non-Techies**:
-- I present the core 'Psychology principles' involved first, to spare the pain of technical jargon. I cover _some_ technical aspects related to 'Knowledge Graphs', but graph syntax is closer to 'Structured English' than it is to a 'Coding Language'.
-- The concept was developed from a [project](https://github.com/David-Barnes-Data-Imaginations/SentimentSuite) that was intended to be a 'light demo' for a friend, using 'Russells Cicumplex' and 'utterances' to evaluate therapy session transcripts (Carl & Gloria etc.)
+- I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
+- The dashboard concept was developed from a [project](https://github.com/David-Barnes-Data-Imaginations/SentimentSuite) that was intended to be a 'light demo' for a friend, using 'Russells Cicumplex' and 'utterances' to evaluate therapy session transcripts (Carl & Gloria etc.)
 ---
 **For 'Techies' or those learning to build 'Advanced Agentic Systems'**: 
-- At the very bottom is the 'Safety & Ethics' section, outlining how to run experiments with the incredibly powerful 'Smolagents' library, in a safe dev environment. This also contains advice on _how to learn_ 'SmolAgents' most powerful 'CodeAgent' functionality.
-- Whilst this project has a specific goal / subject, the architecture has intentionally been built to be flexible enough so that it can be easily transferrable to other domains. These might include: Housing, Information Security or general business / government organizations.
-
-**Security**:
-- All my code runs 'on its own computer' in a similar way to the online models.
-
-### **_Why_ agentic frameworks?**
- 
-- Now if you're still getting to grip with the concept of agentic frameworks, who better to summarise than a former 'Google CEO' and 'Whitehouse Advisor' to multiple US Presidents: [Eric Schmidt](https://en.wikipedia.org/wiki/Eric_Schmidt).
-- Bear in mind this was recorded a month ago, and a hell of a lot has happened in that month.
-- The key segment is at [10:57] in this [video](https://www.youtube.com/watch?v=qaPHK1fJL5s). The process he describes in perfectly feasible, even 'easy' once you have a smolagents runner like mine.
-
-### Here's a trimmed snippet if you want the tldr:
-
+- The Technical README is [here]
 ---
-**_"The remarkable thing... and this is to me is shocking... is you can in 'an enterprise', write the task that you want and then connect your databases with an LLM which can produce the code for your enterprise.
-If you built a brand new enterprise architecture, you would be highly tempted use open-source libraries, and essentially build that architecture, giving you infinite flexibility and the computer system and writes most of the code."_**
-
-_Eric Schmidt_ July 2025
-
----
-
-- ### TODO Note: After spending nearly 5 days trying to get gpt-oss to run across unified memory on Ollama, building servers for Triton, vLLM, Llama.cpp, and even a Custom Hugging Face API docker, Ollama is finally fixed on ubuntu.
-
-
-# TODO's
-1. ~~Finish 'stage one' of the voicebot - I'm building it as a 'home assistant' initially~~
-2. ~~Tune the 'cypher' graph workflow and check for errors~~
-3. ~~Build the workflow to graph system (i'm still deciding but I might use Postgres and 'Apache AGE' as i've not used the latter before)~~
-4. Build the Graph Neural Network (GNN) - One of the fastest approaches to a dataset like this is 'Hybrid Graph-RAG', which utilises a combination of embeddings and knowledge graphs.
-5. Adjust the voice workflow to deliver surveys and forms - This is a small addition to what i've already built, and allows the patient to complete forms vocally with the llm.
-   - The LLM has 2 settings for interacting with the patient 
-     - 1. A local LLM on an edge device (in my case Jetson Orin Nano Super). This is for 'survey-mode', ensuring clear accurate responses with a marginal lag
-     - 2. Chat mode, using Kokoro voice for faster responses, good for conversational voice interface.
-     - The local model may deliver guided meditations, need to test which is best for that
-
-# Project Update
-The forge has been built, albeit still under testing. 
-
-I also pivoted the whole project and re-wrote it using LangGraph, with tracing for the runs on Langsmith.
-
-Since the project files are completely different, I haven't yet decided how I'm going to add to Github, maybe here, maybe as a seperate project.
-
-Whilst I decide, here are some screenshots (yes that's me it's analyzing), currently being tested with the small gpt-oss for speed purposes.
-
-I've also built a LangGraph voice assistant, which listens, transcribes and talks back.
-
-The voice assistant will be built into my Jetson part of the project.
-
-  <h2 align='center'>
-  A basic front end til I get round
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./front-page-forge.png" alt="Front-end">
-</p>
-
-  <h2 align='center'>
-  This is how you view model runs in Langsmith, though the code produces a download file with the models output
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./Langsmith_trace_viewer_3.png" alt="example 1">
-</p>
-
-  <h2 align='center'>
-  The Cypher for the knowledge graph is currently lumped in with the rest. That will be extracted with another agentic parse.
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./Langsmith_trace_viewer_4.png" alt="example 2">
-</p>
-
-  <h2 align='center'>
-  The agentic workflow makes the model fix its mistakes, so these error's get corrected in realtime
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./Langsmith_trace_viewer_5.png" alt="example 3">
-</p>
-
-## BUT! I've had 'Hugging Face - Sheets', and it's able to do all the same work as the forge
-## From locally hosted models
-
-  <h2 align='center'>
-  llama
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./Sheets-09-08-2025_10_01_PM.png" alt="llama">
-</p>
-
-  <h2 align='center'>
-  llama vs gpt (plus I have a third model ready to score the battle)
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./Sheets-09-08-2025_10_18_PM.png" alt="llama">
-</p>
-
-I'll be keeping LangGraph since it's better for scaling, but 'Sheets' is an S-Tier data tool.
-
----
->###  ⛔ Please Review and Consider Example 'Risk Register' Schema before implementing anything beyond Dev phase, found at bottom of document⛔'**.
----
-
-# The Persona-Forge
-- The Persona-Forge has been a project of mine for close to two years, 'evolving' as I have 'pivoted' towards new tech and ideas.
-  > Hear the concept of 'pivoting in AI' from one of the 'Godfathers of AI' - Andrew Ng from around '7:50' [here](https://www.youtube.com/watch?v=RNJCfif1dPY).
-  
-- It began as a simple idea to map personalities of anything from video games, to my own persona, using 'Knowledge Graphs' to map out 'Personality Constructs', or 'Persona'. Mapping include 'speaking tone' & 'vocabulary', profiling frameworks (e.g. 'Myers Briggs', history (e.g. key events in a persons life, and the emotions they trigger) and even metaphor or common phrase types that the character uses.
-- My lifelong passion for Psychology, the pace of AI, and my preference for 'altruistic projects' caused me to pivot to a more specific goal. The pivot was also inspired by the realization that it could be achieved by simply merging three of my portfolio projects and a LOT of testing.
-- The _first half_ of the README is written with 'Clinicians' as the primary audience, to demo possibilities with non-technical jargon in the first half of the document.
-- The _second half_ covers more technical aspects for the _art_ of AI building, Persona-mappings, or 'Using AI to _augment_ people or processes. This covers 'Hardware Considerations', 'Testing', Safety, and learning 'Agentic Frameworks'.
----
-
----
-The Persona-Forge is designed to help therapists and mental health hospitals modernize and care for patients. I'm scoping an adaptation for criminal profiling and pattern matching, both 'online' and in the 'real-world'.
+The Persona-Forge is designed to help therapists and mental health hospitals modernize and care for patients. 
+I'm in the concept stage for various other use cases, including an adaptation for criminal profiling and pattern matching, both 'online' and in the 'real-world'.
 
 # Use Cases:
 
 ## 1. Hospital and/or Therapist/Clinician Support - 'Vision of the Future'
-There are two main elements, three AI models involved, a bunch of UI/Interface tools and many hours of research:
+There are (currently) four AI agents involved, alongside various UI/Interface tools and many hours of research:
 
 ## Elements:
 - To modernize Psychology, by providing the superhuman pattern matching and profiling abilities of AI, for Therapists and Hospitals. 
@@ -145,17 +45,59 @@ There are two main elements, three AI models involved, a bunch of UI/Interface t
 ## AI Models:
 
 ### Local (stressed for importance of privacy):
-- GPT-oss:20b/120b locally hosted 'multi-modal' model for: agentic workflow automation using an adaptation of my [smolagents agentic runner framework](https://github.com/David-Barnes-Data-Imaginations/llm_data_scientist), for example, the transcription and anonomizing of data etc. 
-- AI has _super-human_ pattern matching and profiling abilities, and can be used to _augment_ people or processes.
+- GPT-oss:20b/120b locally hosted 'privacy-first' workflow automation
 
 ### Non-Local - Psychological Profiling:
 - GPT 5 - Can be implemented optionally for advanced analysis, highlighting caution or concerns about the patient. 
-- Sends back to local-agent to record.
+- Sends back to local-agent to record and store.
   
 ## Interface & Process:
-- The therapist dashboard includes results along with AI inference for retrieval of information and can be used via web or mobile app (out of scope until tbc). 
+- The therapist dashboard includes results along with AI inference for retrieval of information and can be used via the web, with Knowledge Graph functionality coming from Neo4J.
+  <h2 align='center'>
+  My Brain mapped out in the Neo4J interface
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Me_forged_4.png" alt="Me_Graph_4">
+</p>
+
 - The patient dashboard includes a 'Patient-Support' interface, with 'patient-care' central to the objectives.
-- *Note*: If you've not heard of knowledge graphs, they are vector based (as are LLM's and RAG's) graphs which are incredibly fast for data retrieval (Google uses it for its search). Most note-taking tools use them to connect your notes, but my 'go-to' LogSeq gives you a tab to view your notes and their relations. See 'Psychology Framework Section'
+- *Note*: If you've not heard of knowledge graphs, they are vector based (as are LLM's and RAG's) graphs which are incredibly fast for data retrieval (Google uses it for its search). 
+- Most note-taking tools use them to connect your notes, but my 'go-to' LogSeq gives you a tab to view your notes and their relations. 
+- See 'Psychology Framework Section'
+
+### The Agentic Worflow
+
+### Legend:
+(F) = Finished, in this repo
+(B) = Built, and in the code here but with further advances on the way
+(H) = Easily Automatable, but currently requiring Human input because it would add no value to the project if i built it.
+```
+[Therapist / Client Therapy Session] (B)
+      |
+      v
+[Transcribed by Agent 1, (B)
+saved into a Regular Database] (H)
+      |
+      v
+[Agent 2 scrolls through each 'Question-Answer Pair' (F)
+then tags the Clients Therapy Script against 7 Psychological Frameworks] (F)
+      |
+      v
+[Agent 3 Initializes the Knowledge-Graph based upon the 'Client_id' and 'Session_id'] (F)
+      |
+      | 
+      v
+[Agent 4 scrolls through the Psychoanalysis (F)
+and generates code in the Cypher language (F)
+for upload to Neo4J] (H)
+
+External:
+- The Neo4J database and dashboard can be used for Human analysis
+OR
+- Agent 5 can analyse the data via a Gradio chatbot with a Hybrid-Graph RAG architecture (to follow shortly)
+
+```
 
 Example Agentic Framework / Responsibilities
 
@@ -221,251 +163,178 @@ Example Agentic Framework / Responsibilities
   When patients are admitted for long periods at all kinds of hospitals, they are often required to fill out forms via pen and paper.  Messy handwriting and confused thoughts aside, this is generally archaic.
 - This could be managed from any tech that allows AI to converse with the patient via text or voice. The AI can be tuned or 'forged' to a 'Therapists' persona'.
 
-## 🧠 Psychology Demonstration: From Thought to Graph
+🧠 # Psychology Demonstration: From Thought to Graph
 
-GPT is fantastic at Psychology, so this seems a fitting place for it to do a light demo of its understanding. 
+I mentioned GPT is fantastic at Psychology and it's certainly better than I, when it comes to explaining complex concepts that span multiple disciplines. 
+So this seems a fitting place for it to do a light demo of its understanding.
 Over to you, GPT:
-
----   
-
-GPT-4o: **Actually, let’s do more than a demo** — let’s show what it looks like when a language model isn’t just reading your words, but *mapping your mind*.
-
-  The Persona-Forge project includes a psychological engine powered by a local AI framework, GPT and graph structures, designed not just to interpret *what* someone says, but *how they think* and *why it matters*. We leverage two foundational frameworks:
-### 1.  **Cognitive Distortion Detection**  (from CBT)
-
-  This identifies irrational patterns in thought, like:
-- **Catastrophising**: "This will be a disaster."
-- **Black-and-White Thinking**: "I always fail."
-- **Emotional Reasoning**: "I feel awful, so I must be awful."
-- **Clinical** Value: High
-  
-CBT remains the gold standard for detecting irrational thoughts like catastrophizing or black-and-white thinking.
-
-  These are tagged automatically using regex + local LLM inference:
-
-  ```
-  {'utterance': "I always mess things up.",
-  'distortion': 'Overgeneralisation'}
-  ```
-
-  Each distortion becomes a node:
-
-  ```
-  (:Utterance {text: "I always mess things up."})-[:HAS_DISTORTION]->(:Distortion {type: "Overgeneralisation"})
-  ```
-
-  And these are then linked to suggested interventions:
-
-  ```
-  (:Distortion {type: "Overgeneralisation"})-[:CAN_REPHRASE_USING]->(:Strategy {method: "Specific Reattribution"})
-  ```
-
-  This means we can *automate gentle rewordings*, show a therapist a client's bias frequency over time, or track a character’s descent into distorted thinking across a time arc.
-
 ---
+Actually, let’s do more than a demo — let’s show what it looks like when a language model isn’t just reading your words, but mapping your mind.
 
-### 2.  **Erikson’s Psychosocial Development Model**
+The Persona-Forge engine integrates multiple psychological frameworks into a graph-based architecture. Instead of just tagging sentences, it links why something was said (cognitive bias), when in life-stage it matters (developmental anchor), how it felt (valence/arousal), and who it reflects (traits, schemas, defenses, attachments).
 
-  Used to infer *life-stage context* and help anchor narratives.
+This transforms text into a cognitive-emotional knowledge graph that can be queried by clinicians, narrative engines, or AI characters.
 
-  Each user (or persona) is assigned a developmental stage, e.g.:
+1. Cognitive Distortion Detection (CBT)
 
-  ```
-  (:Persona {id: "#1245"})-[:IN_LIFE_STAGE]->(:Stage {name: "Identity vs Role Confusion"})
-  ```
+Detects irrational thought patterns like catastrophising, emotional reasoning, or overgeneralisation.
 
-  And utterances can inherit that context:
+Graph:
 
-  ```
-  (:Utterance)-[:REFLECTS_STAGE]->(:Stage)
-  ```
+(:Utterance)-[:HAS_DISTORTION]->(:Distortion {type:"Overgeneralisation"})
+(:Distortion)-[:CAN_REPHRASE_USING]->(:Strategy {method:"Specific Reattribution"})
 
-  This allows emotional expressions to be analysed relative to age-stage norms. For example, isolation in adolescence may signify identity confusion, while in later life it might represent despair.
-  **Clinical Value**: Moderate–High
-
-  Adds temporal context by identifying key psychosocial challenges per life stage.
-
----
-### 🔄 Fusion Example:
-
-  Utterance:
-
-  > "I always mess things up. Everyone probably thinks I’m a failure."
-
-  ```
-  (:Utterance {text: "I always mess things up..."})
-  -[:HAS_DISTORTION]->(:Distortion {type: "Overgeneralisation"})
-  -[:TRIGGERS_EMOTION]->(:Emotion {label: "Shame"})
-  -[:REFLECTS_STAGE]->(:Stage {name: "Identity vs Role Confusion"})
-  ```
-
-  > Models like 'GPT' can now understand: this isn't just a sad sentence — it's a cognitively distorted self-assessment likely influenced by adolescent-stage uncertainty.
-
----
-
-### 🔍 Sentiment2D Layer (Valence–Arousal)
-
-  Using Russell's Circumplex, every utterance is mapped as a 2D coordinate. So for the above:
-
-  ```
-  { "valence": -0.7, "arousal": 0.6 }
-  ```
-
-  This is then projected into a circumplex diagram, shown in the dashboard:
-
-  ```
-  (:Utterance)-[:HAS_SENTIMENT]->(:Sentiment {valence: -0.7, arousal: 0.6})
-  ```
-
-  Combined with distortions:
-
-  ```
-  (:Sentiment)-[:CORRELATED_WITH]->(:Distortion)
-  ```
-
-  **This builds a multidimensional picture of emotional health and thought patterns over time.**
-
----
-### 📈 Aggregating Into Personality Trends
-
-  Over time, each persona's distortions, sentiments, and Erikson stage conflicts are clustered and summarised:
-
-  ```
-  (:Persona)-[:HAS_PATTERN]->(:PatternSummary {
-  overgeneralisation_rate: 0.32,
-  avg_valence: -0.2,
-  dominant_emotion: "Regret"
-  })
-  ```
-
-  These summaries can be passed to a narrative engine, therapist dashboard, or AI character controller to adjust tone, recommend interventions, or emulate growth arcs.
-
----
-### For Clinicians: How Graph Architecture Maps Psychological Frameworks
-
-  Here’s how the structure might look under the hood:
-
-  ```
-  (:Persona)
-  ├──[:SAID]──> (:Utterance)
-  │     ├──[:HAS_DISTORTION]──> (:Distortion)
-  │     ├──[:HAS_SENTIMENT]───> (:Sentiment)
-  │     └──[:REFLECTS_STAGE]──> (:EriksonStage)
-  └──[:HAS_PATTERN]──> (:SummaryStats)
-  
-  (:Session {date:"2025-07-30"})
-  └──[:INCLUDES]──> (:Utterance)
-  ```
-
-  This format allows:
-- clustering of distortions over time
-- valence/arousal monitoring per utterance or session
-- narrative arc reconstruction via Erikson stages
-
-  We include a real Logseq Knowledge-Graph screenshot in the next section to show the working structure during development.
-
-  > *Here’s what it looks like in David’s Logseq notes (used during testing). In production, this is powered by a graph database like Memgraph or Neo4j.*  
-  <h2 align='center'>
-  A Visual View of a Knowledge-Graph
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./logseq_graph.png" alt="KG diagram">
-</p>
-  >   
-
-
-*And here’s the stylised representation of it semantically.*
-
-```mermaid
-  graph TD
-    Persona -->|SAID| Utterance
-    Utterance -->|HAS_DISTORTION| Distortion
-    Utterance -->|HAS_SENTIMENT| Sentiment
-    Utterance -->|REFLECTS_STAGE| EriksonStage
-    Persona -->|HAS_PATTERN| SummaryStats
-    Session -->|INCLUDES| Utterance
-```
-
-## Additional Frameworks David's Scoping 
-[David's note] You can view APPENDIX_1 (tba) to see me testing Gemma3 vs GPT before I added these frameworks. Gemma3-12B (6-7gb in size) actually matched some of my scoping preferences, which GPT then developed.
-
-#### Psychological Framework Ranking for Persona-Forge
-
-This presents a structured ranking of other psychological frameworks David is scoping for integration into Persona-Forge, prioritized by clinical value. Each includes a graph schema example for integration into Memgraph.
-
---- 
-
-### 🧩 1. Attachment Theory – Relational Style Tracking
-
-Clinical Value: Very High
-
-Tracks early relationship patterns and emotional bonding styles (secure, anxious, avoidant, disorganized).
-
-Graph Example:
-
-(:Persona {id: "Client_345"})
-  -[:HAS_ATTACHMENT]-> (:AttachmentStyle {style: "Anxious"})
-(:Utterance {text: "I get scared people will leave me."})
-  -[:INDICATES]-> (:AttachmentStyle {style: "Anxious"})
-
----
-
-### 🧠 2. Big Five Personality Traits (OCEAN)
 
 Clinical Value: High
 
-Trait dimensions provide a stable behavioral lens for understanding clients over time.
+2. Erikson’s Psychosocial Stages
 
-Graph Example:
+Anchors utterances in life-stage challenges (identity, intimacy, generativity, etc.).
 
-(:Persona {id: "Client_345"})
-  -[:HAS_TRAIT]-> (:Trait {name: "Neuroticism", score: 0.82})
-  
+Graph:
+
+(:Persona)-[:IN_LIFE_STAGE]->(:Stage {name:"Identity vs Role Confusion"})
+(:Utterance)-[:REFLECTS_STAGE]->(:Stage)
+
+
+Clinical Value: Moderate–High
+
+3. Sentiment2D Layer (Russell Circumplex)
+
+Every utterance mapped to valence–arousal coordinates.
+
+Graph:
+
+(:Utterance)-[:HAS_SENTIMENT]->(:Sentiment {valence:-0.7, arousal:0.6})
+(:Sentiment)-[:CORRELATED_WITH]->(:Distortion)
+
+
+Clinical Value: High for emotion tracking
+
+4. Attachment Theory
+
+Tracks bonding patterns (secure, anxious, avoidant, disorganised).
+
+Graph:
+
+(:Persona)-[:HAS_ATTACHMENT]->(:AttachmentStyle {style:"Anxious"})
+(:Utterance)-[:INDICATES]->(:AttachmentStyle)
+
+
+Clinical Value: Very High
+
+5. Big Five Personality Traits (OCEAN)
+
+Stable behavioural lens for long-term patterns.
+
+Graph:
+
+(:Persona)-[:HAS_TRAIT]->(:Trait {name:"Neuroticism", score:0.82})
+
+
+Clinical Value: High
+
+6. Schema Therapy (Core Beliefs)
+
+Identifies entrenched maladaptive schemas (e.g. abandonment, defectiveness).
+
+Graph:
+
+(:Utterance)-[:REFLECTS_SCHEMA]->(:Schema {name:"Abandonment"})
+
+
+Clinical Value: High
+
+7. Psychodynamic Frameworks
+
+Maps unconscious defenses, transference, and symbolic content.
+
+Graph:
+
+(:Utterance)-[:SHOWS_DEFENSE]->(:DefenseMechanism {type:"Denial"})
+(:Utterance)-[:INDICATES]->(:Transference {target:"Therapist"})
+
+
+Clinical Value: High (if carefully interpreted)
+
+🔄 Fusion Example
+
+Utterance:
+
+"I always mess things up. Everyone probably thinks I’m a failure."
+
+Graph view:
+
+(:Utterance {text:"I always mess things up"})
+-[:HAS_DISTORTION]->(:Distortion {type:"Overgeneralisation"})
+-[:TRIGGERS_EMOTION]->(:Emotion {label:"Shame"})
+-[:REFLECTS_STAGE]->(:Stage {name:"Identity vs Role Confusion"})
+-[:HAS_SENTIMENT]->(:Sentiment {valence:-0.7, arousal:0.6})
+-[:HAS_ATTACHMENT]->(:AttachmentStyle {style:"Anxious"})
+
+
+Now the model can understand this not as “just a sad sentence”, but as a multi-layered signal: a distorted self-assessment, anxiety-laden attachment style, adolescent-stage vulnerability, and emotional tone of shame.
+
+📈 Aggregation Into Persona Trends
+
+Over time, patterns emerge:
+
+(:Persona)-[:HAS_PATTERN]->(:PatternSummary {
+   overgeneralisation_rate:0.32,
+   avg_valence:-0.2,
+   dominant_emotion:"Regret",
+   dominant_attachment:"Anxious",
+   schema:"Abandonment"
+})
+
+
+These summaries can then power dashboards, narrative arcs, or adaptive character AIs.
+
+For Clinicians & Developers: Unified Graph View
+```mermaid
+graph TD
+  Persona -->|SAID| Utterance
+  Utterance -->|HAS_DISTORTION| Distortion
+  Utterance -->|HAS_SENTIMENT| Sentiment
+  Utterance -->|REFLECTS_STAGE| EriksonStage
+  Utterance -->|INDICATES| AttachmentStyle
+  Utterance -->|REFLECTS_SCHEMA| Schema
+  Utterance -->|SHOWS_DEFENSE| DefenseMechanism
+  Persona -->|HAS_PATTERN| SummaryStats
+  Session -->|INCLUDES| Utterance
+```
+Summary
+
+Psychology isn’t a bolt-on in Persona-Forge — it’s the engine room.
+
+CBT distortions explain why.
+
+Erikson stages tell us when.
+
+Sentiment maps how it feels.
+
+Attachments, schemas, and defenses explain relational and unconscious forces.
+
+Traits summarise the baseline personality.
+
+That’s not just transcription — that’s cognitive modelling.
 ---
+Thanks GPT. Now here's a close up on the graph of 'me'
+  <h2 align='center'>
+  My Brain mapped out
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Me_Forged_2.png" alt="Me_Graph_2">
+</p>
 
-### 🧱 3. Schema Therapy – Deep Core Belief Tracking
-
-Clinical Value: High (esp. for long-term cases)
-
-Identifies entrenched negative schemas like Abandonment or Defectiveness.
-
-Graph Example:
-
-(:Persona)-[:HAS_SCHEMA]->(:Schema {name: "Abandonment"})
-(:Utterance {text: "Everyone leaves me eventually."})
-  -[:REFLECTS_SCHEMA]-> (:Schema {name: "Abandonment"})
-  
---- 
-
-### 🔍 4. Psychodynamic Frameworks – Unconscious Conflicts & Defense Mechanisms
-
-Clinical Value: High (if interpreted correctly)
-
-Flags transference, defense mechanisms (denial, projection), or unconscious themes.
-
-Graph Example:
-
-(:Utterance {text: "I’m fine, it doesn’t bother me."})
-  -[:SHOWS_DEFENSE]-> (:DefenseMechanism {type: "Denial"})
-(:Utterance {text: "You’re going to leave me just like my dad."})
-  -[:INDICATES]-> (:Transference {target: "Therapist"})
-
----
-
-### Summary
-
-  Psychology isn’t a bolt-on in the Persona-Forge — it’s a core layer. Cognitive distortions explain *why* something was said, Erikson tells us *when* in the person’s arc it matters, and the Sentiment2D layer shows *how* it felt.
-
-  That’s not just transcription — that’s **cognitive modelling**.
-
-  And it’s only just beginning.
-
-  *(Human prompt, AI mindmap, and joint authorship: a fusion we call ethical augmentation.)*
-  
----
-
-### Thanks GPT. I'm adding other features being 'scoped for testing' below as I work through them. 
+  <h2 align='center'>
+  Now Even Closer
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Me_Forged_3.png" alt="Me_Graph_3">
+</p>
 
 > Despite having spent two years 'geeking out' on AI, in recent weeks I've found this project opening my eye's to new avenues of possibility on a daily basis whilst I test to a more specific purpose. 
 
@@ -519,7 +388,7 @@ _If you’re looking to re-engage with the concept more deeply — maybe for you
 - _Reading Rollo May’s “Love and Will” or Jordan Peterson’s early lectures (he gives a good Jung-meets-Nietzsche angle)._
 
 ---
----
+
 
 # Technical Details
 
@@ -607,9 +476,10 @@ Beyond voice interactions, it could play music, suggest guided breathing, or hel
 
 Whether you’re prototyping for home use or planning a clinical rollout, think modularly: start small, integrate well, and scale as confidence and budget grow.
 
-## 🛠️ System Architecture (Light Overview)
-- Behind the scenes, the Persona-Forge uses a multi-branch fusion system designed to simulate realistic emotional responses — whether it's analysing therapy transcripts or generating AI character dialogue.
-
+## 🛠️ Agent Recall of the Graph:
+### System Architecture (Light Overview)
+- Behind the scenes, I'm rebuilding my multi-branch fusion system designed to simulate realistic emotional responses — whether it's analysing therapy transcripts or generating AI character dialogue.
+- This is being built into a chabot with a Gradio & E2B sandbox environment for recalling all of the data from within the Graph
   ```
   
   User Input
@@ -637,83 +507,7 @@ Whether you’re prototyping for home use or planning a clinical rollout, think 
 - **Prompt Augmentor**: Injects prior moods, quotes, and memories for character continuity and “growth.”
 ---
 
-### A summarised API Architecture from Docker Containerization:
-```
-[Frontend / Browser]
-      |
-      v
-[FastAPI: SentimentSuite+SmolAgents]
-  - Hosts dashboard
-  - Exposes endpoints
-  - Imports and calls agents
-      |
-      | (connects to)
-      v
-[Docker Service: Memgraph] (via bolt://localhost:7687)
 
-External:
-- GPT (via OpenAI API)
-
-```
----
-### Context Window - Current Strategy
-
-
-- The agent processes CHUNK_SIZE QA pairs (trial=50) per loop.
-- Before each chunk: attempt metadata recall (e.g., metadata_embedder.search_metadata("therapy cleaning patterns")).
-- After each chunk: append a short note to agent_notes (vectorized if the tool is available) so the next iteration can retrieve_similar_chunks().
-- If the context manager trims history, it’s fine — each loop is self‑sufficient; it reads/writes artifacts on disk and uses memory lookup sparingly.
----
-
----
-## Learning to Build Agentic Systems
----
-
-This information is built into my ever list of growing blogs, but after my domain host wiped it (for reasons known only to them), I've placed the 'Learning Agentic Systems' section here temporarily.
-
----
-## 📝 Testing:
-
-Most of the work on these _concept_ projects is spent testing, akin to the old 'Data Science' adage of "80-90% of Data Science is data cleansing".
-When I build AI for a project, i'll test it works to the point where one or a combination of the below are satisfied:
-- I'm convinced the architecture is optimally created.
-- If [it's a model tuning project] then until I'm convinced it works better for my goals than before it was tuned.
-- The test works better than I expected, inspiring a new even more 'exciting / impactful / beneficial' project (i.e. a 'Pivot').
-For projects aimed at 'Production Environments' testing of agentic workflows could take as long as a year or more, dependant on subject sensitivty (like Psychology for example), exposure, Risk and resources.
-- I'm currently testing the Pycharm [AI Model Testing Toolkit](https://lp.jetbrains.com/pycharm-for-ai-engineers/?utm_source=product&utm_medium=link&utm_campaign=PY&utm_content=2025.2) and so far it's 'S-Tier'. 
-
----
-**Code vs No-Code**
-Since even smaller LLM's can perform vastly differently dependant on the task, training used, prompt template, agentic architecture etc. Using AI to code _complex AI driven systems_ has its limits (as of July 25), primarily because the code is often relatively simple, but the runtime testing is critical. Typically 'runs' are tracked in production using tools such as OpenTelemetry, Phoenix and / or LangFuse. 
-
-My 'Smolagents' project was really intended to be an 'AI Skunkworks' style testing platform where the runs are viewed in realtime through Gradio + Command-line, with 'Emergency Stops', 'Step Control' and layers of containerization for safety built in. 
-'Smolagents - CodeAgent' is the most complex framework IMO, but one with optimal precision & control. Perhaps akin to using '.cpp' LLM models opposed to 'plug and play' format of 'GGUF'.
-
-*Vibe Coding*
-It's great for non-coding agentic systems, but 'inadvisable' to _solely_ use for complex ones. 
-That said, I agree with 'Andrew Ng' when he believes that 'All staff should know Python'. It's literally a days worth of study to get Python to the level required to debug, then debugging is honed over a longer period.
-By using AI with Python, everyone gets to have their own 'Polymath', likely one of the angle's Altman viewed it when he compared AI as closer to 'The Renaissance' than 'Industrial Revolution'.
-Here are the main options:
-a) Use git so that your favourite online-AI can read your code, then have it explain suggestions on how to implement certain processes. I prefer this since it helps with learning for me.
-b) Use an IDE based tool, Pycharm or Cursor for example. These IDE's have their own API which formats and organizes the code for you.
-c) Use the coding tool for your favourite online-AI (e.g. GPT-Codex, Claude-CodeCLI, Gemini-CLI).
-d) Build your own equivalent of 'b', and use local models. I'm going to do this at some point since gpt-oss is perfect for such things.
-
-**Using AI - Ethics**
-These are such murky waters, that I simply highlight these points:
-- AI augments humans with its super-human abilities. 
-- I defer to Jensen Huang when he says: "If you aren't using AI in your job, someone who _is_ using AI will replace you"
-- If you're clinging to your code like a dev from 5 years ago, try to visualize those who refused to use a calculator in favour of 'pen and paper' when it was invented.
-
-**_My Practices (for the record)_**
-- My own writing for Blog's or README's is usually left as-is, unless I lose whole chunks or need it put into a table/diagram.
-- I use AI for all my learning, and when it's especially insightful, I'll add it's own sections to my documentation (as you've seen).
-- For coding I mostly use 'a' in the section above. Going pure vibe is good for small projects or if your python is rusty but big projects like this require code-understanding.
-- I put in 100's of hours testing into my projects, AI is of limited help at runtime until it gets the ability to view the screen as we do.
-- If you see a 'mermaid diagram', it's done by GPT.
-- Note: I'm currently testing the new [Pycharm AI Dev Environment](https://lp.jetbrains.com/pycharm-for-ai-engineers/?utm_source=product&utm_medium=link&utm_campaign=PY&utm_content=2025.2) and will update accordingly.
-
----
 ---
 ## ⚠️ Ethical considerations and safety ⚠️
   
@@ -755,52 +549,3 @@ The following table is designed to demonstrate an awareness of common security a
   
 **Key Principle:** No matter how small the perceived probability of a risk (e.g., content injection), in new or untested systems it should be treated as **High Likelihood / High Impact** until there is operational evidence to downgrade its rating. This approach mirrors physical security protocols, where high-impact threats are addressed proactively rather than reactively.  
 - Additional note: The backtick tags '```' noted with 'aiignore' can be used for when you need to demonstrate code with a specific language (e.g., python) but don't want it to confuse AI tools that might read it.
-
-# Technical Build Notes by GPT
-## Useful notes for other learners (and me!)
-
-### GPT on when to use `f"""` versus when to use `r"""` in prompts etc.
-___
-- Use f"""...""" when you want Python to interpolate variables now (e.g., insert the current sandbox paths like /workspace/export/...).
-- Use plain """...""" when you want to show literal braces that the LLM will substitute mentally (e.g., /workspace/export/{PATIENT_ID}/.../qa_chunk_{k}.csv).
-- If you must use an f‑string but want literal braces inside the text, double them: {{k}} shows up as {k}.
-- Use r"""...""" (raw string) only if you have lots of backslashes (regex, Windows paths). It stops \n → newline escaping. You can also combine as fr"""...""" when you need both raw and f‑string interpolation—but avoid unless necessary.
-
-### Example: building the planning facts safely
-This version uses an f‑string to inject the paths from your templates (e.g., /workspace/export/...), but it does not interpolate {k}—that brace lives inside the variable’s string value and is preserved:
-
-```
-# src/utils/prompts.py
-from . import config as C
-from .session_paths import session_templates
-from .paths import SBX_DATA_DIR, SBX_EXPORTS_DIR, SBX_DB_DIR
-
-def build_planning_initial_facts() -> str:
-    t = session_templates(C.PATIENT_ID, C.SESSION_TYPE, C.SESSION_DATE)
-    return f"""
-**Fixed environment facts (SANDBOX paths)**
-- Data dir: {SBX_DATA_DIR}
-- Exports dir: {SBX_EXPORTS_DIR}
-- DB dir: {SBX_DB_DIR}
-- Session export base: {t.export_base}
-- CSV path template: {t.csv_template}
-- Graph JSON template: {t.graph_template}
-- Cypher export dir: {t.cypher_dir}
-- SQLite DB: {t.sqlite_db}
-- Therapy transcript: {t.therapy_md}
-- Psych frameworks: {t.psych_frameworks_md}
-- Graph schema: {t.graph_schema_json}
-
-**Placeholders**
-- Use k (an integer) as the current chunk index when calling tools. Do **not** write files directly; call:
-  - write_graph_for_chunk(k, graph)
-  - write_cypher_for_chunk(k, cypher_text)
-""".strip()
-```
-Why this is safe:
-
-- t.csv_template is literally /workspace/export/.../qa_chunk_{k}.csv as a string value. Inserting it via {t.csv_template} does not touch the {k} inside it.
-- You don’t need backticks around k unless you want Markdown code formatting. If you do, it’s fine, since it’s just text for the README/prompt.
-- If you ever need to show {k} inside an f‑string literal (not coming from a variable), escape as {{k}}.
-
----

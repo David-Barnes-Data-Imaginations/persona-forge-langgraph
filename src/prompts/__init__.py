@@ -1,3 +1,2 @@
-from .text_prompts import SYSTEM_PROMPT
-from .text_prompts import CYPHER_PROMPT
-__all__ = ["SYSTEM_PROMPT", "CYPHER_PROMPT"]
+from .text_prompts import SYSTEM_PROMPT, CYPHER_SETUP_PROMPT, CYPHER_QA_PAIR_PROMPT
+__all__ = ["SYSTEM_PROMPT", "CYPHER_SETUP_PROMPT", "CYPHER_QA_PAIR_PROMPT"]
