@@ -436,9 +436,9 @@ FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
 
 // ============================================================================
 
-
 ```
 
+You can find the whole file generated in my workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/output/psychological_analysis/graph_output/psychological_graph_20250916.cypher)
 
 
 
