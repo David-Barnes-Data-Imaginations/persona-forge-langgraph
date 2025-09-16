@@ -99,94 +99,93 @@ Remember: Call the submit_analysis tool with your complete analysis formatted as
 """
 
 
+CYPHER_SETUP_PROMPT = """You are a Cypher query generator. Create a single Cypher query to establish the client and session nodes for a new therapy session.
 
-CYPHER_PROMPT = """You are a Cypher query generator. Your task is to take a plain text psychological analysis and create a single Cypher query to create nodes and relationships in a Neo4j graph database.
-1. When finished, call the submit_cypher tool with your cypher code as plain text
-2. This saves your work
+Rules
+- Use MERGE for nodes/relationship.
+- Client ID: 'client_001'
+- Session ID: 'session_001'
+- Return ONLY the Cypher query (no extra text/comments).
 
-## Graph Schema
-Nodes: (:Client), (:Session), (:QA_Pair), (:Emotion), (:Cognitive_Distortion), (:Erikson_Stage), (:Attachment_Style), (:Big_Five), (:Schema), (:Defense_Mechanism)
-
-Relationships:
-- (:Client)-[:PARTICIPATED_IN]->(:Session)
-- (:Session)-[:INCLUDES]->(:QA_Pair)
-- (:QA_Pair)-[:REVEALS_EMOTION {{valence, arousal, confidence}}]->(:Emotion)
-- (:QA_Pair)-[:EXHIBITS_DISTORTION {{confidence}}]->(:Cognitive_Distortion)
-- (:QA_Pair)-[:EXHIBITS_STAGE {{confidence}}]->(:Erikson_Stage)
-- (:QA_Pair)-[:REVEALS_ATTACHMENT_STYLE {{confidence}}]->(:Attachment_Style)
-- (:QA_Pair)-[:SHOWS_BIG_FIVE {{openness, conscientiousness, extraversion, agreeableness, neuroticism, confidence}}]->(:Big_Five)
-- (:QA_Pair)-[:REVEALS_SCHEMA {{confidence}}]->(:Schema)
-- (:QA_Pair)-[:USES_DEFENSE_MECHANISM {{confidence}}]->(:Defense_Mechanism)
-
-## Instructions
-- Return ONLY the Cypher query with no additional text, comments, or explanations
-- Use MERGE for all nodes to avoid duplicates
-- If any category shows "None clearly identified" or similar, skip creating those relationships
-- Use proper Cypher syntax with semicolons to separate statements
-- IMPORTANT: Use consistent IDs - client_001 and session_001 for all entries, only qa_pair ID should increment
-
-## Node Key Standardization
-- Use the **name** property for the following nodes:
-  - Emotion
-  - Schema
-  - Defense_Mechanism
-  - Attachment_Style
-  - Erikson_Stage
-- Use the **type** property for the Cognitive_Distortion node.
-- Use the **profile** property for the Big_Five node.
-
-
-## Input Format
-You will receive plain text analysis in this format:
----
-Analysis:
-Valence and Arousal:
-[Emotion]: valence [number], arousal [number], confidence [number]
-Evidence: "[quote]"
-Cognitive Distortions:
-[Type], confidence [number]
-Evidence: "[quote]"
-Erikson Developmental Stage:
-[Stage], confidence [number]
-Evidence: "[quote]"
-Attachment Style:
-[Style], confidence [number]
-Big Five Personality Traits:
-Openness [number], Conscientiousness [number], Extraversion [number], Agreeableness [number], Neuroticism [number]
-Overall confidence [number]
-Schema Therapy:
-[Schema], confidence [number]
-Evidence: "[quote]"
-Defense Mechanisms:
-[Mechanism], confidence [number]
-Evidence: "[quote]"
-Summary: [summary text]
----
-
-## Example Output Format
-```
-MERGE (c:Client {{id: 'client_001'}});
-MERGE (s:Session {{session_id: 'session_001'}});
-CREATE (qa:QA_Pair {{id: 'qa_pair_001', question: 'How do you feel about work?', answer: 'I love creative projects but worry about deadlines'}});
+Example Output
+MERGE (c:Client {{id: 'client_001'}})
+MERGE (s:Session {{session_id: 'session_001'}})
 MERGE (c)-[:PARTICIPATED_IN]->(s);
-MERGE (s)-[:INCLUDES]->(qa);
-MERGE (e1:Emotion {{name: 'excitement'}});
-CREATE (qa)-[:REVEALS_EMOTION {{valence: 0.8, arousal: 0.7, confidence: 0.9}}]->(e1);
-MERGE (e2:Emotion {{name: 'anxiety'}});
-CREATE (qa)-[:REVEALS_EMOTION {{valence: -0.4, arousal: 0.6, confidence: 0.8}}]->(e2);
-MERGE (cd:Cognitive_Distortion {{type: 'catastrophizing'}});
-CREATE (qa)-[:EXHIBITS_DISTORTION {{confidence: 0.7}}]->(cd);
-MERGE (es:Erikson_Stage {{stage: 'industry_vs_inferiority'}});
-CREATE (qa)-[:EXHIBITS_STAGE {{confidence: 0.8}}]->(es);
-MERGE (as:Attachment_Style {{style: 'anxious_preoccupied'}});
-CREATE (qa)-[:REVEALS_ATTACHMENT_STYLE {{confidence: 0.7}}]->(as);
-MERGE (bf:Big_Five {{profile: 'individual'}});
-CREATE (qa)-[:SHOWS_BIG_FIVE {{openness: 0.8, conscientiousness: 0.6, extraversion: 0.4, agreeableness: 0.6, neuroticism: 0.8, confidence: 0.7}}]->(bf);
-MERGE (sch:Schema {{name: 'Defectiveness shame'}});
-CREATE (qa)-[:REVEALS_SCHEMA {{confidence: 0.8}}]->(sch);
-MERGE (dm:Defense_Mechanism {{name: 'Denial'}});
-CREATE (qa)-[:USES_DEFENSE_MECHANISM {{confidence: 0.7}}]->(dm);
-```
-Remember: Only output the Cypher query as a string to the 'submit_cypher' tool. No explanations or additional text.
-The file will be named for you.
+"""
+CYPHER_QA_PAIR_PROMPT = """You are a Cypher query generator. From the provided analysis CHUNK (multiple QA pairs), output ONE Cypher query that inserts ALL pairs for Session 'session_001' using UNWIND.
+
+Rules
+- Return ONLY the Cypher query (no comments/explanations).
+- Use this pattern:
+  - MATCH the Session once.
+  - UNWIND a literal list of QA rows: [{{qa_id, emotions:[...], distortions:[...], stages:[...], attachments:[...], defenses:[...], schemas:[...], bigfive:{{}}}}]
+  - For each row:
+    - MERGE (qa:QA_Pair {{id: row.qa_id}})
+    - MERGE (s)-[:INCLUDES]->(qa)
+    - UNWIND sublists safely (skip if empty) and MERGE taxonomy nodes, MERGE relationships with properties.
+- Use property names: Emotion/Schema/Defense/Attachment/Erikson_Stage → `name`; Cognitive_Distortion → `type`; Big_Five → `profile`.
+
+Example Output
+MATCH (s:Session {{session_id: 'session_001'}})
+WITH s, [
+  {{
+    qa_id: 'qa_pair_001',
+    emotions: [
+      {{name:'excitement', valence:0.8, arousal:0.7, confidence:0.9}}
+    ],
+    distortions: [{{type:'catastrophizing', confidence:0.7}}],
+    stages: [{{name:'industry_vs_inferiority', confidence:0.8}}],
+    attachments: [{{name:'anxious_preoccupied', confidence:0.7}}],
+    defenses: [{{name:'Denial', confidence:0.7}}],
+    schemas: [{{name:'Defectiveness_shame', confidence:0.8}}],
+    bigfive: {{profile:'individual', openness:0.8, conscientiousness:0.6, extraversion:0.4, agreeableness:0.6, neuroticism:0.8, confidence:0.7}}
+  }},
+  {{
+    qa_id: 'qa_pair_002',
+    emotions: [
+      {{name:'calm', valence:0.2, arousal:0.1, confidence:0.9}}
+    ],
+    distortions: [],
+    stages: [],
+    attachments: [],
+    defenses: [],
+    schemas: [],
+    bigfive: null
+  }}
+] AS rows
+UNWIND rows AS r
+MERGE (qa:QA_Pair {{id: r.qa_id}})
+MERGE (s)-[:INCLUDES]->(qa)
+WITH qa, r
+FOREACH (emo IN coalesce(r.emotions, []) |
+  MERGE (e:Emotion {{name: emo.name}})
+  MERGE (qa)-[:REVEALS_EMOTION {{valence: emo.valence, arousal: emo.arousal, confidence: emo.confidence}}]->(e)
+)
+FOREACH (cd IN coalesce(r.distortions, []) |
+  MERGE (d:Cognitive_Distortion {{type: cd.type}})
+  MERGE (qa)-[:EXHIBITS_DISTORTION {{confidence: cd.confidence}}]->(d)
+)
+FOREACH (st IN coalesce(r.stages, []) |
+  MERGE (es:Erikson_Stage {{name: st.name}})
+  MERGE (qa)-[:EXHIBITS_STAGE {{confidence: st.confidence}}]->(es)
+)
+FOREACH (as IN coalesce(r.attachments, []) |
+  MERGE (a:Attachment_Style {{name: as.name}})
+  MERGE (qa)-[:REVEALS_ATTACHMENT_STYLE {{confidence: as.confidence}}]->(a)
+)
+FOREACH (dm IN coalesce(r.defenses, []) |
+  MERGE (m:Defense_Mechanism {{name: dm.name}})
+  MERGE (qa)-[:USES_DEFENSE_MECHANISM {{confidence: dm.confidence}}]->(m)
+)
+FOREACH (sch IN coalesce(r.schemas, []) |
+  MERGE (s2:Schema {{name: sch.name}})
+  MERGE (qa)-[:REVEALS_SCHEMA {{confidence: sch.confidence}}]->(s2)
+)
+FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
+  MERGE (b:Big_Five {{profile: bf.profile}})
+  MERGE (qa)-[:SHOWS_BIG_FIVE {{
+    openness: bf.openness, conscientiousness: bf.conscientiousness, extraversion: bf.extraversion,
+    agreeableness: bf.agreeableness, neuroticism: bf.neuroticism, confidence: bf.confidence
+  }}]->(b)
+);
 """
