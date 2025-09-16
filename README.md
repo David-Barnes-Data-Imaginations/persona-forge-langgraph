@@ -440,12 +440,6 @@ FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
 
 You can find the whole file generated in my workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/output/psychological_analysis/graph_output/psychological_graph_20250916.cypher)
 
-
-
-> Despite having spent two years 'geeking out' on AI, in recent weeks I've found this project opening my eye's to new avenues of possibility on a daily basis whilst I test to a more specific purpose. 
-
-socials' element i'm testing, and the AI model architecture (for the techies), though i've held back a few tricks for few surprises to come.
-
 ## :couple: Socials
 - Some area's of therapy use a patients Social Media as clue's for insights on the persona.
 - Before a 'Pitchfork-Wielding Baying-Mob' show up at my door, this is always done _only_ with patient consent.
