@@ -20,6 +20,14 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <img src="./Me_Forged.png" alt="Me_Graph">
 </p>
 
+  <h2 align='center'>
+  Querying of the analysis via a Chatbot & Hybrid-Graph-RAG (Voice to follow)
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./chat_page.png" alt="chat-page">
+</p>
+
 ---
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
@@ -72,7 +80,7 @@ There are (currently) four AI agents involved, alongside various UI/Interface to
   </h2>
   <br><br>
 <p align="center">
-  <img src="./app-page.png" alt="app">
+  <img src="./therapy-analysis-page.png" alt="app">
 </p>
 
 ### The Agentic Worflow
