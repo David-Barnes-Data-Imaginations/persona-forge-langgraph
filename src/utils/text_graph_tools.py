@@ -90,105 +90,75 @@ def submit_cypher(cypher_data: str) -> str:
 @tool
 def submit_chunk(analysis_data: str) -> str:
     """
-    ! Notes for Claude:
-    ---
-    Submit chunk to be embedded later.
-    Output format like this i 'think':
+    Submit chunk data in TSV format to be processed and embedded.
+
+    Expected format:
     ```MANIFEST-TSV
     chunk_id	session_id	qa_id	source	framework_tags	valence	arousal	confidence	timestamp	text
-    s001.q001.v1	session_001	qa_pair_001	therapy.md	Emotion:Empathy|Attachment:Anxious_preoccupied	0.2	0.3	0.8	2025-09-13T15:52:46Z	If I’m with someone who’s happy, I feel happy...
-    ... other rows
+    s001.q001.v1	session_001	qa_pair_001	therapy.md	Emotion:Empathy|Attachment:Anxious_preoccupied	0.2	0.3	0.8	2025-09-13T15:52:46Z	If I'm with someone who's happy, I feel happy...
     ```
-    The rows should be:
-    chunk_id (deterministic, e.g., session.qaid.v1 or hash)
 
-    session_id
+    Args:
+        analysis_data: The TSV-formatted chunk data within MANIFEST-TSV blocks
 
-    qa_id
-
-    source (e.g., therapy.md)
-
-    framework_tags (pipe-delimited list, e.g., Emotion:Empathy|Attachment:Anxious_preoccupied)
-
-    valence (float)
-
-    arousal (float)
-
-    confidence (float)
-
-    timestamp (ISO 8601)
-
-    text (free text; TSV handles tabs/quotes better than CSV)
-
-    An example of the output from the 'submit_analysis tool (which is the human-readable equivalent of the chunk)':
-    Analysis:
-
-        Valence and Arousal:
-        Empathy: valence 0.2, arousal 0.3, confidence 0.8
-        Evidence: "If I’m with someone who’s happy, I feel happy. If I’m with someone sad, I feel sad."
-        Anger visualization: valence 0.5, arousal 0.7, confidence 0.7
-        Evidence: "I will typically visualise something that would make me angry, as it ‘feels’ like it gives me extra strength."
-        Sadness when others sad: valence -0.4, arousal 0.4, confidence 0.7
-        Evidence: "If I’m with someone sad, I feel sad."
-
-        Cognitive Distortions:
-        Rationalization, confidence 0.7
-        Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
-
-        Erikson Developmental Stage:
-        Identity vs role confusion, confidence 0.7
-        Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
-
-        Attachment Style:
-        Anxious preoccupied, confidence 0.7
-        Evidence: "I feel emotions through others, reflecting their feelings, or my perception of their feelings."
-
-        Defense Mechanisms:
-        Denial, confidence 0.6
-        Evidence: "I literally never remember even seeing them."
-        Intellectualization, confidence 0.6
-        Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
-
-        Schema Therapy:
-        Emotional deprivation, confidence 0.7
-        Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
-
-        Big Five Personality Traits:
-        Openness 0.8, Conscientiousness 0.6, Extraversion 0.4, Agreeableness 0.5, Neuroticism 0.5
-        Overall confidence 0.7
-
-        Summary: The client reports a predominantly other‑oriented emotional experience with minimal self‑directed affect. They employ creative visualization to generate emotions for functional purposes, suggesting a rationalization defense. The pattern indicates possible identity confusion and emotional deprivation schemas, with an anxious preoccupied attachment style. Personality assessment shows high openness and moderate conscientiousness, low extraversion, and moderate neuroticism, aligning with a reflective, internally focused individual who may benefit from interventions targeting self‑affect awareness and emotional integration.
-
-    ---
-
+    Returns:
+        String confirmation with processing results
     """
     try:
-        # Create output directory if it doesn't exist
-        output_dir = os.path.join(os.getcwd(), "output", "chunks_for_embedding") # i need it to add a directory with the date as its title
-        os.makedirs(output_dir, exist_ok=True)
+        # Create output directories
+        today_str = datetime.now().strftime("%Y%m%d")
+        base_output_dir = os.path.join(os.getcwd(), "output", "chunks_for_embedding")
+        dated_output_dir = os.path.join(base_output_dir, today_str)
+        os.makedirs(dated_output_dir, exist_ok=True)
 
-        # Single master file
-        filepath = os.path.join(output_dir, "psychological_analysis_master.txt")
+        # Parse the TSV data from the LLM output
+        good_rows, bad_rows = parse_manifest_tsv(analysis_data)
 
-        # Get current timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if bad_rows:
+            error_details = "; ".join([str(row.get('error', 'Unknown error')) for row in bad_rows])
+            return f"Error parsing TSV data: {error_details}"
 
-        # Append to the master file with separator
-        with open(filepath, 'a', encoding='utf-8') as f:
-            f.write(f"\n{'=' * 80}\n")
-            f.write(f"ANALYSIS ENTRY - {timestamp}\n")
-            f.write(f"{'=' * 80}\n\n")
-            f.write(str(analysis_data))
-            f.write(f"\n\n{'=' * 80}\n")
+        if not good_rows:
+            return "No valid chunk data found in the analysis"
 
-        # Count entries by counting separators
-        with open(filepath, 'r', encoding='utf-8') as f:
-            entry_count = f.read().count("ANALYSIS ENTRY")
+        # Save raw TSV data first (for debugging/inspection)
+        tsv_filepath = os.path.join(dated_output_dir, f"chunks_tsv_{datetime.now().strftime('%H%M%S')}.tsv")
+        with open(tsv_filepath, 'w', encoding='utf-8', newline='') as f:
+            if good_rows:
+                writer = csv.DictWriter(f, fieldnames=REQUIRED_FIELDS, delimiter='\t')
+                writer.writeheader()
+                writer.writerows(good_rows)
 
-        return f"Analysis #{entry_count} successfully appended to: {filepath}"
+        # Convert to JSONL format
+        jsonl_filepath = os.path.join(dated_output_dir, f"chunks_jsonl_{datetime.now().strftime('%H%M%S')}.jsonl")
+        save_jsonl(jsonl_filepath, good_rows)
+
+        # Create embeddings for the chunks
+        from .embeddings import embed_texts
+
+        # Extract text for embedding
+        texts_to_embed = [row['text'] for row in good_rows]
+        chunk_ids = [row['chunk_id'] for row in good_rows]
+
+        # Generate embeddings
+        embeddings = embed_texts(texts_to_embed)
+
+        # Save embeddings with metadata
+        embeddings_filepath = os.path.join(dated_output_dir, f"embeddings_{datetime.now().strftime('%H%M%S')}.jsonl")
+        with open(embeddings_filepath, 'w', encoding='utf-8') as f:
+            for i, (chunk_data, embedding) in enumerate(zip(good_rows, embeddings)):
+                embedding_record = {
+                    **chunk_data,  # Include all original chunk metadata
+                    'embedding': embedding,
+                    'embedding_model': 'all-MiniLM-L6-v2',  # Default model
+                    'created_at': datetime.now().isoformat()
+                }
+                f.write(json.dumps(embedding_record, ensure_ascii=False) + '\n')
+
+        return f"Successfully processed {len(good_rows)} chunks. Files saved: TSV({tsv_filepath}), JSONL({jsonl_filepath}), Embeddings({embeddings_filepath})"
 
     except Exception as e:
-        return f"Error saving analysis: {str(e)}"
+        return f"Error processing chunks: {str(e)}"
 
 
 

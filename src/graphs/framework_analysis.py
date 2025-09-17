@@ -112,40 +112,53 @@ graph_config = {
 def parse_therapy_csv(csv_content: str) -> list:
     """
     Parse the therapy CSV and extract QA pairs for processing.
-    
+    Handles multi-line cells by grouping rows with the same message_id.
+
     Args:
         csv_content: Raw CSV content as string
-        
+
     Returns:
         List of QA pair dictionaries with question, answer, and message_id
     """
     try:
         from io import StringIO
         df = pd.read_csv(StringIO(csv_content))
-        
+
         # Clean column names
         df.columns = [col.strip() for col in df.columns]
-        
+
         # Verify required columns
         required_cols = ['Therapist', 'Client', 'message_id']
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"CSV must contain columns: {required_cols}")
-        
+
+        # Group by message_id to handle multi-line cells
         qa_pairs = []
-        for _, row in df.iterrows():
-            # Skip rows with missing data
-            if pd.isna(row['Therapist']) or pd.isna(row['Client']) or pd.isna(row['message_id']):
-                continue
-                
-            qa_pair = {
-                'question': str(row['Therapist']).strip(),
-                'answer': str(row['Client']).strip(),
-                'message_id': str(row['message_id']).strip()
-            }
-            qa_pairs.append(qa_pair)
-        
+        grouped = df.groupby('message_id', dropna=True)
+
+        for message_id, group in grouped:
+            # Combine non-null values for each column
+            therapist_parts = group['Therapist'].dropna().astype(str).str.strip()
+            client_parts = group['Client'].dropna().astype(str).str.strip()
+
+            # Filter out empty strings and combine
+            therapist_text = ' '.join([part for part in therapist_parts if part and part != 'nan'])
+            client_text = ' '.join([part for part in client_parts if part and part != 'nan'])
+
+            # Only include if we have both question and answer
+            if therapist_text and client_text:
+                qa_pair = {
+                    'question': therapist_text,
+                    'answer': client_text,
+                    'message_id': f"qa_pair_{int(message_id):03d}"  # Format as qa_pair_001, qa_pair_002, etc.
+                }
+                qa_pairs.append(qa_pair)
+
+        # Sort by message_id to ensure consistent ordering
+        qa_pairs.sort(key=lambda x: x['message_id'])
+
         return qa_pairs
-    
+
     except Exception as e:
         raise ValueError(f"Error parsing CSV: {str(e)}")
 

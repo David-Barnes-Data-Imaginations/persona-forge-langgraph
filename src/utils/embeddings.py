@@ -1,16 +1,42 @@
 from __future__ import annotations
 from typing import List
 import os
+import requests
+import json
 
-_backend = os.getenv("EMBED_BACKEND", "local")
-_model   = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
+_backend = os.getenv("EMBED_BACKEND", "ollama")
+_model   = os.getenv("EMBED_MODEL", "nomic-embed-text")
 
 def embed_texts(texts: List[str], model_name: str = None) -> List[List[float]]:
     model = model_name or _model
-    if _backend == "local":
+
+    if _backend == "ollama":
+        # Use Ollama for embeddings
+        embeddings = []
+        for text in texts:
+            try:
+                response = requests.post(
+                    "http://localhost:11434/api/embeddings",
+                    json={
+                        "model": model,
+                        "prompt": text
+                    },
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                embedding = response.json().get("embedding", [])
+                embeddings.append(embedding)
+            except Exception as e:
+                print(f"Error getting embedding for text: {e}")
+                # Return a zero vector as fallback
+                embeddings.append([0.0] * 768)  # Common embedding dimension
+        return embeddings
+
+    elif _backend == "local":
         from sentence_transformers import SentenceTransformer
         st = SentenceTransformer(model)
         return st.encode(texts, normalize_embeddings=True).tolist()
+
     elif _backend == "openai":
         from openai import OpenAI
         client = OpenAI()

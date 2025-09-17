@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
+from src.graphs.text_embedder import process_therapy_embeddings
 import math
 
 # Removed torch configuration - focusing on gpt-oss only
@@ -625,6 +626,27 @@ async def analyze_psychological(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing psychological analysis: {str(e)}")
 
+@app.post("/analyze/embeddings")
+async def analyze_embeddings(file: UploadFile = File(...)):
+    """
+    Process therapy CSV through LangGraph embedding workflow.
+    """
+    try:
+        content = await file.read()
+        csv_content = content.decode("utf-8")
+
+        # Process the therapy session for embeddings
+        results = process_therapy_embeddings(csv_content)
+
+        # Store results
+        analysis_store.results['embeddings'] = results
+        analysis_store.timestamp = datetime.now()
+
+        return results
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing embedding analysis: {str(e)}")
+
 @app.get("/upload-therapy-csv", response_class=HTMLResponse)
 async def upload_therapy_form():
     """
@@ -703,6 +725,7 @@ async def upload_therapy_form():
                             <button type="submit" class="submit-btn">Upload and Analyze</button>
                             <a href="/psychological-results" class="view-dashboard">View Results</a>
                             <button type="button" class="submit-btn" onclick="createGraph()" style="background-color: #FF6B35;">Create Graph</button>
+                            <button type="button" class="submit-btn" onclick="createEmbeddings()" style="background-color: #9C27B0;">Create Embeddings</button>
                             <a href="/upload-csv" class="view-dashboard">Regular Analysis</a>
                         </div>
                     </form>
@@ -713,26 +736,26 @@ async def upload_therapy_form():
                     document.getElementById('uploadForm').onsubmit = async (e) => {
                         e.preventDefault();
                         const formData = new FormData(e.target);
-                        
+
                         // Show loading message
                         document.getElementById('results').innerHTML = '<p style="color: #2196F3;">Processing... This may take several minutes for large files.</p>';
-                        
+
                         try {
                             const response = await fetch('/analyze/psychological', {
                                 method: 'POST',
                                 body: formData
                             });
                             const data = await response.json();
-                            
+
                             if (data.status === 'completed') {
-                                document.getElementById('results').innerHTML = 
+                                document.getElementById('results').innerHTML =
                                     `<p style="color: #4CAF50;">Analysis completed successfully!</p>
                                      <p>Total QA pairs: ${data.total_pairs}</p>
                                      <p>Successful: ${data.successful}</p>
                                      <p>Errors: ${data.errors}</p>
                                      <a href="/psychological-results" style="color: #2196F3; text-decoration: underline;">View detailed results</a>`;
                             } else {
-                                document.getElementById('results').innerHTML = 
+                                document.getElementById('results').innerHTML =
                                     '<p style="color: red;">Analysis failed: ' + (data.error || 'Unknown error') + '</p>';
                             }
                         } catch (error) {
@@ -744,23 +767,61 @@ async def upload_therapy_form():
                     async function createGraph() {
                         // Show loading message
                         document.getElementById('results').innerHTML = '<p style="color: #FF6B35;">Creating knowledge graph... This may take several minutes.</p>';
-                        
+
                         try {
                             const response = await fetch('/create-graph', {
                                 method: 'POST'
                             });
                             const data = await response.json();
-                            
+
                             if (data.status === 'completed') {
-                                document.getElementById('results').innerHTML = 
+                                document.getElementById('results').innerHTML =
                                     `<p style="color: #4CAF50;">Knowledge graph creation completed!</p>
                                      <p>Total Analyses: ${data.total_analyses}</p>
                                      <p>Successful: ${data.successful}</p>
                                      <p>Errors: ${data.errors}</p>
                                      <a href="/graph-results" style="color: #2196F3; text-decoration: underline;">View graph results</a>`;
                             } else {
-                                document.getElementById('results').innerHTML = 
+                                document.getElementById('results').innerHTML =
                                     '<p style="color: red;">Graph creation failed: ' + (data.error || 'Unknown error') + '</p>';
+                            }
+                        } catch (error) {
+                            document.getElementById('results').innerHTML =
+                                '<p style="color: red;">Error: ' + error.message + '</p>';
+                        }
+                    }
+
+                    async function createEmbeddings() {
+                        // Get the file from the form
+                        const fileInput = document.querySelector('input[name="file"]');
+                        if (!fileInput.files[0]) {
+                            document.getElementById('results').innerHTML = '<p style="color: red;">Please select a CSV file first.</p>';
+                            return;
+                        }
+
+                        // Show loading message
+                        document.getElementById('results').innerHTML = '<p style="color: #9C27B0;">Creating embeddings... This may take several minutes.</p>';
+
+                        try {
+                            const formData = new FormData();
+                            formData.append('file', fileInput.files[0]);
+
+                            const response = await fetch('/analyze/embeddings', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const data = await response.json();
+
+                            if (data.status === 'completed') {
+                                document.getElementById('results').innerHTML =
+                                    `<p style="color: #4CAF50;">Embedding creation completed!</p>
+                                     <p>Total QA pairs: ${data.total_pairs}</p>
+                                     <p>Successful: ${data.successful}</p>
+                                     <p>Errors: ${data.errors}</p>
+                                     <p style="color: #9C27B0;">Embeddings have been generated and saved for vector search.</p>`;
+                            } else {
+                                document.getElementById('results').innerHTML =
+                                    '<p style="color: red;">Embedding creation failed: ' + (data.error || 'Unknown error') + '</p>';
                             }
                         } catch (error) {
                             document.getElementById('results').innerHTML =

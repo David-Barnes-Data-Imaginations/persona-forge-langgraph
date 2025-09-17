@@ -10,8 +10,8 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
-from ..prompts.text_prompts import SYSTEM_PROMPT
-from ..utils.text_graph_tools import submit_analysis
+from ..prompts.text_prompts import EMBEDDING_SYSTEM_PROMPT
+from ..utils.text_graph_tools import submit_chunk
 
 # LLM
 llm = ChatOllama(
@@ -85,12 +85,12 @@ def _print_event(event: dict, _printed: set, max_length=1500):
 
 assistant_prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", SYSTEM_PROMPT),
+        ("system", EMBEDDING_SYSTEM_PROMPT),
         ("placeholder", "{messages}"),
     ]
 )
 
-tools = [submit_analysis]
+tools = [submit_chunk]
 assistant_runnable = assistant_prompt | llm.bind_tools(tools)
 
 embedder = StateGraph(State)
@@ -108,7 +108,7 @@ embedder.add_edge("tools", "assistant")
 
 # The checkpointer lets the graph persist its state
 # this is a complete memory for the entire graph.
-framework_graph = embedder.compile()
+embedder_graph = embedder.compile()
 
 # Set configuration for recursion limit
 graph_config = {
@@ -120,6 +120,7 @@ graph_config = {
 def parse_therapy_csv(csv_content: str) -> list:
     """
     Parse the therapy CSV and extract QA pairs for processing.
+    Handles multi-line cells by grouping rows with the same message_id.
 
     Args:
         csv_content: Raw CSV content as string
@@ -139,18 +140,30 @@ def parse_therapy_csv(csv_content: str) -> list:
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"CSV must contain columns: {required_cols}")
 
+        # Group by message_id to handle multi-line cells
         qa_pairs = []
-        for _, row in df.iterrows():
-            # Skip rows with missing data
-            if pd.isna(row['Therapist']) or pd.isna(row['Client']) or pd.isna(row['message_id']):
-                continue
+        grouped = df.groupby('message_id', dropna=True)
 
-            qa_pair = {
-                'question': str(row['Therapist']).strip(),
-                'answer': str(row['Client']).strip(),
-                'message_id': str(row['message_id']).strip()
-            }
-            qa_pairs.append(qa_pair)
+        for message_id, group in grouped:
+            # Combine non-null values for each column
+            therapist_parts = group['Therapist'].dropna().astype(str).str.strip()
+            client_parts = group['Client'].dropna().astype(str).str.strip()
+
+            # Filter out empty strings and combine
+            therapist_text = ' '.join([part for part in therapist_parts if part and part != 'nan'])
+            client_text = ' '.join([part for part in client_parts if part and part != 'nan'])
+
+            # Only include if we have both question and answer
+            if therapist_text and client_text:
+                qa_pair = {
+                    'question': therapist_text,
+                    'answer': client_text,
+                    'message_id': f"qa_pair_{int(message_id):03d}"  # Format as qa_pair_001, qa_pair_002, etc.
+                }
+                qa_pairs.append(qa_pair)
+
+        # Sort by message_id to ensure consistent ordering
+        qa_pairs.sort(key=lambda x: x['message_id'])
 
         return qa_pairs
 
@@ -186,7 +199,7 @@ def process_qa_pair(qa_pair: dict) -> dict:
         }
 
         # Run the graph with increased recursion limit
-        result = framework_graph.invoke(initial_state, config=graph_config)
+        result = embedder_graph.invoke(initial_state, config=graph_config)
 
         return {
             "qa_id": qa_pair['message_id'],
@@ -206,7 +219,7 @@ def process_qa_pair(qa_pair: dict) -> dict:
         }
 
 
-def process_therapy_session(csv_content: str) -> dict:
+def process_therapy_embeddings(csv_content: str) -> dict:
     """
     Process entire therapy session CSV through the LangGraph workflow.
 
