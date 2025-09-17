@@ -67,6 +67,14 @@ There are (currently) four AI agents involved, alongside various UI/Interface to
 - Most note-taking tools use them to connect your notes, but my 'go-to' LogSeq gives you a tab to view your notes and their relations. 
 - See 'Psychology Framework Section'
 
+  <h2 align='center'>
+  The basic App front-page
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./app-page.png" alt="app">
+</p>
+
 ### The Agentic Worflow
 
 ### Legend:
