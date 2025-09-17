@@ -18,12 +18,22 @@ from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
 from src.graphs.text_embedder import process_therapy_embeddings
+from src.ui.langgraph_chat import create_chat_app
+import gradio as gr
 import math
 
 # Removed torch configuration - focusing on gpt-oss only
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Mount Gradio chat interface
+try:
+    chat_app = create_chat_app()
+    app = gr.mount_gradio_app(app, chat_app, path="/chat")
+    print("✅ Gradio chat interface mounted at /chat")
+except Exception as e:
+    print(f"❌ Error mounting Gradio app: {e}")
 
 # Updated the Sentiment2D class with
 # more emotions and patterns
@@ -474,9 +484,42 @@ async def upload_form():
                     .button-container {
                         margin: 20px 0;
                     }
+                    .nav-tabs {
+                        display: flex;
+                        background: #2d2d2d;
+                        border-radius: 10px 10px 0 0;
+                        margin-bottom: 20px;
+                        overflow: hidden;
+                    }
+                    .nav-tab {
+                        flex: 1;
+                        padding: 15px 20px;
+                        text-align: center;
+                        background: #3d3d3d;
+                        border: none;
+                        color: white;
+                        text-decoration: none;
+                        transition: background 0.3s;
+                        border-right: 1px solid #555;
+                    }
+                    .nav-tab:hover {
+                        background: #4d4d4d;
+                    }
+                    .nav-tab.active {
+                        background: #4CAF50;
+                    }
+                    .nav-tab:last-child {
+                        border-right: none;
+                    }
                 </style>
             </head>
             <body>
+                <div class="nav-tabs">
+                    <a href="/upload-csv" class="nav-tab active">📊 Sentiment Analysis</a>
+                    <a href="/upload-therapy-csv" class="nav-tab">🧠 Therapy Analysis</a>
+                    <a href="/chat" class="nav-tab">💬 Chat Agent</a>
+                    <a href="/psychological-results" class="nav-tab">📈 Results</a>
+                </div>
                 <h2>Upload CSV File for Sentiment Analysis</h2>
                 <div class="upload-form">
                     <form id="uploadForm" enctype="multipart/form-data">
@@ -708,9 +751,42 @@ async def upload_therapy_form():
                         margin-bottom: 20px;
                         border-left: 4px solid #2196F3;
                     }
+                    .nav-tabs {
+                        display: flex;
+                        background: #2d2d2d;
+                        border-radius: 10px 10px 0 0;
+                        margin-bottom: 20px;
+                        overflow: hidden;
+                    }
+                    .nav-tab {
+                        flex: 1;
+                        padding: 15px 20px;
+                        text-align: center;
+                        background: #3d3d3d;
+                        border: none;
+                        color: white;
+                        text-decoration: none;
+                        transition: background 0.3s;
+                        border-right: 1px solid #555;
+                    }
+                    .nav-tab:hover {
+                        background: #4d4d4d;
+                    }
+                    .nav-tab.active {
+                        background: #4CAF50;
+                    }
+                    .nav-tab:last-child {
+                        border-right: none;
+                    }
                 </style>
             </head>
             <body>
+                <div class="nav-tabs">
+                    <a href="/upload-csv" class="nav-tab">📊 Sentiment Analysis</a>
+                    <a href="/upload-therapy-csv" class="nav-tab active">🧠 Therapy Analysis</a>
+                    <a href="/chat" class="nav-tab">💬 Chat Agent</a>
+                    <a href="/psychological-results" class="nav-tab">📈 Results</a>
+                </div>
                 <h2>Upload Therapy CSV for Psychological Analysis</h2>
                 <div class="info-box">
                     <p><strong>CSV Format Required:</strong></p>

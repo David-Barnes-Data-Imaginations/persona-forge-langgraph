@@ -1,12 +1,9 @@
 from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
-from src.server import get_mcp_server_tools
-from ..utils.voice_tools import get_tools as get_datetime_tools
 from langchain_ollama import ChatOllama
 from ..io_py.edge.config import LLMConfigVoice # this just contains basic info to see up gpt-oss
 
 
-# The ReactAgent is new with 1.0, so not implemented in the other graph til i test it
 # create agent
 def get_new_agent(
         config, short_term_memory, long_term_memory
@@ -20,13 +17,8 @@ def get_new_agent(
         reasoning=LLMConfigVoice.reasoning
     )
 
-    # initialise the tools that the agent will use
-    server_tools = get_mcp_server_tools()
 
-    tools = (
-        get_datetime_tools()
-        + server_tools
-    )
+    tools = ( )
 
     # build the agent workflow given the LLM, its tools and memory.
     agent_executor = create_react_agent(
@@ -38,6 +30,19 @@ def get_new_agent(
 
     return agent_executor
 
-#  def get_response_stream(agent_executor: object, system_prompt_formatted: dict, user_query_formatted: dict):
+# This block would go in the main file:
+async def main():
 
 
+    user_query = "Hello world!"
+    user_query_formatted = {
+        "role": "user",
+        "content": user_query
+    }
+
+    system_prompt_formatted = {
+        "role": "system",
+        "content": (
+            "You are a helpful assistant"
+        )
+    }

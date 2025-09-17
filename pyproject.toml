@@ -33,5 +33,6 @@ dependencies = [
     "platformdirs>=4.4.0",
     "openai>=1.107.3",
     "sentence-transformers>=5.1.0",
+    "gradio>=5.46.0",
 ]
 
