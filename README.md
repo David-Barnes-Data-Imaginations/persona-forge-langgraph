@@ -100,6 +100,8 @@ then tags the Clients Therapy Script against 7 Psychological Frameworks] (F)
 [Agent 4 scrolls through the Psychoanalysis (F)
 and generates code in the Cypher language (F)
 for upload to Neo4J] (H)
+      |
+[Agent 5 Creates Vector Embeddings and 'Text-Chunk' Graph for use in 'Hybrid Graph RAG]
 
 External:
 - The Neo4J database and dashboard can be used for Human analysis
