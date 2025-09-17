@@ -31,5 +31,7 @@ dependencies = [
     "langchain-mcp-adapters>=0.1.9",
     "langgraph-checkpoint-sqlite>=2.0.11",
     "platformdirs>=4.4.0",
+    "openai>=1.107.3",
+    "sentence-transformers>=5.1.0",
 ]
 
