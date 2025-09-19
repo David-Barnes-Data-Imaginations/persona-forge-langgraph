@@ -2,7 +2,7 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
 from langchain_ollama import ChatOllama
 from ..io_py.edge.config import LLMConfigVoice # this just contains basic info to see up gpt-oss
-
+from ..utils.hybrid_rag_tools import PERSONA_FORGE_TOOLS
 
 # create agent
 def get_new_agent(
@@ -18,7 +18,7 @@ def get_new_agent(
     )
 
 
-    tools = ( )
+    tools = PERSONA_FORGE_TOOLS
 
     # build the agent workflow given the LLM, its tools and memory.
     agent_executor = create_react_agent(
