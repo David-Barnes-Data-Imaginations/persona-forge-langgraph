@@ -12,10 +12,9 @@ SERVER_ENDPOINT=f"https://{SERVER_HOST}:{SERVER_PORT}/stdio"
 
 @dataclass
 class LLMConfigVoice:
-
     tools = []
-    model_name: str = "gemma3:1b",
-    max_completion_tokens: int = 8192,
+    model_name: str = "gpt-oss:20b"
+    max_completion_tokens: int = 8192
     temperature: float = 0
-    stream_outputs=True,
-    reasoning = False,
+    stream_outputs: bool = True
+    reasoning: bool = False

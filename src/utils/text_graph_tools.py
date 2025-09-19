@@ -143,8 +143,10 @@ def submit_chunk(analysis_data: str) -> str:
         # Generate embeddings
         embeddings = embed_texts(texts_to_embed)
 
+
         # Save embeddings with metadata
-        embeddings_filepath = os.path.join(dated_output_dir, f"embeddings_{datetime.now().strftime('%H%M%S')}.jsonl")
+        embeddings_filepath = os.path.join(dated_output_dir,
+                                           f"embeddings_{datetime.now().strftime('%H%M%S')}.jsonl")
         embedding_records = []
         with open(embeddings_filepath, 'w', encoding='utf-8') as f:
             for i, (chunk_data, embedding) in enumerate(zip(good_rows, embeddings)):
@@ -265,6 +267,7 @@ def save_jsonl(path: str, rows: List[Dict[str, Any]]):
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 def generate_chunk_cypher(rows: List[Dict[str, Any]]) -> Tuple[str, str]:
+    """Generate Cypher with proper map syntax (unquoted keys)"""
     """
     Generate optimized, parameterized Cypher queries for TextChunk nodes and relationships.
 
@@ -275,95 +278,40 @@ def generate_chunk_cypher(rows: List[Dict[str, Any]]) -> Tuple[str, str]:
         Tuple of (cypher_query, json_params) for parameterized execution
     """
 
-    if not rows:
-        return "// No chunk data to process", "{}"
-
-    # Normalize framework tags to lowercase for consistency
-    normalized_rows = []
-    for row in rows:
-        normalized_row = row.copy()
-        # Normalize framework tags: "Emotion:Anger" -> "emotion:anger"
-        normalized_tags = []
-        for tag in row['framework_tags']:
-            if ':' in tag:
-                kind, name = tag.split(':', 1)
-                normalized_tags.append(f"{kind.lower()}:{name.lower()}")
+    # Convert Python dicts to Cypher-style map strings
+    def dict_to_cypher_map(d):
+        """Convert Python dict to Cypher map string with unquoted keys"""
+        items = []
+        for k, v in d.items():
+            if isinstance(v, str):
+                items.append(f"{k}: '{v}'")
+            elif isinstance(v, list):
+                # Handle arrays
+                if all(isinstance(item, str) for item in v):
+                    items.append(f"{k}: {v}")  # String arrays are fine
+                else:
+                    items.append(f"{k}: {v}")  # Let Cypher handle it
             else:
-                normalized_tags.append(tag.lower())
-        normalized_row['framework_tags'] = normalized_tags
-        normalized_rows.append(normalized_row)
+                items.append(f"{k}: {v}")
+        return "{" + ", ".join(items) + "}"
 
-    # Optimized, parameterized Cypher query - build without .format() to avoid brace conflicts
+    # Build the UNWIND data as Cypher maps, not JSON
+    cypher_maps = []
+    for row in rows:
+        cypher_maps.append(dict_to_cypher_map(row))
+
     cypher_query = f"""
-// ============================================================================
-// TEXT CHUNK NODES AND RELATIONSHIPS (Parameterized)
-// ============================================================================
-
-// -- TextChunk upsert + properties
-UNWIND $rows AS c
-MERGE (t:TextChunk {{id: c.chunk_id}})
-SET t.text = c.text,
-    t.source = c.source,
-    t.framework_tags = c.framework_tags,
-    t.valence = c.valence,
-    t.arousal = c.arousal,
-    t.confidence = c.confidence,
-    t.timestamp = datetime(c.timestamp);
-
-// -- Link to QA and Session (if present)
-UNWIND $rows AS c
-OPTIONAL MATCH (q:QA_Pair {{id: c.qa_id}})
-OPTIONAL MATCH (s:Session {{session_id: c.session_id}})
-WITH c, q, s
-MATCH (t:TextChunk {{id: c.chunk_id}})
-FOREACH (_ IN CASE WHEN q IS NULL THEN [] ELSE [1] END |
-  MERGE (q)-[:HAS_CHUNK]->(t)
-)
-FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END |
-  MERGE (s)-[:INCLUDES_CHUNK]->(t)
-);
-
-// -- Expand tags to evidence edges
-UNWIND $rows AS c
-UNWIND c.framework_tags AS tag
-WITH c, split(tag, ':') AS parts
-WITH c, toLower(parts[0]) AS kind, toLower(parts[1]) AS name
-MATCH (t:TextChunk {{id: c.chunk_id}})
-
-FOREACH (_ IN CASE WHEN kind='emotion' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (e:Emotion {{name: name}})
-  MERGE (t)-[:REVEALS_EMOTION {{valence: c.valence, arousal: c.arousal, confidence: c.confidence}}]->(e)
-)
-FOREACH (_ IN CASE WHEN kind='cognitivedistortion' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (d:Cognitive_Distortion {{type: name}})
-  MERGE (t)-[:EXHIBITS_DISTORTION {{confidence: c.confidence}}]->(d)
-)
-FOREACH (_ IN CASE WHEN kind='attachment' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (a:Attachment_Style {{name: name}})
-  MERGE (t)-[:REVEALS_ATTACHMENT_STYLE {{confidence: c.confidence}}]->(a)
-)
-FOREACH (_ IN CASE WHEN kind='defense' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (m:Defense_Mechanism {{name: name}})
-  MERGE (t)-[:USES_DEFENSE_MECHANISM {{confidence: c.confidence}}]->(m)
-)
-FOREACH (_ IN CASE WHEN kind='schema' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (s:Schema {{name: name}})
-  MERGE (t)-[:REVEALS_SCHEMA {{confidence: c.confidence}}]->(s)
-)
-FOREACH (_ IN CASE WHEN kind='erikson' AND name IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (es:Erikson_Stage {{name: name}})
-  MERGE (t)-[:EXHIBITS_STAGE {{confidence: c.confidence}}]->(es)
-);
-
-// ============================================================================
-// Created {len(normalized_rows)} TextChunk nodes with framework relationships
-// ============================================================================
-"""
-
-    # Generate JSON parameters
-    params = {"rows": normalized_rows}
-
-    return cypher_query.strip(), json.dumps(params, ensure_ascii=False, indent=2)
+    UNWIND [
+      {', '.join(cypher_maps)}
+    ] AS c
+    MERGE (t:TextChunk {{id: c.chunk_id}})
+    SET t.text = c.text,
+        t.framework_tags = c.framework_tags,
+        t.valence = c.valence,
+        t.arousal = c.arousal,
+        t.confidence = c.confidence;
+    """
+    return cypher_query
 
 def generate_embedding_cypher(embeddings_data: List[Dict[str, Any]]) -> Tuple[str, str]:
     """
