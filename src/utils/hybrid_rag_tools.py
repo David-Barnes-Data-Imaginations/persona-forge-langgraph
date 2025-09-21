@@ -10,7 +10,6 @@ from neo4j import GraphDatabase
 from src.utils.embeddings import embed_texts
 import json
 
-
 # Global RAG instance (initialize once, use many times)
 _rag_instance = None
 
@@ -48,54 +47,81 @@ class PersonaForgeRAGTool:
         CALL db.index.vector.queryNodes('textchunk_embedding_index', $k, $query_embedding)
         YIELD node, score
 
-        // Get comprehensive psychological context
-        MATCH (node:TextChunk)
-        OPTIONAL MATCH (node)-[:REVEALS_EMOTION]->(e:Emotion)
-        OPTIONAL MATCH (node)-[:EXHIBITS_DISTORTION]->(d:Cognitive_Distortion)
-        OPTIONAL MATCH (node)-[:REVEALS_ATTACHMENT_STYLE]->(a:Attachment_Style)
-        OPTIONAL MATCH (node)-[:REVEALS_SCHEMA]->(s:Schema)
-        OPTIONAL MATCH (node)-[:USES_DEFENSE_MECHANISM]->(m:Defense_Mechanism)
-        OPTIONAL MATCH (node)-[:EXHIBITS_STAGE]->(es:Erikson_Stage)
+        // Get the TextChunk and its basic properties
+        WITH node, score
+        WHERE node:TextChunk
 
         // Get parent QA and session context
         OPTIONAL MATCH (qa:QA_Pair)-[:HAS_CHUNK]->(node)
-        OPTIONAL MATCH (session:Session)-[:INCLUDES_CHUNK]->(node)
+        OPTIONAL MATCH (session:Session)-[:INCLUDES]->(qa)
 
-        // Get QA-level psychological analysis
+        // Get QA-level psychological analysis (this is where the psychology lives)
         OPTIONAL MATCH (qa)-[:REVEALS_EMOTION]->(qa_emotion:Emotion)
-        OPTIONAL MATCH (qa)-[:EXHIBITS_DISTORTION]->(qa_distortion:Cognitive_Distortion)
+        OPTIONAL MATCH (qa)-[:EXHIBITS_DISTORTION]->(qa_distortion:Cognitive_Distortion)  
         OPTIONAL MATCH (qa)-[:REVEALS_ATTACHMENT_STYLE]->(qa_attachment:Attachment_Style)
+        OPTIONAL MATCH (qa)-[:REVEALS_SCHEMA]->(qa_schema:Schema)
+        OPTIONAL MATCH (qa)-[:USES_DEFENSE_MECHANISM]->(qa_defense:Defense_Mechanism)
+        OPTIONAL MATCH (qa)-[:EXHIBITS_STAGE]->(qa_stage:Erikson_Stage)
         OPTIONAL MATCH (qa)-[:SHOWS_BIG_FIVE]->(big5:Big_Five)
+
+        // Get relationship properties for emotions (valence, arousal, confidence)
+        OPTIONAL MATCH (qa)-[emo_rel:REVEALS_EMOTION]->(qa_emotion)
+        OPTIONAL MATCH (qa)-[dist_rel:EXHIBITS_DISTORTION]->(qa_distortion)
+        OPTIONAL MATCH (qa)-[att_rel:REVEALS_ATTACHMENT_STYLE]->(qa_attachment)
+        OPTIONAL MATCH (qa)-[sch_rel:REVEALS_SCHEMA]->(qa_schema)
+        OPTIONAL MATCH (qa)-[def_rel:USES_DEFENSE_MECHANISM]->(qa_defense)
+        OPTIONAL MATCH (qa)-[stage_rel:EXHIBITS_STAGE]->(qa_stage)
+        OPTIONAL MATCH (qa)-[big5_rel:SHOWS_BIG_FIVE]->(big5)
 
         RETURN 
             node.id as chunk_id,
             node.text as text,
             score,
-            node.valence as valence,
-            node.arousal as arousal,
-            node.confidence as confidence,
 
-            // Chunk-level psychology
-            collect(DISTINCT e.name) as chunk_emotions,
-            collect(DISTINCT d.type) as chunk_distortions,
-            collect(DISTINCT a.name) as chunk_attachment_styles,
-            collect(DISTINCT s.name) as chunk_schemas,
-            collect(DISTINCT m.name) as chunk_defense_mechanisms,
-            collect(DISTINCT es.name) as chunk_erikson_stages,
-
-            // QA-level psychology  
+            // QA and session context
             qa.id as qa_pair_id,
             session.session_id as session_id,
-            collect(DISTINCT qa_emotion.name) as qa_emotions,
-            collect(DISTINCT qa_distortion.type) as qa_distortions,
-            collect(DISTINCT qa_attachment.name) as qa_attachment_styles,
 
-            // Big Five personality
+            // QA-level psychology with confidence scores
+            collect(DISTINCT {
+                name: qa_emotion.name, 
+                valence: emo_rel.valence, 
+                arousal: emo_rel.arousal, 
+                confidence: emo_rel.confidence
+            }) as emotions,
+
+            collect(DISTINCT {
+                type: qa_distortion.type, 
+                confidence: dist_rel.confidence
+            }) as distortions,
+
+            collect(DISTINCT {
+                name: qa_attachment.name, 
+                confidence: att_rel.confidence
+            }) as attachment_styles,
+
+            collect(DISTINCT {
+                name: qa_schema.name, 
+                confidence: sch_rel.confidence
+            }) as schemas,
+
+            collect(DISTINCT {
+                name: qa_defense.name, 
+                confidence: def_rel.confidence
+            }) as defense_mechanisms,
+
+            collect(DISTINCT {
+                name: qa_stage.name, 
+                confidence: stage_rel.confidence
+            }) as erikson_stages,
+
+            // Big Five personality (single values)
             big5.openness as openness,
             big5.conscientiousness as conscientiousness,
             big5.extraversion as extraversion,
             big5.agreeableness as agreeableness,
-            big5.neuroticism as neuroticism
+            big5.neuroticism as neuroticism,
+            big5_rel.confidence as big5_confidence
 
         ORDER BY score DESC
         """
@@ -138,25 +164,41 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
         context_parts = [f"=== PSYCHOLOGICAL INSIGHTS FOR: '{query}' ===\n"]
 
         for i, result in enumerate(search_results, 1):
-            # Build psychological profile summary
-            chunk_psychology = []
-            if result['chunk_emotions']:
-                chunk_psychology.append(f"Emotions: {', '.join(result['chunk_emotions'])}")
-            if result['chunk_distortions']:
-                chunk_psychology.append(f"Cognitive Distortions: {', '.join(result['chunk_distortions'])}")
-            if result['chunk_attachment_styles']:
-                chunk_psychology.append(f"Attachment: {', '.join(result['chunk_attachment_styles'])}")
-            if result['chunk_schemas']:
-                chunk_psychology.append(f"Core Schemas: {', '.join(result['chunk_schemas'])}")
-            if result['chunk_defense_mechanisms']:
-                chunk_psychology.append(f"Defense Mechanisms: {', '.join(result['chunk_defense_mechanisms'])}")
+            # Extract psychology data (filter out empty entries)
+            emotions = [e for e in result['emotions'] if e['name']]
+            distortions = [d for d in result['distortions'] if d['type']]
+            attachments = [a for a in result['attachment_styles'] if a['name']]
+            schemas = [s for s in result['schemas'] if s['name']]
+            defenses = [d for d in result['defense_mechanisms'] if d['name']]
+            stages = [s for s in result['erikson_stages'] if s['name']]
 
-            # QA-level context
-            qa_psychology = []
-            if result['qa_emotions']:
-                qa_psychology.append(f"QA Emotions: {', '.join(result['qa_emotions'])}")
-            if result['qa_distortions']:
-                qa_psychology.append(f"QA Distortions: {', '.join(result['qa_distortions'])}")
+            # Build psychological profile summary
+            psychology_parts = []
+
+            if emotions:
+                emotion_strs = [f"{e['name']} (v:{e['valence']:.1f}, a:{e['arousal']:.1f}, conf:{e['confidence']:.1f})"
+                                for e in emotions]
+                psychology_parts.append(f"Emotions: {', '.join(emotion_strs)}")
+
+            if distortions:
+                distortion_strs = [f"{d['type']} (conf:{d['confidence']:.1f})" for d in distortions]
+                psychology_parts.append(f"Cognitive Distortions: {', '.join(distortion_strs)}")
+
+            if attachments:
+                attachment_strs = [f"{a['name']} (conf:{a['confidence']:.1f})" for a in attachments]
+                psychology_parts.append(f"Attachment: {', '.join(attachment_strs)}")
+
+            if schemas:
+                schema_strs = [f"{s['name']} (conf:{s['confidence']:.1f})" for s in schemas]
+                psychology_parts.append(f"Core Schemas: {', '.join(schema_strs)}")
+
+            if defenses:
+                defense_strs = [f"{d['name']} (conf:{d['confidence']:.1f})" for d in defenses]
+                psychology_parts.append(f"Defense Mechanisms: {', '.join(defense_strs)}")
+
+            if stages:
+                stage_strs = [f"{s['name']} (conf:{s['confidence']:.1f})" for s in stages]
+                psychology_parts.append(f"Erikson Stage: {', '.join(stage_strs)}")
 
             # Big Five if available
             big_five = []
@@ -166,6 +208,8 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
                 big_five.append(f"Conscientiousness: {result['conscientiousness']:.1f}")
             if result['extraversion'] is not None:
                 big_five.append(f"Extraversion: {result['extraversion']:.1f}")
+            if result['agreeableness'] is not None:
+                big_five.append(f"Agreeableness: {result['agreeableness']:.1f}")
             if result['neuroticism'] is not None:
                 big_five.append(f"Neuroticism: {result['neuroticism']:.1f}")
 
@@ -173,11 +217,9 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
 INSIGHT {i} (Relevance: {result['score']:.3f}):
 Text: "{result['text']}"
 
-Chunk Psychology: {' | '.join(chunk_psychology) if chunk_psychology else 'None detected'}
-QA Psychology: {' | '.join(qa_psychology) if qa_psychology else 'None detected'}
-Big Five Traits: {' | '.join(big_five) if big_five else 'Not available'}
-Emotional State: Valence={result['valence']}, Arousal={result['arousal']}
-Source: {result['session_id']} → {result['qa_pair_id']}
+Psychology: {' | '.join(psychology_parts) if psychology_parts else 'None detected'}
+Big Five: {' | '.join(big_five) if big_five else 'Not available'}
+Source: {result['session_id']} → {result['qa_pair_id']} → {result['chunk_id']}
 
 {'-' * 60}"""
 
@@ -227,13 +269,16 @@ def get_personality_summary(focus_area: str = "overall") -> str:
         all_distortions = []
         all_attachments = []
         all_schemas = []
+        all_defenses = []
         big_five_data = {}
 
         for result in results:
-            all_emotions.extend(result['chunk_emotions'] or [])
-            all_distortions.extend(result['chunk_distortions'] or [])
-            all_attachments.extend(result['chunk_attachment_styles'] or [])
-            all_schemas.extend(result['chunk_schemas'] or [])
+            # Extract names from the structured data
+            all_emotions.extend([e['name'] for e in result['emotions'] if e['name']])
+            all_distortions.extend([d['type'] for d in result['distortions'] if d['type']])
+            all_attachments.extend([a['name'] for a in result['attachment_styles'] if a['name']])
+            all_schemas.extend([s['name'] for s in result['schemas'] if s['name']])
+            all_defenses.extend([d['name'] for d in result['defense_mechanisms'] if d['name']])
 
             # Collect Big Five data
             if result['openness'] is not None:
@@ -242,6 +287,8 @@ def get_personality_summary(focus_area: str = "overall") -> str:
                 big_five_data['conscientiousness'] = result['conscientiousness']
             if result['extraversion'] is not None:
                 big_five_data['extraversion'] = result['extraversion']
+            if result['agreeableness'] is not None:
+                big_five_data['agreeableness'] = result['agreeableness']
             if result['neuroticism'] is not None:
                 big_five_data['neuroticism'] = result['neuroticism']
 
@@ -263,6 +310,10 @@ def get_personality_summary(focus_area: str = "overall") -> str:
         if all_schemas:
             core_schemas = list(set(all_schemas))
             summary_parts.append(f"Core Schemas: {', '.join(core_schemas)}")
+
+        if all_defenses:
+            defense_mechanisms = list(set(all_defenses))
+            summary_parts.append(f"Defense Mechanisms: {', '.join(defense_mechanisms)}")
 
         if big_five_data:
             big_five_summary = []
