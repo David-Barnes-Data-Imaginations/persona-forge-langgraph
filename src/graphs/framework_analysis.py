@@ -162,6 +162,79 @@ def parse_therapy_csv(csv_content: str) -> list:
     except Exception as e:
         raise ValueError(f"Error parsing CSV: {str(e)}")
 
+def enhance_analysis_with_qa(question: str, answer: str) -> None:
+    """
+    Post-process the most recent analysis entry to include original question and answer.
+    This ensures the Q&A text is always included regardless of LLM memory issues.
+
+    Args:
+        question: The therapist's original question
+        answer: The client's original answer
+    """
+    try:
+        import os
+        master_file = os.path.join(os.getcwd(), "output", "psychological_analysis", "psychological_analysis_master.txt")
+
+        if not os.path.exists(master_file):
+            print("Warning: Master analysis file doesn't exist yet")
+            return
+
+        # Read the entire file
+        with open(master_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Split by entry separators to find the last entry
+        separator = "=" * 80
+        entries = content.split(f"\n{separator}\nANALYSIS ENTRY")
+
+        if len(entries) < 2:
+            print("Warning: No analysis entries found to enhance")
+            return
+
+        # Get the last entry (most recent)
+        last_entry = entries[-1]
+
+        # Split the last entry to separate the timestamp line from the analysis
+        lines = last_entry.split('\n')
+        if len(lines) < 3:
+            print("Warning: Last entry format is unexpected")
+            return
+
+        # Find where the analysis content starts (after the timestamp and separator lines)
+        analysis_start_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip() == separator:
+                analysis_start_idx = i + 1
+                break
+
+        if analysis_start_idx == 0:
+            print("Warning: Could not find analysis content in last entry")
+            return
+
+        # Extract the timestamp and separator lines
+        header_lines = lines[:analysis_start_idx]
+
+        # Extract the existing analysis content
+        existing_analysis = '\n'.join(lines[analysis_start_idx:]).strip()
+
+        # Create the enhanced analysis with Q&A prepended
+        enhanced_analysis = f"Original Question: {question}\n\nOriginal Answer: {answer}\n\n{existing_analysis}"
+
+        # Reconstruct the last entry with enhanced content
+        enhanced_entry = '\n'.join(header_lines) + '\n' + enhanced_analysis
+
+        # Reconstruct the full file with the enhanced last entry
+        enhanced_content = f"\n{separator}\nANALYSIS ENTRY".join(entries[:-1]) + f"\n{separator}\nANALYSIS ENTRY" + enhanced_entry
+
+        # Write the enhanced content back to the file
+        with open(master_file, 'w', encoding='utf-8') as f:
+            f.write(enhanced_content)
+
+        print(f"Enhanced analysis with original Q&A text")
+
+    except Exception as e:
+        print(f"Warning: Failed to enhance analysis with Q&A: {str(e)}")
+
 def process_qa_pair(qa_pair: dict) -> dict:
     """
     Process a single QA pair through the LangGraph workflow.
@@ -191,7 +264,10 @@ def process_qa_pair(qa_pair: dict) -> dict:
         
         # Run the graph with increased recursion limit
         result = framework_graph.invoke(initial_state, config=graph_config)
-        
+
+        # Post-process: Add original question and answer to the analysis file
+        enhance_analysis_with_qa(qa_pair['question'], qa_pair['answer'])
+
         return {
             "qa_id": qa_pair['message_id'],
             "question": qa_pair['question'],

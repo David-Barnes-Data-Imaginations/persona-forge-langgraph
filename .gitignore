@@ -1,3 +1,5 @@
-/output/
 /data/
 /src/io_py/edge/.env
+/src/.env
+/.env
+/output/workflow_1_and_2_examples.txt

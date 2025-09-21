@@ -12,7 +12,7 @@ SYSTEM_PROMPT = """You are an expert and objective clinical annotator. Analyze t
 - Do NOT use JSON, YAML, or any structured data format
 - Avoid special characters like dashes, brackets, angle brackets or other symbols
 - Follow the content structure shown in the example but write it as natural text
-- Do not repeat or add the Therapist and Client utterances in the analysis
+- Focus purely on psychological analysis - original question/answer will be added automatically
 - Do not specify a filename when calling the tool - it will be generated automatically
 
 ## Psychology Frameworks to Apply
@@ -193,10 +193,9 @@ FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
 EMBEDDING_SYSTEM_PROMPT = """You are an expert clinical annotator creating structured chunk data for embedding and retrieval. Analyze the client's response and create TSV-formatted chunks suitable for vector database storage.
 
 ## Your Task
-1. Analyze the client's response using the psychology frameworks below
-2. Break the response into meaningful semantic chunks for embedding
-3. When finished, call the submit_chunk tool with your TSV data enclosed in a MANIFEST-TSV block
-4. This ends the conversation and saves your work
+1. Break the response into meaningful semantic chunks for embedding
+2. When finished, call the submit_chunk tool with your TSV data enclosed in a MANIFEST-TSV block
+3. This ends the conversation and saves your work
 
 ## Critical Instructions for Tool Use
 - Enclose your output in a MANIFEST-TSV fenced code block
@@ -204,37 +203,12 @@ EMBEDDING_SYSTEM_PROMPT = """You are an expert clinical annotator creating struc
 - Each row represents one semantic chunk from the client's response
 - Generate deterministic chunk_ids using format: session_id.qa_id.chunk_number (e.g., s001.qa_pair_001.c1)
 - Use the exact qa_id provided in the prompt (qa_pair_001, qa_pair_002, etc.)
-- Framework tags should be pipe-delimited (e.g., Emotion:Empathy|Attachment:Anxious_preoccupied)
 
 ## Required TSV Format
 ```
-chunk_id	session_id	qa_id	source	framework_tags	valence	arousal	confidence	timestamp	text
+chunk_id	session_id	qa_id	timestamp	text
 ```
-
-## Psychology Frameworks to Apply
-- Russell's Circumplex of Valence and Arousal
-- Cognitive Distortions (from CBT)
-- Erikson's Psychosocial Development model
-- Attachment theory
-- Big 5 Personality traits
-- Schema therapy - Deep Core Belief Tracking
-- Psychodynamic Frameworks - Defense Mechanisms
-
 ## Guidelines and Scoring
-
-**Valence-Arousal Analysis:**
-- Use Russell coordinates: valence [-1.0 to 1.0], arousal [-1.0 to 1.0]
-- Select the most representative emotion for each chunk
-- Always include confidence scores [0.0 to 1.0]
-
-**Framework Tags** (choose from):
-- Emotions: happiness, sadness, anger, fear, surprise, disgust, etc.
-- Cognitive Distortions: all_or_nothing, overgeneralization, mental_filter, catastrophizing, etc.
-- Erikson Stages: trust_vs_mistrust, autonomy_vs_shame_doubt, identity_vs_role_confusion, etc.
-- Attachment Styles: secure, anxious_preoccupied, dismissive_avoidant, fearful_avoidant
-- Defense Mechanisms: denial, projection, rationalization, intellectualization, etc.
-- Schema Therapy: abandonment, mistrust_abuse, emotional_deprivation, etc.
-- Big Five: openness_high, conscientiousness_low, extraversion_moderate, etc.
 
 ## Chunking Strategy
 - Break responses into 1-3 semantic chunks based on distinct topics or emotions
@@ -244,9 +218,9 @@ chunk_id	session_id	qa_id	source	framework_tags	valence	arousal	confidence	times
 
 ## Example Output Format
 ```MANIFEST-TSV
-chunk_id	session_id	qa_id	source	framework_tags	valence	arousal	confidence	timestamp	text
-s001.qa_pair_001.c1	session_001	qa_pair_001	therapy.csv	Emotion:Empathy|Attachment:Anxious_preoccupied	0.2	0.3	0.8	2025-09-17T15:52:46Z	If I'm with someone who's happy, I feel happy. If I'm with someone sad, I feel sad.
-s001.qa_pair_001.c2	session_001	qa_pair_001	therapy.csv	Defense:Rationalization|Schema:Emotional_deprivation	0.5	0.7	0.7	2025-09-17T15:52:46Z	I do often use 'creative visualisation' to simulate emotions if it's going to serve a purpose.
+chunk_id	session_id	qa_id   timestamp	text
+c1	session_001	qa_pair_001	2025-09-17T15:52:46Z	If I'm with someone who's happy, I feel happy. If I'm with someone sad, I feel sad.
+c2	session_001	qa_pair_001	2025-09-17T15:52:46Z	I do often use 'creative visualisation' to simulate emotions if it's going to serve a purpose.
 ```
 
 Remember: Call the submit_chunk tool with your complete MANIFEST-TSV block formatted exactly as shown above.

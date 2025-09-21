@@ -2,7 +2,7 @@ from RealtimeSTT import AudioToTextRecorder
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.store.sqlite.aio import AsyncSqliteStore
 from RealtimeSTT import AudioToTextRecorder
-from src.graphs.agent import get_new_agent
+from src.graphs.chat_agent import get_new_agent
 from src.io_py.tts.output import KokoroSpeech, OutputChunkBuilder, Speech
 from langgraph.prebuilt import chat_agent_executor # add possibly later for STT
 from settings import load_config
@@ -62,7 +62,6 @@ async def main():
         "role": "system",
         "content": (
             "You are a voice assistant called Delamain."
-            + " Keep your responses as short as possible."
             + "Do not format your responses using markdown, such as **bold** or _italics. ",
         )
     }

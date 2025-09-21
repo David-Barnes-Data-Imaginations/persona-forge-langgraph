@@ -15,6 +15,7 @@ from datetime import datetime
 
 from ..prompts.text_prompts import SYSTEM_PROMPT, CYPHER_SETUP_PROMPT, CYPHER_QA_PAIR_PROMPT
 from ..utils.text_graph_tools import submit_cypher
+from ..utils.embeddings import embed_texts
 
 # Add LangSmith tracking
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
@@ -142,6 +143,7 @@ Functions for processing the psychological analysis master file
 def extract_analyses_from_master_file():
     """
     Extract individual analyses from the master file and return as chunks.
+    Now also extracts original question/answer text for text chunking.
     """
     master_file = os.path.join(os.getcwd(), "output", "psychological_analysis", "psychological_analysis_master.txt")
 
@@ -157,8 +159,8 @@ def extract_analyses_from_master_file():
     print(f"Debug: Master file size: {len(content)} characters")
     print(f"Debug: File starts with: {repr(content[:200])}")
 
-    # Split by the entry separators - look for the exact pattern in your file
-    entries = re.split(r'={80}\n\n={80}\nANALYSIS ENTRY', content)
+    # Split by the entry separators - match the actual pattern: three lines of =
+    entries = re.split(r'={80}\n={80}\nANALYSIS ENTRY', content)
     print(f"Debug: Found {len(entries)} entries after split")
 
     analyses = []
@@ -169,21 +171,57 @@ def extract_analyses_from_master_file():
         if 'Analysis:' in entry:  # This should match your file format
             # Clean up the entry
             entry = entry.strip()
-
-            # Find where "Analysis:" starts
             lines = entry.split('\n')
+
+            # Extract original question and answer
+            original_question = ""
+            original_answer = ""
+            analysis_text = ""
+
+            # Find the different sections
+            question_start = -1
+            answer_start = -1
             analysis_start = -1
+
             for j, line in enumerate(lines):
-                if line.strip() == 'Analysis:':
+                line_stripped = line.strip()
+                if line_stripped.startswith('Original Question:'):
+                    question_start = j
+                elif line_stripped.startswith('Original Answer:'):
+                    answer_start = j
+                elif line_stripped == 'Analysis:':
                     analysis_start = j
                     break
+
+            # Extract sections
+            if question_start >= 0:
+                original_question = lines[question_start].replace('Original Question:', '').strip()
+
+            if answer_start >= 0 and analysis_start >= 0:
+                # Extract multi-line answer between "Original Answer:" and "Analysis:"
+                answer_lines = []
+                for line_idx in range(answer_start, analysis_start):
+                    line = lines[line_idx]
+                    if line_idx == answer_start:
+                        # First line - remove "Original Answer:" prefix
+                        line = line.replace('Original Answer:', '').strip()
+                    else:
+                        line = line.strip()
+
+                    if line:  # Only add non-empty lines
+                        answer_lines.append(line)
+
+                original_answer = ' '.join(answer_lines)
 
             if analysis_start >= 0:
                 # Take everything from "Analysis:" onwards
                 analysis_text = '\n'.join(lines[analysis_start:]).strip()
+
                 analyses.append({
                     'entry_number': len(analyses) + 1,
-                    'content': analysis_text
+                    'content': analysis_text,
+                    'original_question': original_question,
+                    'original_answer': original_answer
                 })
                 print(f"Debug: Successfully extracted analysis {len(analyses)}")
                 print(f"Debug: Analysis preview: {analysis_text[:100]}...")
@@ -241,12 +279,160 @@ def create_client_session_setup() -> dict:
             "status": "error"
         }
 
+def create_text_chunks_and_embeddings(qa_pair_id: str, question: str, answer: str) -> dict:
+    """
+    Create semantic text chunks from question and answer, and generate embeddings.
+
+    Args:
+        qa_pair_id: The QA pair identifier
+        question: The therapist's question
+        answer: The client's answer
+
+    Returns:
+        Dictionary with chunks and their embeddings
+    """
+    try:
+        # Create semantic chunks - typically 2-3 chunks per QA pair
+        chunks = []
+
+        # Split answer into sentences for semantic chunking
+        import re
+        sentences = re.split(r'[.!?]+', answer)
+        sentences = [s.strip() for s in sentences if s.strip()]
+
+        # Group sentences into 2-3 chunks based on length
+        if len(sentences) <= 2:
+            # Short answer - one chunk
+            chunks.append({
+                'chunk_id': f's001.{qa_pair_id}.c1',
+                'session_id': 'session_001',
+                'qa_id': qa_pair_id,
+                'timestamp': datetime.now().isoformat() + 'Z',
+                'text': answer.strip()
+            })
+        elif len(sentences) <= 4:
+            # Medium answer - two chunks
+            mid = len(sentences) // 2
+            chunk1_text = '. '.join(sentences[:mid]).strip()
+            chunk2_text = '. '.join(sentences[mid:]).strip()
+
+            if chunk1_text:
+                chunks.append({
+                    'chunk_id': f's001.{qa_pair_id}.c1',
+                    'session_id': 'session_001',
+                    'qa_id': qa_pair_id,
+                    'timestamp': datetime.now().isoformat() + 'Z',
+                    'text': chunk1_text + '.'
+                })
+
+            if chunk2_text:
+                chunks.append({
+                    'chunk_id': f's001.{qa_pair_id}.c2',
+                    'session_id': 'session_001',
+                    'qa_id': qa_pair_id,
+                    'timestamp': datetime.now().isoformat() + 'Z',
+                    'text': chunk2_text + '.'
+                })
+        else:
+            # Long answer - three chunks
+            chunk_size = len(sentences) // 3
+
+            for i in range(3):
+                start_idx = i * chunk_size
+                if i == 2:  # Last chunk gets remaining sentences
+                    end_idx = len(sentences)
+                else:
+                    end_idx = (i + 1) * chunk_size
+
+                chunk_text = '. '.join(sentences[start_idx:end_idx]).strip()
+                if chunk_text:
+                    chunks.append({
+                        'chunk_id': f's001.{qa_pair_id}.c{i+1}',
+                        'session_id': 'session_001',
+                        'qa_id': qa_pair_id,
+                        'timestamp': datetime.now().isoformat() + 'Z',
+                        'text': chunk_text + '.'
+                    })
+
+        # Generate embeddings for chunks
+        if chunks:
+            texts_to_embed = [chunk['text'] for chunk in chunks]
+            embeddings = embed_texts(texts_to_embed)
+
+            # Add embeddings to chunks
+            for chunk, embedding in zip(chunks, embeddings):
+                chunk['embedding'] = embedding
+
+        return {
+            'chunks': chunks,
+            'status': 'success'
+        }
+
+    except Exception as e:
+        return {
+            'error': str(e),
+            'status': 'error'
+        }
+
+def generate_text_chunk_cypher(chunks: list) -> str:
+    """
+    Generate Cypher query for TextChunk nodes and their relationships.
+
+    Args:
+        chunks: List of chunk dictionaries with chunk_id, text, embedding, etc.
+
+    Returns:
+        Cypher query string
+    """
+    if not chunks:
+        return "// No chunks to process"
+
+    # Build the Cypher query
+    cypher_lines = []
+
+    # Add chunks data as literal list
+    cypher_lines.append("MATCH (s:Session {session_id: 'session_001'})")
+    cypher_lines.append("WITH s, [")
+
+    # Add each chunk as a literal object
+    for i, chunk in enumerate(chunks):
+        embedding_str = "[" + ", ".join(map(str, chunk['embedding'])) + "]"
+
+        # Escape double quotes in text for Cypher string literals
+        escaped_text = chunk['text'].replace('"', '\\"')
+
+        chunk_line = f"""  {{
+    chunk_id: '{chunk['chunk_id']}',
+    qa_id: '{chunk['qa_id']}',
+    text: "{escaped_text}",
+    embedding: {embedding_str}
+  }}"""
+        if i < len(chunks) - 1:
+            chunk_line += ","
+        cypher_lines.append(chunk_line)
+
+    cypher_lines.append("] AS chunks")
+    cypher_lines.append("UNWIND chunks AS c")
+
+    # Create TextChunk nodes
+    cypher_lines.append("MERGE (tc:TextChunk {id: c.chunk_id})")
+    cypher_lines.append("SET tc.text = c.text,")
+    cypher_lines.append("    tc.embedding = c.embedding")
+
+    # Link to QA_Pair
+    cypher_lines.append("WITH c, tc")
+    cypher_lines.append("MATCH (qa:QA_Pair {id: c.qa_id})")
+    cypher_lines.append("MERGE (qa)-[:HAS_CHUNK]->(tc);")
+
+    return "\n".join(cypher_lines)
+
 def process_analysis_to_cypher(analysis: dict) -> dict:
     """
     Process a single analysis through the LangGraph workflow to generate Cypher.
+    Now also creates text chunks and embeddings, generating a combined Cypher file.
 
     Args:
-        analysis: Dictionary with entry_number and content
+        analysis: Dictionary with entry_number, content, original_question, original_answer
 
     Returns:
         Dictionary with processing results
@@ -282,15 +468,46 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
             }
         }
 
-        # Run the QA pair graph
+        # Run the QA pair graph to generate psychology framework Cypher
         print(f"Processing analysis #{analysis['entry_number']}...")
         result = qa_pair_graph.invoke(initial_state, config=analysis_config)
+
+        # Create text chunks and embeddings if we have original text
+        chunks_result = None
+        if analysis.get('original_question') and analysis.get('original_answer'):
+            print(f"Creating text chunks for QA pair #{analysis['entry_number']}...")
+            chunks_result = create_text_chunks_and_embeddings(
+                qa_pair_id,
+                analysis['original_question'],
+                analysis['original_answer']
+            )
+
+            # Generate additional Cypher for text chunks if successful
+            if chunks_result.get('status') == 'success' and chunks_result.get('chunks'):
+                chunks = chunks_result['chunks']
+                text_chunk_cypher = generate_text_chunk_cypher(chunks)
+
+                # Append text chunk Cypher to the same file
+                output_dir = os.path.join(os.getcwd(), "output", "psychological_analysis", "graph_output")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"psychological_graph_{timestamp[:8]}.cypher"
+                filepath = os.path.join(output_dir, filename)
+
+                with open(filepath, 'a', encoding='utf-8') as f:
+                    f.write(f"\n// ============================================================================\n")
+                    f.write(f"// TEXT CHUNKS AND EMBEDDINGS FOR {qa_pair_id.upper()}\n")
+                    f.write(f"// ============================================================================\n\n")
+                    f.write(text_chunk_cypher)
+                    f.write(f"\n\n// ============================================================================\n")
+
+                print(f"Added text chunks to Cypher file: {filepath}")
 
         return {
             "analysis_id": analysis['entry_number'],
             "thread_id": thread_id,
             "content": analysis['content'][:200] + "...",  # Truncated for brevity
             "messages_count": len(result.get('messages', [])),
+            "chunks_created": len(chunks_result.get('chunks', [])) if chunks_result else 0,
             "status": "success"
         }
 

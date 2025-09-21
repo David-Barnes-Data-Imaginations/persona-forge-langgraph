@@ -13,9 +13,10 @@ from datetime import datetime
 
 # Import your existing embedding function
 from src.utils.embeddings import embed_texts
+neo4j_password = os.getenv("NEO4JP")
 
 jsonl_filepath = '/home/david-barnes/Documents/Projects/sentiment_suite/output/chunks_for_embedding/20250917/embedding_params_230044.json'
-neo4j_password = "enterpassword"
+
 class OllamaPersonaForgeRAG:
     """
     RAG system using your existing Ollama embedding setup
@@ -27,29 +28,7 @@ class OllamaPersonaForgeRAG:
     def close(self):
         self.driver.close()
 
-    def load_embeddings_from_your_jsonl(self, jsonl_filepath: str) -> Dict[str, Any]:
-        """
-        Load embeddings from your existing JSONL format (from text_graph_tools.py output)
-        """
-        print(f"Loading embeddings from JSONL: {jsonl_filepath}")
-
-        if not os.path.exists(jsonl_filepath):
-            return {"error": f"File not found: {jsonl_filepath}"}
-
-        # Read your JSONL format
-        embedding_records = []
-        with open(jsonl_filepath, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    record = json.loads(line.strip())
-                    embedding_records.append({
-                        'chunk_id': record['chunk_id'],
-                        'embedding': record['embedding']
-                    })
-
-        return self._load_embeddings_to_neo4j(embedding_records)
-
-    def load_embeddings_from_your_json(self, json_filepath: str) -> Dict[str, Any]:
+    def load_embeddings_from_json(self, json_filepath: str) -> Dict[str, Any]:
         """
         Load embeddings from your JSON format (embedding_params_230044.json)
         """
@@ -263,7 +242,7 @@ def test_ollama_embedding_system():
 
             load_choice = input("Load embeddings from JSON? [y/N]: ").lower()
             if load_choice == 'y':
-                result = rag.load_embeddings_from_your_json(json_file)
+                result = rag.load_embeddings_from_json(json_file)
                 print(f"Load result: {result}")
 
         # Test hybrid search
@@ -276,7 +255,7 @@ def test_ollama_embedding_system():
 
         for query in test_queries:
             print(f"\n{'='*60}")
-            results = rag.hybrid_search_with_ollama(query, k=2)
+            results = rag.hybrid_search_with_ollama(query, k=5)
 
             if results:
                 print(f"\n📝 RAG Context for '{query}':")
@@ -295,7 +274,7 @@ if __name__ == "__main__":
     # Quick embedding load without the full test
     NEO4J_URI = "bolt://localhost:7687"
     NEO4J_USER = "neo4j"
-    NEO4J_PASSWORD = "enterpassword"  # Using your password from the file
+    NEO4J_PASSWORD = "W00dpidge0n!"  # Using your password from the file
 
     # Initialize the RAG system
     rag = OllamaPersonaForgeRAG(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
@@ -305,7 +284,7 @@ if __name__ == "__main__":
         json_file_path = '/home/david-barnes/Documents/Projects/sentiment_suite/output/chunks_for_embedding/20250917/embedding_params_230044.json'
 
         print("🚀 Loading embeddings into Neo4j...")
-        result = rag.load_embeddings_from_your_json(json_file_path)
+        result = rag.load_embeddings_from_json(json_file_path)
         print(f"📊 Result: {result}")
 
         if result.get("status") == "success":
@@ -313,7 +292,7 @@ if __name__ == "__main__":
 
             # Quick test search
             print("\n🔍 Testing hybrid search...")
-            search_results = rag.hybrid_search_with_ollama("emotional empathy", k=2)
+            search_results = rag.hybrid_search_with_ollama("emotions", k=2)
 
             if search_results:
                 print("\n📝 RAG Context Preview:")

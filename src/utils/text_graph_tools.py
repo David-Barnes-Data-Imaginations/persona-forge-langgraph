@@ -94,10 +94,9 @@ def submit_chunk(analysis_data: str) -> str:
 
     Expected format:
     ```MANIFEST-TSV
-    chunk_id	session_id	qa_id	source	framework_tags	valence	arousal	confidence	timestamp	text
-    s001.q001.v1	session_001	qa_pair_001	therapy.md	Emotion:Empathy|Attachment:Anxious_preoccupied	0.2	0.3	0.8	2025-09-13T15:52:46Z	If I'm with someone who's happy, I feel happy...
+    chunk_id	session_id	qa_id	timestamp	text
+    s001.q001.c1	session_001	qa_pair_001 2025-09-13T15:52:46Z	If I'm with someone who's happy, I feel happy...
     ```
-
     Args:
         analysis_data: The TSV-formatted chunk data within MANIFEST-TSV blocks
 
@@ -200,8 +199,7 @@ TSV_BLOCK_PATTERN = re.compile(
 )
 
 REQUIRED_FIELDS = [
-    "chunk_id","session_id","qa_id","source",
-    "framework_tags","valence","arousal","confidence","timestamp","text"
+    "chunk_id","session_id","qa_id","timestamp","text"
 ]
 
 def parse_manifest_tsv(llm_output: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
@@ -250,10 +248,6 @@ def parse_manifest_tsv(llm_output: str) -> Tuple[List[Dict[str, Any]], List[Dict
             # Minimal validations
             if not row["text"]:
                 raise ValueError("empty text")
-            if row["valence"] is not None and not (-1.0 <= row["valence"] <= 1.0):
-                raise ValueError("valence out of range [-1,1]")
-            if row["arousal"] is not None and not (0.0 <= row["arousal"] <= 1.0):
-                raise ValueError("arousal out of range [0,1]")
 
             good.append(row)
         except Exception as e:
@@ -267,7 +261,6 @@ def save_jsonl(path: str, rows: List[Dict[str, Any]]):
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 def generate_chunk_cypher(rows: List[Dict[str, Any]]) -> Tuple[str, str]:
-    """Generate Cypher with proper map syntax (unquoted keys)"""
     """
     Generate optimized, parameterized Cypher queries for TextChunk nodes and relationships.
 
@@ -278,40 +271,45 @@ def generate_chunk_cypher(rows: List[Dict[str, Any]]) -> Tuple[str, str]:
         Tuple of (cypher_query, json_params) for parameterized execution
     """
 
-    # Convert Python dicts to Cypher-style map strings
-    def dict_to_cypher_map(d):
-        """Convert Python dict to Cypher map string with unquoted keys"""
-        items = []
-        for k, v in d.items():
-            if isinstance(v, str):
-                items.append(f"{k}: '{v}'")
-            elif isinstance(v, list):
-                # Handle arrays
-                if all(isinstance(item, str) for item in v):
-                    items.append(f"{k}: {v}")  # String arrays are fine
-                else:
-                    items.append(f"{k}: {v}")  # Let Cypher handle it
-            else:
-                items.append(f"{k}: {v}")
-        return "{" + ", ".join(items) + "}"
+    if not rows:
+        return "// No chunk data to process", "{}"
 
-    # Build the UNWIND data as Cypher maps, not JSON
-    cypher_maps = []
-    for row in rows:
-        cypher_maps.append(dict_to_cypher_map(row))
 
+    # Optimized, parameterized Cypher query - build without .format() to avoid brace conflicts
     cypher_query = f"""
-    UNWIND [
-      {', '.join(cypher_maps)}
-    ] AS c
-    MERGE (t:TextChunk {{id: c.chunk_id}})
-    SET t.text = c.text,
-        t.framework_tags = c.framework_tags,
-        t.valence = c.valence,
-        t.arousal = c.arousal,
-        t.confidence = c.confidence;
-    """
-    return cypher_query
+// ============================================================================
+// TEXT CHUNK NODES AND RELATIONSHIPS (Parameterized)
+// ============================================================================
+
+// -- TextChunk upsert + properties
+UNWIND $rows AS c
+MERGE (t:TextChunk {{id: c.chunk_id}})
+SET t.text = c.text,
+    t.timestamp = datetime(c.timestamp);
+
+// -- Link to QA and Session (if present)
+UNWIND $rows AS c
+OPTIONAL MATCH (q:QA_Pair {{id: c.qa_id}})
+OPTIONAL MATCH (s:Session {{session_id: c.session_id}})
+WITH c, q, s
+MATCH (t:TextChunk {{id: c.chunk_id}})
+FOREACH (_ IN CASE WHEN q IS NULL THEN [] ELSE [1] END |
+  MERGE (q)-[:HAS_CHUNK]->(t)
+)
+FOREACH (_ IN CASE WHEN s IS NULL THEN [] ELSE [1] END |
+  MERGE (s)-[:INCLUDES_CHUNK]->(t)
+);
+
+// -- Expand tags to evidence edges
+UNWIND $rows AS c
+UNWIND c.framework_tags AS tag
+WITH c, split(tag, ':') AS parts
+WITH c, toLower(parts[0]) AS kind, toLower(parts[1]) AS name
+MATCH (t:TextChunk {{id: c.chunk_id}})
+"""
+
+    return cypher_query.strip(), json.dumps(params, ensure_ascii=False, indent=2)
+
 
 def generate_embedding_cypher(embeddings_data: List[Dict[str, Any]]) -> Tuple[str, str]:
     """
