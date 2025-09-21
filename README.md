@@ -36,6 +36,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <img src="./personality_summary.png" alt="chat-page">
 </p>
 ---
+
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
 - The dashboard concept was developed from a [project](https://github.com/David-Barnes-Data-Imaginations/SentimentSuite) that was intended to be a 'light demo' for a friend, using 'Russells Cicumplex' and 'utterances' to evaluate therapy session transcripts (Carl & Gloria etc.)
