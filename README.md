@@ -123,6 +123,35 @@ OR
 
 ```
 
+This project also houses a 'Hospital Automation Workflow' which replaces the typical pen and paper forms used.
+
+The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
+(Workflow: (Under construction)
+```mermaid
+graph TD
+    subgraph "Patient Room/Apartment"
+        A[Echo Dots/Flex<br/>Wake Word + Audio I/O]
+    end
+    
+    subgraph "Hallway Hub"
+        B[Raspberry Pi 5<br/>Home Assistant<br/>Device Control Hub]
+    end
+    
+    subgraph "Edge AI Processing"
+        C[Jetson Orin Nano<br/>Primary AI Server<br/>STT/TTS/LLM]
+    end
+    
+    subgraph "Backup/Heavy Processing"
+        D[Mini-ITX PC<br/>VLM/Fallback LLM<br/>Graph Processing]
+    end
+    
+    A -->|Audio Stream| C
+    C -->|Commands| B
+    B -->|Device Control| A
+    C <-->|Complex Tasks| D
+    C -->|Store Results| E[SQLite/DuckDB]
+```
+
 Example Agentic Framework / Responsibilities
 
 ### 1. Sandbox / Secure Container - _AI Clinical & Patient‑Care Assistant_
