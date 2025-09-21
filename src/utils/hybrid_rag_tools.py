@@ -21,7 +21,7 @@ def get_rag_instance():
         _rag_instance = PersonaForgeRAGTool(
             neo4j_uri="bolt://localhost:7687",
             neo4j_user="neo4j",
-            neo4j_password="!"  # You might want to use env vars for this
+            neo4j_password="W00dpidge0n!"  # You might want to use env vars for this
         )
     return _rag_instance
 
@@ -116,11 +116,11 @@ class PersonaForgeRAGTool:
             }) as erikson_stages,
 
             // Big Five personality (single values)
-            big5.openness as openness,
-            big5.conscientiousness as conscientiousness,
-            big5.extraversion as extraversion,
-            big5.agreeableness as agreeableness,
-            big5.neuroticism as neuroticism,
+            big5_rel.openness as openness,
+            big5_rel.conscientiousness as conscientiousness,
+            big5_rel.extraversion as extraversion,
+            big5_rel.agreeableness as agreeableness,
+            big5_rel.neuroticism as neuroticism,
             big5_rel.confidence as big5_confidence
 
         ORDER BY score DESC

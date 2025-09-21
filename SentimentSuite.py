@@ -17,7 +17,6 @@ from fastapi.responses import HTMLResponse
 from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
-from src.graphs.text_embedder import process_therapy_embeddings
 from src.ui.langgraph_chat import create_chat_app
 import gradio as gr
 import math
@@ -668,27 +667,6 @@ async def analyze_psychological(file: UploadFile = File(...)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing psychological analysis: {str(e)}")
-
-@app.post("/analyze/embeddings")
-async def analyze_embeddings(file: UploadFile = File(...)):
-    """
-    Process therapy CSV through LangGraph embedding workflow.
-    """
-    try:
-        content = await file.read()
-        csv_content = content.decode("utf-8")
-
-        # Process the therapy session for embeddings
-        results = process_therapy_embeddings(csv_content)
-
-        # Store results
-        analysis_store.results['embeddings'] = results
-        analysis_store.timestamp = datetime.now()
-
-        return results
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing embedding analysis: {str(e)}")
 
 @app.get("/upload-therapy-csv", response_class=HTMLResponse)
 async def upload_therapy_form():

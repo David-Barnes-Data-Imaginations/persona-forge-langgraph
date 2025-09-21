@@ -25,9 +25,16 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   </h2>
   <br><br>
 <p align="center">
-  <img src="./chat_page.png" alt="chat-page">
+  <img src="./search_psychological_insights.png" alt="chat-page">
 </p>
 
+  <h2 align='center'>
+  Recieving an overall summary of the clients personality (needs tuning)
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./personality_summary.png" alt="chat-page">
+</p>
 ---
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
@@ -105,11 +112,8 @@ then tags the Clients Therapy Script against 7 Psychological Frameworks] (F)
       |
       | 
       v
-[Agent 4 scrolls through the Psychoanalysis (F)
-and generates code in the Cypher language (F)
-for upload to Neo4J] (H)
-      |
-[Agent 5 Creates Vector Embeddings and 'Text-Chunk' Graph for use in 'Hybrid Graph RAG]
+[Agent 4 Uses 'personality_summary' & 'search_psychological_insights' based on the users query of the client.
+ The users query is converted to embeddings, and the agent searches the graph for top scoring similarities(Hybrid Graph RAG)]
 
 External:
 - The Neo4J database and dashboard can be used for Human analysis
