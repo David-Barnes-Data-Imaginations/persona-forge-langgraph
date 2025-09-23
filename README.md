@@ -126,7 +126,7 @@ OR
 This project also houses a 'Hospital Automation Workflow' which replaces the typical pen and paper forms used.
 
 The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
-TTS/SST models hosted locally on Jetson via NVIDEA Riva.
+
 Workflow: (Under construction: mermaid designed by Claude 4.1)
 ```mermaid
 graph TD
