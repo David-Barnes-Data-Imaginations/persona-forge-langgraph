@@ -2,7 +2,7 @@
 name = "persona-forge"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.11"
 dependencies = [
     "fastapi>=0.115.13",
     "pandas>=2.2.2",
@@ -35,5 +35,7 @@ dependencies = [
     "sentence-transformers>=5.1.0",
     "gradio>=5.46.0",
     "neo4j>=5.28.2",
+    "ctranslate2>=4.6.0",
+    "openai-whisper>=20250625",
 ]
 

@@ -1,6 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import requests
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 # Removed heavy ML imports - focusing on gpt-oss only
 import pandas as pd
 from pydantic import BaseModel
@@ -13,18 +17,20 @@ from src.analysis.enhanced_visualisation import create_sentiment_dashboard_plotl
 from src.analysis.sentiment_dashboard_tabs import build_dashboard_tabbed
 from src.analysis.circumplex_plot import create_circumplex_plot
 from src.analysis.distortion_detection import detect_distortions
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
 from src.ui.langgraph_chat import create_chat_app
+from src.voice_service import voice_service
 import gradio as gr
 import math
+import io
 
 # Removed torch configuration - focusing on gpt-oss only
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="SentimentSuite", description="AI-Powered Therapy Analysis Platform")
 
 # Mount Gradio chat interface
 try:
@@ -33,6 +39,166 @@ try:
     print("✅ Gradio chat interface mounted at /chat")
 except Exception as e:
     print(f"❌ Error mounting Gradio app: {e}")
+
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    """Main homepage with navigation to all features"""
+    return '''
+        <html>
+            <head>
+                <title>SentimentSuite - AI Therapy Analysis Platform</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 900px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+                        color: white;
+                        min-height: 100vh;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 40px;
+                        padding: 20px;
+                        background: rgba(45, 45, 45, 0.8);
+                        border-radius: 15px;
+                        border: 2px solid #4CAF50;
+                    }
+                    .header h1 {
+                        font-size: 2.5em;
+                        margin: 0;
+                        color: #4CAF50;
+                    }
+                    .header p {
+                        font-size: 1.2em;
+                        margin: 10px 0 0 0;
+                        color: #ccc;
+                    }
+                    .features {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                        gap: 20px;
+                        margin: 30px 0;
+                    }
+                    .feature-card {
+                        background: #3d3d3d;
+                        padding: 25px;
+                        border-radius: 10px;
+                        border-left: 4px solid #2196F3;
+                        transition: transform 0.3s ease;
+                    }
+                    .feature-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+                    }
+                    .feature-card.voice {
+                        border-left-color: #9C27B0;
+                    }
+                    .feature-card.therapy {
+                        border-left-color: #FF6B35;
+                    }
+                    .feature-card.sentiment {
+                        border-left-color: #4CAF50;
+                    }
+                    .feature-card h3 {
+                        margin: 0 0 15px 0;
+                        font-size: 1.4em;
+                    }
+                    .feature-card p {
+                        margin: 10px 0;
+                        color: #ccc;
+                        line-height: 1.6;
+                    }
+                    .feature-link {
+                        display: inline-block;
+                        margin: 15px 10px 5px 0;
+                        padding: 10px 20px;
+                        background-color: #2196F3;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        transition: background-color 0.3s;
+                    }
+                    .feature-link:hover {
+                        background-color: #1976D2;
+                    }
+                    .feature-link.voice { background-color: #9C27B0; }
+                    .feature-link.voice:hover { background-color: #7B1FA2; }
+                    .feature-link.therapy { background-color: #FF6B35; }
+                    .feature-link.therapy:hover { background-color: #E55A2B; }
+                    .feature-link.sentiment { background-color: #4CAF50; }
+                    .feature-link.sentiment:hover { background-color: #45a049; }
+                    .status {
+                        background: #2d2d2d;
+                        padding: 15px;
+                        border-radius: 5px;
+                        margin: 20px 0;
+                        border-left: 4px solid #4CAF50;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🧠 SentimentSuite</h1>
+                    <p>AI-Powered Therapy Analysis Platform</p>
+                </div>
+
+                <div class="status">
+                    <strong>🎤 Voice Features:</strong> Enabled with WhisperX Large-v3 + Piper TTS<br>
+                    <strong>🤖 Analysis Engine:</strong> Hybrid Graph-RAG with LangGraph<br>
+                    <strong>📊 Visualization:</strong> Advanced sentiment & emotion dashboards
+                </div>
+
+                <div class="features">
+                    <div class="feature-card voice">
+                        <h3>💬 Voice-Enabled Chat</h3>
+                        <p>Interactive chat interface with speech-to-text and text-to-speech capabilities. Query your therapy data using voice commands and receive spoken responses.</p>
+                        <p><strong>Features:</strong></p>
+                        <ul>
+                            <li>🎤 Voice input with Whisper Large-v3</li>
+                            <li>🔊 Text-to-speech responses</li>
+                            <li>🧠 Hybrid Graph-RAG integration</li>
+                        </ul>
+                        <a href="/chat" class="feature-link voice">Launch Chat Interface</a>
+                    </div>
+
+                    <div class="feature-card therapy">
+                        <h3>🧠 Therapy Analysis</h3>
+                        <p>Upload therapy session transcripts for comprehensive psychological analysis using multiple frameworks including Big Five, attachment styles, and cognitive distortions.</p>
+                        <p><strong>Analysis Types:</strong></p>
+                        <ul>
+                            <li>📋 Psychological frameworks</li>
+                            <li>🕸️ Knowledge graph creation</li>
+                            <li>🔍 Vector embeddings</li>
+                        </ul>
+                        <a href="/upload-therapy-csv" class="feature-link therapy">Upload Therapy Data</a>
+                        <a href="/psychological-results" class="feature-link therapy">View Results</a>
+                    </div>
+
+                    <div class="feature-card sentiment">
+                        <h3>📊 Sentiment Analysis</h3>
+                        <p>Analyze emotional content in text using multiple AI models. Generate comprehensive dashboards with valence-arousal mapping and emotion distribution analysis.</p>
+                        <p><strong>Models Available:</strong></p>
+                        <ul>
+                            <li>🤖 Nous-Hermes LLM</li>
+                            <li>🎯 ModernBERT classification</li>
+                            <li>📈 Custom circumplex plotting</li>
+                        </ul>
+                        <a href="/upload-csv" class="feature-link sentiment">Sentiment Analysis</a>
+                        <a href="/dashboard_all" class="feature-link sentiment">View Dashboard</a>
+                    </div>
+                </div>
+
+                <div class="status">
+                    <strong>🚀 Quick Start:</strong>
+                    <a href="/chat" style="color: #9C27B0;">Try Voice Chat</a> |
+                    <a href="/upload-therapy-csv" style="color: #FF6B35;">Upload Therapy Data</a> |
+                    <a href="/dashboard_all" style="color: #4CAF50;">View Results</a>
+                </div>
+            </body>
+        </html>
+    '''
 
 # Updated the Sentiment2D class with
 # more emotions and patterns
@@ -1417,3 +1583,39 @@ async def dashboard_home():
             </body>
         </html>
     '''
+
+# Voice API endpoints
+@app.post("/api/voice/transcribe")
+async def transcribe_voice(file: UploadFile = File(...)):
+    """Transcribe uploaded audio file to text"""
+    try:
+        result = await voice_service.process_audio_file(file)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/voice/synthesize")
+async def synthesize_voice(text: str):
+    """Convert text to speech and return audio"""
+    try:
+        audio_data = voice_service.synthesize_speech(text)
+        if audio_data:
+            return StreamingResponse(
+                io.BytesIO(audio_data),
+                media_type="audio/wav",
+                headers={"Content-Disposition": "attachment; filename=speech.wav"}
+            )
+        else:
+            raise HTTPException(status_code=500, detail="TTS generation failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/voice/status")
+async def voice_status():
+    """Get voice service status"""
+    return {
+        "available": voice_service.is_available(),
+        "stt_enabled": voice_service._initialized,
+        "tts_enabled": True,  # Piper should generally be available
+        "device": voice_service.device
+    }

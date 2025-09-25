@@ -130,32 +130,31 @@ The workflow uses edge hardware to host a 'Patient Voice Assistant' who can cont
 Workflow: (Under construction: mermaid designed by Claude 4.1)
 ```mermaid
 graph TD
-    subgraph "Patient Room/Apartment"
-        A[Echo Dots/Flex<br/>Wake Word + Audio I/O]
+    subgraph "Edge Devices"
+        A[Echo Dots/Flex<br/>Audio I/O]
     end
     
-    subgraph "Hallway Hub"
-        B[Raspberry Pi 5<br/>Home Assistant<br/>Device Control Hub]
+    subgraph "Control Hub"
+        B[Raspberry Pi 5<br/>Home Assistant]
     end
     
-    subgraph "Edge AI Processing"
-        C[Jetson Orin Nano<br/>Primary AI Server<br/>STT/TTS/LLM]
+    subgraph "AI Processing Server"
+        C[Mini-ITX<br/>WhisperX + Piper<br/>RTX 4070 Super]
     end
     
-    subgraph "Backup/Heavy Processing"
-        D[Mini-ITX PC<br/>VLM/Fallback LLM<br/>Graph Processing]
+    subgraph "Vision Processing"
+        D[Jetson Nano<br/>VLM/Camera Analysis<br/>Patient Monitoring]
     end
     
-    A -->|Audio Stream| C
-    C -->|Commands| B
-    B -->|Device Control| A
-    C <-->|Complex Tasks| D
-    C -->|Store Results| E[SQLite/DuckDB]
+    A <-->|Audio| C
+    C <-->|Commands| B
+    D -->|Alerts| B
+    C <-->|Complex Analysis| D
 ```
 
 Example Agentic Framework / Responsibilities
 
-### 1. Sandbox / Secure Container - _AI Clinical & Patient‑Care Assistant_
+### 1. _AI Clinical & Patient‑Care Assistant_
 
   **Primary role:** Collects and organises patient‑related data from multiple sources.  
   
