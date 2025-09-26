@@ -22,9 +22,7 @@ class LangGraphChatInterface:
     def __init__(self):
         self.agent = None
         self.memory = MemorySaver()
-        self.config = {
-            "configurable": {"thread_id": "chat_session_1"}
-        }
+        self.config = {"configurable": {"thread_id": "chat_session_1"}}
         self._initialize_agent()
 
     def _initialize_agent(self):
@@ -37,14 +35,16 @@ class LangGraphChatInterface:
             self.agent = get_new_agent(
                 config=LLMConfigVoice,
                 short_term_memory=short_term_memory,
-                long_term_memory=long_term_memory
+                long_term_memory=long_term_memory,
             )
             print("✅ LangGraph agent initialized successfully")
         except Exception as e:
             print(f"❌ Error initializing agent: {e}")
             self.agent = None
 
-    def chat_response(self, message: str, history: List[List[str]]) -> Generator[str, None, None]:
+    def chat_response(
+        self, message: str, history: List[List[str]]
+    ) -> Generator[str, None, None]:
         """
         Generate streaming response from the LangGraph agent
 
@@ -73,24 +73,21 @@ class LangGraphChatInterface:
             # Stream response from agent
             full_response = ""
             for chunk in self.agent.stream(
-                {"messages": messages},
-                config=self.config,
-                stream_mode="values"
+                {"messages": messages}, config=self.config, stream_mode="values"
             ):
                 if "messages" in chunk:
                     latest_message = chunk["messages"][-1]
-                    if hasattr(latest_message, 'content') and latest_message.content:
+                    if hasattr(latest_message, "content") and latest_message.content:
                         content = latest_message.content
-                        if content != full_response:  # Only yield if content has changed
+                        if (
+                            content != full_response
+                        ):  # Only yield if content has changed
                             full_response = content
                             yield content
 
             # If no streaming occurred, get the final response
             if not full_response:
-                result = self.agent.invoke(
-                    {"messages": messages},
-                    config=self.config
-                )
+                result = self.agent.invoke({"messages": messages}, config=self.config)
                 if "messages" in result and result["messages"]:
                     final_content = result["messages"][-1].content
                     yield final_content
@@ -114,7 +111,7 @@ class LangGraphChatInterface:
             .chat-bubble {
                 max-width: 70% !important;
             }
-            """
+            """,
         ) as interface:
 
             # Voice status check
@@ -140,7 +137,7 @@ class LangGraphChatInterface:
                 bubble_full_width=False,
                 show_copy_button=True,
                 layout="panel",
-                type="messages"
+                type="messages",
             )
 
             # Input controls with voice
@@ -149,7 +146,7 @@ class LangGraphChatInterface:
                     placeholder="Type your message here...",
                     label="Message",
                     scale=3,
-                    lines=1
+                    lines=1,
                 )
 
                 # Voice input (only show if available)
@@ -161,13 +158,17 @@ class LangGraphChatInterface:
                             type="numpy",
                             label="🎤 Voice Input",
                             show_download_button=False,
-                            interactive=True
+                            interactive=True,
                         )
                         # Manual transcribe button for reliable control
-                        transcribe_btn = gr.Button("📝 Transcribe", variant="primary", size="sm")
+                        transcribe_btn = gr.Button(
+                            "📝 Transcribe", variant="primary", size="sm"
+                        )
 
                         # VAD toggle button
-                        vad_toggle = gr.Button("🎙️ Voice Mode", variant="secondary", size="sm")
+                        vad_toggle = gr.Button(
+                            "🎙️ Voice Mode", variant="secondary", size="sm"
+                        )
                 else:
                     voice_input = None
                     transcribe_btn = None
@@ -183,12 +184,12 @@ class LangGraphChatInterface:
                 # Voice controls (only show if available)
                 if voice_available:
                     tts_enabled = gr.Checkbox(
-                        label="🔊 Enable Text-to-Speech",
-                        value=False,
-                        scale=1
+                        label="🔊 Enable Text-to-Speech", value=False, scale=1
                     )
                     # Test button to verify voice service
-                    voice_test_btn = gr.Button("🔧 Test Voice", variant="secondary", size="sm")
+                    voice_test_btn = gr.Button(
+                        "🔧 Test Voice", variant="secondary", size="sm"
+                    )
                 else:
                     tts_enabled = None
                     voice_test_btn = None
@@ -199,7 +200,7 @@ class LangGraphChatInterface:
                     label="🔊 Assistant Voice",
                     autoplay=True,
                     show_download_button=False,
-                    interactive=False
+                    interactive=False,
                 )
             else:
                 audio_output = None
@@ -207,10 +208,12 @@ class LangGraphChatInterface:
             # Status indicators
             with gr.Row():
                 status = gr.Textbox(
-                    value="🟢 Agent Ready" if self.agent else "🔴 Agent Not Initialized",
+                    value=(
+                        "🟢 Agent Ready" if self.agent else "🔴 Agent Not Initialized"
+                    ),
                     label="Status",
                     interactive=False,
-                    scale=2
+                    scale=2,
                 )
 
                 if voice_available:
@@ -218,7 +221,7 @@ class LangGraphChatInterface:
                         value="🔴 Voice Mode Off",
                         label="Voice Mode",
                         interactive=False,
-                        scale=1
+                        scale=1,
                     )
                 else:
                     vad_status = None
@@ -241,7 +244,9 @@ class LangGraphChatInterface:
 
                     # For now, just return a test message to verify the event works
                     # This bypasses the heavy Whisper processing that's causing timeouts
-                    test_message = " [Voice recorded - processing temporarily disabled for demo]"
+                    test_message = (
+                        " [Voice recorded - processing temporarily disabled for demo]"
+                    )
 
                     print(f"📝 Returning test message")
                     return current_text + test_message
@@ -261,7 +266,9 @@ class LangGraphChatInterface:
 
                 except Exception as e:
                     print(f"❌ Voice handler error: {e}")
-                    return (current_text if current_text else "") + f" [Error: {str(e)[:30]}]"
+                    return (
+                        current_text if current_text else ""
+                    ) + f" [Error: {str(e)[:30]}]"
 
             def test_voice_service():
                 """Test function to verify voice service is working"""
@@ -288,23 +295,26 @@ class LangGraphChatInterface:
                     response = requests.post(
                         "http://localhost:8000/api/voice/synthesize",
                         params={"text": test_text},
-                        timeout=10
+                        timeout=10,
                     )
 
                     if response.status_code == 200:
                         # Save audio to temporary file
-                        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                        with tempfile.NamedTemporaryFile(
+                            suffix=".wav", delete=False
+                        ) as tmp_file:
                             tmp_file.write(response.content)
                             print(f"✅ TTS test successful: {tmp_file.name}")
 
                             # Play the test audio
                             try:
                                 import subprocess
+
                                 print(f"🔊 Playing test TTS audio...")
                                 subprocess.run(
                                     ["aplay", tmp_file.name],
                                     capture_output=True,
-                                    timeout=10
+                                    timeout=10,
                                 )
                                 print("✅ Test audio playback completed")
                             except Exception as e:
@@ -336,10 +346,14 @@ class LangGraphChatInterface:
                         return (current_text or "") + " [Voice service not ready]"
 
                     # Use the numpy-based transcription
-                    transcribed_text = faster_whisper_service.transcribe_audio_numpy(voice_data)
+                    transcribed_text = faster_whisper_service.transcribe_audio_numpy(
+                        voice_data
+                    )
 
                     if "error" in transcribed_text.lower():
-                        return (current_text or "") + f" [Error: {transcribed_text[:50]}]"
+                        return (
+                            current_text or ""
+                        ) + f" [Error: {transcribed_text[:50]}]"
 
                     print(f"✅ Manual transcription successful: '{transcribed_text}'")
 
@@ -354,6 +368,7 @@ class LangGraphChatInterface:
                 except Exception as e:
                     print(f"❌ Manual transcription error: {e}")
                     import traceback
+
                     traceback.print_exc()
                     return (current_text or "") + f" [Error: {str(e)[:30]}]"
 
@@ -369,9 +384,11 @@ class LangGraphChatInterface:
                 full_response = ""
                 # Convert history to old format for chat_response
                 history_tuples = []
-                for i in range(0, len(history)-1, 2):
+                for i in range(0, len(history) - 1, 2):
                     user_msg = history[i]["content"] if i < len(history) else ""
-                    assistant_msg = history[i+1]["content"] if i+1 < len(history) else ""
+                    assistant_msg = (
+                        history[i + 1]["content"] if i + 1 < len(history) else ""
+                    )
                     history_tuples.append([user_msg, assistant_msg])
 
                 # Add empty assistant response first
@@ -381,7 +398,9 @@ class LangGraphChatInterface:
                 for chunk in self.chat_response(message, history_tuples):
                     if chunk and chunk.strip():
                         # Accumulate the full response
-                        full_response = chunk  # chat_response already returns the full content
+                        full_response = (
+                            chunk  # chat_response already returns the full content
+                        )
                         # Update the assistant's response in history
                         history[-1]["content"] = full_response
                         yield history, "", None
@@ -398,12 +417,14 @@ class LangGraphChatInterface:
                         response = requests.post(
                             "http://localhost:8000/api/voice/synthesize",
                             params={"text": full_response.strip()},
-                            timeout=30
+                            timeout=30,
                         )
 
                         if response.status_code == 200:
                             # Save audio to temporary file
-                            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                            with tempfile.NamedTemporaryFile(
+                                suffix=".wav", delete=False
+                            ) as tmp_file:
                                 tmp_file.write(response.content)
                                 audio_file = tmp_file.name
                                 print(f"✅ TTS generated: {audio_file}")
@@ -411,17 +432,20 @@ class LangGraphChatInterface:
                                 # Play the audio file using aplay
                                 try:
                                     import subprocess
+
                                     print(f"🔊 Playing TTS audio...")
                                     subprocess.run(
                                         ["aplay", audio_file],
                                         capture_output=True,
-                                        timeout=30
+                                        timeout=30,
                                     )
                                     print("✅ Audio playback completed")
                                 except subprocess.TimeoutExpired:
                                     print("⚠️ Audio playback timeout")
                                 except FileNotFoundError:
-                                    print("❌ aplay not found - audio file created but not played")
+                                    print(
+                                        "❌ aplay not found - audio file created but not played"
+                                    )
                                 except Exception as e:
                                     print(f"❌ Audio playback error: {e}")
                         else:
@@ -454,25 +478,25 @@ class LangGraphChatInterface:
                 send_btn.click(
                     respond,
                     inputs=[msg_input, chatbot, tts_enabled],
-                    outputs=[chatbot, msg_input, audio_output]
+                    outputs=[chatbot, msg_input, audio_output],
                 )
 
                 msg_input.submit(
                     respond,
                     inputs=[msg_input, chatbot, tts_enabled],
-                    outputs=[chatbot, msg_input, audio_output]
+                    outputs=[chatbot, msg_input, audio_output],
                 )
             else:
                 send_btn.click(
                     respond_no_tts,
                     inputs=[msg_input, chatbot],
-                    outputs=[chatbot, msg_input]
+                    outputs=[chatbot, msg_input],
                 )
 
                 msg_input.submit(
                     respond_no_tts,
                     inputs=[msg_input, chatbot],
-                    outputs=[chatbot, msg_input]
+                    outputs=[chatbot, msg_input],
                 )
 
             # Voice transcription - Manual button approach for reliability
@@ -480,25 +504,16 @@ class LangGraphChatInterface:
                 transcribe_btn.click(
                     transcribe_current_audio,
                     inputs=[voice_input, msg_input],
-                    outputs=[msg_input]
+                    outputs=[msg_input],
                 )
 
-            clear_btn.click(
-                clear_chat,
-                outputs=[chatbot, status]
-            )
+            clear_btn.click(clear_chat, outputs=[chatbot, status])
 
-            reset_btn.click(
-                reset_memory,
-                outputs=[chatbot, status]
-            )
+            reset_btn.click(reset_memory, outputs=[chatbot, status])
 
             # Voice test button
             if voice_available and voice_test_btn:
-                voice_test_btn.click(
-                    test_tts,
-                    outputs=[audio_output]
-                )
+                voice_test_btn.click(test_tts, outputs=[audio_output])
 
             # VAD toggle functionality
             def toggle_vad():
@@ -507,10 +522,7 @@ class LangGraphChatInterface:
                 return "🟡 Toggling Voice Mode..."
 
             if voice_available and vad_toggle:
-                vad_toggle.click(
-                    toggle_vad,
-                    outputs=[vad_status]
-                )
+                vad_toggle.click(toggle_vad, outputs=[vad_status])
 
             # Add custom JavaScript for VAD functionality
             interface.load(
@@ -878,7 +890,7 @@ class LangGraphChatInterface:
 
                     console.log('✅ VAD JavaScript loaded');
                 }
-                """
+                """,
             )
 
         return interface
