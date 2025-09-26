@@ -21,6 +21,14 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 </p>
 
   <h2 align='center'>
+  The main app page
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./app-page-1.png" alt="chat-page">
+</p>
+
+  <h2 align='center'>
   Querying of the analysis via a Chatbot & Hybrid-Graph-RAG (Voice to follow)
   </h2>
   <br><br>

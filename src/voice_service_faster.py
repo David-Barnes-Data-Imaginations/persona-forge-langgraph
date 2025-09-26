@@ -16,7 +16,7 @@ class FasterWhisperService:
     def __init__(self):
         self.model = None
         self._initialized = False
-        self.device = "cpu"  # Start with CPU, can upgrade to GPU later
+        self.device = "cuda"  # Use GPU for better performance
 
         # Initialize model
         self._initialize_model()
@@ -33,15 +33,31 @@ class FasterWhisperService:
                 print(f"❌ Model path not found: {model_path}")
                 return
 
-            # Load model (CPU mode for reliability)
+            # For now, let's use CPU to avoid cuDNN issues
+            # You can switch back to CUDA once cuDNN is properly installed
+            print("🎯 Loading model with CPU (cuDNN issues detected)...")
             self.model = WhisperModel(
                 model_path,
-                device="cpu",  # Use CPU for stability
+                device="cpu",
                 compute_type="int8"
             )
+            self.device = "cpu"
+            print("✅ faster-whisper model loaded successfully with CPU!")
+
+            # TODO: Uncomment this section once cuDNN is fixed:
+            # try:
+            #     print("🎯 Attempting to load model with CUDA...")
+            #     self.model = WhisperModel(model_path, device="cuda", compute_type="float16")
+            #     self.device = "cuda"
+            #     print("✅ faster-whisper model loaded successfully with CUDA!")
+            # except Exception as cuda_error:
+            #     print(f"⚠️ CUDA failed: {cuda_error}")
+            #     print("🔄 Falling back to CPU...")
+            #     self.model = WhisperModel(model_path, device="cpu", compute_type="int8")
+            #     self.device = "cpu"
+            #     print("✅ faster-whisper model loaded successfully with CPU!")
 
             self._initialized = True
-            print("✅ faster-whisper model loaded successfully!")
 
         except Exception as e:
             print(f"❌ faster-whisper initialization failed: {e}")

@@ -1,7 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 import requests
 import os
 from dotenv import load_dotenv
+import json
+import asyncio
+import numpy as np
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,7 +29,7 @@ from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
 from src.ui.langgraph_chat import create_chat_app
-from src.voice_service_whisper import fasterwhisperservice
+from src.voice_service_faster import faster_whisper_service
 
 # for the whisperx version
 # from src.voice_service import voice_service
@@ -1665,6 +1669,100 @@ async def dashboard_home():
     """
 
 
+# WebSocket endpoint for VAD audio streaming
+@app.websocket("/ws/vad-stream")
+async def vad_websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for VAD audio streaming"""
+    await websocket.accept()
+    print("🎤 VAD WebSocket connection established")
+
+    current_frames = []
+
+    try:
+        while websocket.client_state == WebSocketState.CONNECTED:
+            # Receive data from client
+            try:
+                data = await websocket.receive()
+            except WebSocketDisconnect:
+                print("🔌 VAD WebSocket connection closed by client")
+                break
+
+            if "bytes" in data:
+                # Raw PCM audio data
+                pcm_data = np.frombuffer(data["bytes"], dtype=np.int16)
+                current_frames.append(pcm_data)
+
+            elif "text" in data:
+                # Control message
+                try:
+                    message = json.loads(data["text"])
+                    if message.get("type") == "UTTERANCE_END":
+                        print("🎯 Processing utterance from VAD...")
+
+                        if current_frames:
+                            # Concatenate all audio frames
+                            full_audio = np.concatenate(current_frames)
+                            current_frames = []
+
+                            # Create temporary file for transcription
+                            import tempfile
+                            import soundfile as sf
+
+                            try:
+                                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                                    # Convert to float32 for soundfile
+                                    audio_float = full_audio.astype(np.float32) / 32768.0
+                                    sf.write(tmp_file.name, audio_float, 16000)
+
+                                    # Transcribe using faster-whisper
+                                    print(f"🎤 Transcribing {len(audio_float)} samples...")
+                                    transcription = faster_whisper_service.transcribe_audio_file(tmp_file.name)
+
+                                    # Clean up temp file
+                                    os.unlink(tmp_file.name)
+
+                                    # Only send non-empty transcriptions
+                                    if transcription and transcription.strip() and "error" not in transcription.lower():
+                                        # Send transcription back to client
+                                        if websocket.client_state == WebSocketState.CONNECTED:
+                                            await websocket.send_text(json.dumps({
+                                                "type": "TRANSCRIPT",
+                                                "text": transcription.strip(),
+                                                "timestamp": datetime.now().isoformat()
+                                            }))
+                                            print(f"✅ Sent transcription: '{transcription.strip()}'")
+                                    else:
+                                        print(f"⚠️ Empty or error transcription: '{transcription}'")
+                                        # Send status update instead
+                                        if websocket.client_state == WebSocketState.CONNECTED:
+                                            await websocket.send_text(json.dumps({
+                                                "type": "STATUS",
+                                                "message": "No speech detected",
+                                                "timestamp": datetime.now().isoformat()
+                                            }))
+
+                            except Exception as transcription_error:
+                                print(f"❌ Transcription error: {transcription_error}")
+                                if websocket.client_state == WebSocketState.CONNECTED:
+                                    await websocket.send_text(json.dumps({
+                                        "type": "ERROR",
+                                        "message": f"Transcription failed: {str(transcription_error)}",
+                                        "timestamp": datetime.now().isoformat()
+                                    }))
+
+                except json.JSONDecodeError:
+                    print("⚠️ Invalid JSON received")
+
+    except WebSocketDisconnect:
+        print("🔌 VAD WebSocket connection closed")
+    except Exception as e:
+        print(f"❌ VAD WebSocket error: {e}")
+        try:
+            if websocket.client_state == WebSocketState.CONNECTED:
+                await websocket.close()
+        except:
+            pass  # Ignore close errors
+
 # Voice API endpoints
 @app.post("/api/voice/transcribe")
 async def transcribe_voice(file: UploadFile = File(...)):
@@ -1678,18 +1776,67 @@ async def transcribe_voice(file: UploadFile = File(...)):
 
 @app.post("/api/voice/synthesize")
 async def synthesize_voice(text: str):
-    """Convert text to speech and return audio"""
+    """Convert text to speech using Piper and return audio"""
     try:
-        audio_data = fasterwhisperservice.synthesize_speech(text)
-        if audio_data:
-            return StreamingResponse(
-                io.BytesIO(audio_data),
+        import subprocess
+        import tempfile
+        import os
+        from fastapi.responses import FileResponse
+
+        # Create temporary output file
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+            output_path = tmp_file.name
+
+        # Piper model path (adjust to your installation)
+        piper_model = os.path.expanduser("~/piper/en_US-libritts-high.onnx")
+
+        # Check if model exists
+        if not os.path.exists(piper_model):
+            # Try alternative path
+            piper_model = "en_US-libritts-high"  # Let piper find it automatically
+
+        # Run Piper TTS
+        print(f"🔊 Generating TTS for: '{text[:50]}...'")
+        process = subprocess.run(
+            ["piper", "--model", piper_model, "--output_file", output_path],
+            input=text,
+            text=True,
+            capture_output=True,
+            timeout=30
+        )
+
+        if process.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+            print("✅ TTS generated successfully")
+
+            # Return the audio file
+            async def cleanup():
+                try:
+                    os.unlink(output_path)
+                except:
+                    pass
+
+            # Use FileResponse with cleanup
+            return FileResponse(
+                output_path,
                 media_type="audio/wav",
-                headers={"Content-Disposition": "attachment; filename=speech.wav"},
+                filename="speech.wav",
+                background=cleanup
             )
         else:
-            raise HTTPException(status_code=500, detail="TTS generation failed")
+            print(f"❌ Piper TTS failed: {process.stderr}")
+            # Clean up on failure
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+            raise HTTPException(status_code=500, detail=f"TTS generation failed: {process.stderr}")
+
+    except subprocess.TimeoutExpired:
+        print("❌ Piper TTS timeout")
+        raise HTTPException(status_code=500, detail="TTS generation timeout")
+    except FileNotFoundError:
+        print("❌ Piper not found - please install piper TTS")
+        raise HTTPException(status_code=500, detail="Piper TTS not installed")
     except Exception as e:
+        print(f"❌ TTS error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1697,8 +1844,92 @@ async def synthesize_voice(text: str):
 async def voice_status():
     """Get voice service status"""
     return {
-        "available": fasterwhisperservice.is_available(),
-        "stt_enabled": fasterwhisperservice._initialized,
+        "available": faster_whisper_service.is_available(),
+        "stt_enabled": faster_whisper_service._initialized,
         "tts_enabled": True,  # Piper should generally be available
-        "device": fasterwhisperservice.device,
+        "device": faster_whisper_service.device,
     }
+
+@app.get("/test-vad", response_class=HTMLResponse)
+async def test_vad():
+    """Simple test page for VAD WebSocket connection"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>VAD WebSocket Test</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+            .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .connected { background: #2d5a2d; }
+            .disconnected { background: #5a2d2d; }
+            .error { background: #5a4d2d; }
+            button { padding: 10px 20px; margin: 10px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h1>🎤 VAD WebSocket Test</h1>
+        <div id="status" class="status disconnected">Not connected</div>
+        <button onclick="testConnection()">Test WebSocket Connection</button>
+        <button onclick="testMicrophone()">Test Microphone Access</button>
+        <div id="log" style="background: #2d2d2d; padding: 10px; margin-top: 20px; border-radius: 5px; max-height: 300px; overflow-y: auto;"></div>
+
+        <script>
+            let socket;
+
+            function log(message) {
+                const logDiv = document.getElementById('log');
+                logDiv.innerHTML += new Date().toISOString() + ': ' + message + '<br>';
+                logDiv.scrollTop = logDiv.scrollHeight;
+                console.log(message);
+            }
+
+            function updateStatus(message, className) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = message;
+                statusDiv.className = 'status ' + className;
+            }
+
+            function testConnection() {
+                log('🔗 Testing WebSocket connection...');
+
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/vad-stream`;
+                log('Connecting to: ' + wsUrl);
+
+                socket = new WebSocket(wsUrl);
+
+                socket.onopen = () => {
+                    log('✅ WebSocket connected successfully!');
+                    updateStatus('Connected', 'connected');
+                };
+
+                socket.onmessage = (event) => {
+                    log('📨 Received: ' + event.data);
+                };
+
+                socket.onerror = (error) => {
+                    log('❌ WebSocket error: ' + error);
+                    updateStatus('Error', 'error');
+                };
+
+                socket.onclose = () => {
+                    log('🔌 WebSocket closed');
+                    updateStatus('Disconnected', 'disconnected');
+                };
+            }
+
+            async function testMicrophone() {
+                log('🎤 Testing microphone access...');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    log('✅ Microphone access granted');
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (error) {
+                    log('❌ Microphone access denied: ' + error.message);
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """

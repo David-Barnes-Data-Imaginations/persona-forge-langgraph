@@ -13,7 +13,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 from ..graphs.chat_agent import get_new_agent
 from ..io_py.edge.config import LLMConfigVoice
-from ..voice_service import voice_service
+from ..voice_service_faster import faster_whisper_service
 
 
 class LangGraphChatInterface:
@@ -71,7 +71,7 @@ class LangGraphChatInterface:
             messages.append(HumanMessage(content=message))
 
             # Stream response from agent
-            response_chunks = []
+            full_response = ""
             for chunk in self.agent.stream(
                 {"messages": messages},
                 config=self.config,
@@ -79,14 +79,14 @@ class LangGraphChatInterface:
             ):
                 if "messages" in chunk:
                     latest_message = chunk["messages"][-1]
-                    if hasattr(latest_message, 'content'):
+                    if hasattr(latest_message, 'content') and latest_message.content:
                         content = latest_message.content
-                        if content and content not in response_chunks:
-                            response_chunks.append(content)
+                        if content != full_response:  # Only yield if content has changed
+                            full_response = content
                             yield content
 
             # If no streaming occurred, get the final response
-            if not response_chunks:
+            if not full_response:
                 result = self.agent.invoke(
                     {"messages": messages},
                     config=self.config
@@ -118,7 +118,7 @@ class LangGraphChatInterface:
         ) as interface:
 
             # Voice status check
-            voice_available = voice_service.is_available()
+            voice_available = faster_whisper_service.is_available()
             voice_status_emoji = "🔊" if voice_available else "🔇"
 
             gr.Markdown(
@@ -165,9 +165,13 @@ class LangGraphChatInterface:
                         )
                         # Manual transcribe button for reliable control
                         transcribe_btn = gr.Button("📝 Transcribe", variant="primary", size="sm")
+
+                        # VAD toggle button
+                        vad_toggle = gr.Button("🎙️ Voice Mode", variant="secondary", size="sm")
                 else:
                     voice_input = None
                     transcribe_btn = None
+                    vad_toggle = None
 
                 send_btn = gr.Button("Send", scale=1, variant="primary")
 
@@ -189,15 +193,35 @@ class LangGraphChatInterface:
                     tts_enabled = None
                     voice_test_btn = None
 
-            # Audio output - TEMPORARILY DISABLED for debugging
-            audio_output = None
+            # Audio output for TTS
+            if voice_available:
+                audio_output = gr.Audio(
+                    label="🔊 Assistant Voice",
+                    autoplay=True,
+                    show_download_button=False,
+                    interactive=False
+                )
+            else:
+                audio_output = None
 
-            # Status indicator
-            status = gr.Textbox(
-                value="🟢 Agent Ready" if self.agent else "🔴 Agent Not Initialized",
-                label="Status",
-                interactive=False
-            )
+            # Status indicators
+            with gr.Row():
+                status = gr.Textbox(
+                    value="🟢 Agent Ready" if self.agent else "🔴 Agent Not Initialized",
+                    label="Status",
+                    interactive=False,
+                    scale=2
+                )
+
+                if voice_available:
+                    vad_status = gr.Textbox(
+                        value="🔴 Voice Mode Off",
+                        label="Voice Mode",
+                        interactive=False,
+                        scale=1
+                    )
+                else:
+                    vad_status = None
 
             # Event handlers
             def handle_voice_input(voice_file, current_text):
@@ -243,17 +267,57 @@ class LangGraphChatInterface:
                 """Test function to verify voice service is working"""
                 print("🧪 Testing voice service...")
                 try:
-                    # Import voice service properly
-                    from ..voice_service import voice_service as vs
-                    if hasattr(vs, 'whisper_model') and vs.whisper_model:
+                    if faster_whisper_service.is_available():
                         print("✅ Voice service model found")
-                        return "✅ Voice service is working! Model loaded successfully."
+                        return f"✅ Voice service is working! Model loaded successfully on {faster_whisper_service.device}."
                     else:
                         print("❌ Voice service model not found")
                         return "❌ Voice service model not available"
                 except Exception as e:
                     print(f"❌ Voice service test error: {e}")
                     return f"❌ Voice service error: {str(e)}"
+
+            def test_tts():
+                """Test TTS functionality"""
+                print("🔊 Testing TTS...")
+                try:
+                    import requests
+                    import tempfile
+
+                    test_text = "Hello! This is a test of the text to speech system."
+                    response = requests.post(
+                        "http://localhost:8000/api/voice/synthesize",
+                        params={"text": test_text},
+                        timeout=10
+                    )
+
+                    if response.status_code == 200:
+                        # Save audio to temporary file
+                        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                            tmp_file.write(response.content)
+                            print(f"✅ TTS test successful: {tmp_file.name}")
+
+                            # Play the test audio
+                            try:
+                                import subprocess
+                                print(f"🔊 Playing test TTS audio...")
+                                subprocess.run(
+                                    ["aplay", tmp_file.name],
+                                    capture_output=True,
+                                    timeout=10
+                                )
+                                print("✅ Test audio playback completed")
+                            except Exception as e:
+                                print(f"❌ Test audio playback error: {e}")
+
+                            return tmp_file.name
+                    else:
+                        print(f"❌ TTS test failed: {response.status_code}")
+                        return None
+
+                except Exception as e:
+                    print(f"❌ TTS test error: {e}")
+                    return None
 
             def transcribe_current_audio(voice_data, current_text):
                 """Manually transcribe the current audio data (numpy format)"""
@@ -266,15 +330,13 @@ class LangGraphChatInterface:
                     return (current_text or "") + " [No audio data]"
 
                 try:
-                    # Import the working voice service
-                    from ..voice_service import voice_service as vs
-
-                    if not vs.is_available():
+                    # Use the faster-whisper service
+                    if not faster_whisper_service.is_available():
                         print("❌ Voice service not available")
                         return (current_text or "") + " [Voice service not ready]"
 
                     # Use the numpy-based transcription
-                    transcribed_text = vs.transcribe_audio_numpy(voice_data)
+                    transcribed_text = faster_whisper_service.transcribe_audio_numpy(voice_data)
 
                     if "error" in transcribed_text.lower():
                         return (current_text or "") + f" [Error: {transcribed_text[:50]}]"
@@ -295,16 +357,16 @@ class LangGraphChatInterface:
                     traceback.print_exc()
                     return (current_text or "") + f" [Error: {str(e)[:30]}]"
 
-            def respond(message, history):
-                """Handle user message and generate response - SIMPLIFIED"""
+            def respond(message, history, tts_enabled_value):
+                """Handle user message and generate response with proper streaming"""
                 if not message.strip():
-                    return history, ""
+                    return history, "", None
 
                 # Add user message to history
                 history = history + [{"role": "user", "content": message}]
 
                 # Get response from agent
-                response = ""
+                full_response = ""
                 # Convert history to old format for chat_response
                 history_tuples = []
                 for i in range(0, len(history)-1, 2):
@@ -312,16 +374,63 @@ class LangGraphChatInterface:
                     assistant_msg = history[i+1]["content"] if i+1 < len(history) else ""
                     history_tuples.append([user_msg, assistant_msg])
 
-                for chunk in self.chat_response(message, history_tuples):
-                    response = chunk
-                    # Update or add assistant response
-                    if len(history) > 0 and history[-1]["role"] == "user":
-                        history = history + [{"role": "assistant", "content": response}]
-                    else:
-                        history[-1]["content"] = response
-                    yield history, ""
+                # Add empty assistant response first
+                history = history + [{"role": "assistant", "content": ""}]
 
-                return history, ""
+                # Stream and accumulate response chunks
+                for chunk in self.chat_response(message, history_tuples):
+                    if chunk and chunk.strip():
+                        # Accumulate the full response
+                        full_response = chunk  # chat_response already returns the full content
+                        # Update the assistant's response in history
+                        history[-1]["content"] = full_response
+                        yield history, "", None
+
+                # Generate TTS if enabled and we have a response
+                audio_file = None
+                if tts_enabled_value and full_response and full_response.strip():
+                    try:
+                        print(f"🔊 Generating TTS for response...")
+                        import requests
+                        import tempfile
+
+                        # Call TTS API
+                        response = requests.post(
+                            "http://localhost:8000/api/voice/synthesize",
+                            params={"text": full_response.strip()},
+                            timeout=30
+                        )
+
+                        if response.status_code == 200:
+                            # Save audio to temporary file
+                            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                                tmp_file.write(response.content)
+                                audio_file = tmp_file.name
+                                print(f"✅ TTS generated: {audio_file}")
+
+                                # Play the audio file using aplay
+                                try:
+                                    import subprocess
+                                    print(f"🔊 Playing TTS audio...")
+                                    subprocess.run(
+                                        ["aplay", audio_file],
+                                        capture_output=True,
+                                        timeout=30
+                                    )
+                                    print("✅ Audio playback completed")
+                                except subprocess.TimeoutExpired:
+                                    print("⚠️ Audio playback timeout")
+                                except FileNotFoundError:
+                                    print("❌ aplay not found - audio file created but not played")
+                                except Exception as e:
+                                    print(f"❌ Audio playback error: {e}")
+                        else:
+                            print(f"❌ TTS API error: {response.status_code}")
+
+                    except Exception as e:
+                        print(f"❌ TTS generation failed: {e}")
+
+                return history, "", audio_file
 
             def clear_chat():
                 """Clear the chat history"""
@@ -336,18 +445,35 @@ class LangGraphChatInterface:
                 except Exception as e:
                     return [], f"❌ Error resetting memory: {str(e)}"
 
-            # Wire up events - SIMPLIFIED
-            send_btn.click(
-                respond,
-                inputs=[msg_input, chatbot],
-                outputs=[chatbot, msg_input]
-            )
+            # Create a wrapper function for when TTS is not available
+            def respond_no_tts(message, history):
+                return respond(message, history, False)
 
-            msg_input.submit(
-                respond,
-                inputs=[msg_input, chatbot],
-                outputs=[chatbot, msg_input]
-            )
+            # Wire up events - with TTS support
+            if voice_available:
+                send_btn.click(
+                    respond,
+                    inputs=[msg_input, chatbot, tts_enabled],
+                    outputs=[chatbot, msg_input, audio_output]
+                )
+
+                msg_input.submit(
+                    respond,
+                    inputs=[msg_input, chatbot, tts_enabled],
+                    outputs=[chatbot, msg_input, audio_output]
+                )
+            else:
+                send_btn.click(
+                    respond_no_tts,
+                    inputs=[msg_input, chatbot],
+                    outputs=[chatbot, msg_input]
+                )
+
+                msg_input.submit(
+                    respond_no_tts,
+                    inputs=[msg_input, chatbot],
+                    outputs=[chatbot, msg_input]
+                )
 
             # Voice transcription - Manual button approach for reliability
             if voice_available and transcribe_btn:
@@ -367,8 +493,393 @@ class LangGraphChatInterface:
                 outputs=[chatbot, status]
             )
 
-            # Voice button events - TEMPORARILY DISABLED for debugging
-            # (All voice events disabled to test basic chat)
+            # Voice test button
+            if voice_available and voice_test_btn:
+                voice_test_btn.click(
+                    test_tts,
+                    outputs=[audio_output]
+                )
+
+            # VAD toggle functionality
+            def toggle_vad():
+                """Toggle VAD mode on/off"""
+                # This will be handled by JavaScript, just return a status update
+                return "🟡 Toggling Voice Mode..."
+
+            if voice_available and vad_toggle:
+                vad_toggle.click(
+                    toggle_vad,
+                    outputs=[vad_status]
+                )
+
+            # Add custom JavaScript for VAD functionality
+            interface.load(
+                None,
+                None,
+                None,
+                js="""
+                function() {
+                    // VAD JavaScript implementation
+                    let audioCtx, mic, workletNode, socket;
+                    let speaking = false;
+                    let silenceMs = 0;
+                    let speechMs = 0;
+                    let vadEnabled = false;
+
+                    const SAMPLE_RATE = 16000;
+                    const FRAME_MS = 20;
+                    const MIN_SPEECH_MS = 200;     // Require more speech before triggering
+                    const END_SILENCE_MS = 1200;   // Wait longer before ending utterance
+                    const ENERGY_ON = 0.008;       // Slightly higher threshold to start
+                    const ENERGY_OFF = 0.004;      // Slightly higher threshold to stop
+                    const PRE_ROLL_MS = 300;
+
+                    // Ring buffer for pre-roll
+                    const preRollFrames = [];
+                    const maxPreRollFrames = Math.ceil(PRE_ROLL_MS / FRAME_MS);
+
+                    // VAD Worklet processor code
+                    const workletCode = `
+                        class VADProcessor extends AudioWorkletProcessor {
+                            constructor(options) {
+                                super();
+                                this.frameSize = options.processorOptions.frameSize || 320;
+                                this.buffer = new Float32Array(0);
+                            }
+
+                            process(inputs) {
+                                const input = inputs[0];
+                                if (!input || input.length === 0) return true;
+
+                                const ch0 = input[0];
+                                const newBuf = new Float32Array(this.buffer.length + ch0.length);
+                                newBuf.set(this.buffer, 0);
+                                newBuf.set(ch0, this.buffer.length);
+                                this.buffer = newBuf;
+
+                                while (this.buffer.length >= this.frameSize) {
+                                    const frame = this.buffer.subarray(0, this.frameSize);
+                                    this.buffer = this.buffer.subarray(this.frameSize);
+
+                                    // Simple energy (RMS) calculation
+                                    let sum = 0;
+                                    for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
+                                    const rms = Math.sqrt(sum / frame.length);
+
+                                    // Convert float32 [-1..1] to int16
+                                    const pcm = new Int16Array(frame.length);
+                                    for (let i = 0; i < frame.length; i++) {
+                                        const s = Math.max(-1, Math.min(1, frame[i]));
+                                        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+                                    }
+
+                                    this.port.postMessage({ pcm, energy: rms });
+                                }
+                                return true;
+                            }
+                        }
+                        registerProcessor('vad-processor', VADProcessor);
+                    `;
+
+                    async function startVAD() {
+                        try {
+                            console.log('🎤 Starting VAD...');
+
+                            // Create audio context
+                            audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+
+                            // Add worklet module
+                            const blob = new Blob([workletCode], { type: 'application/javascript' });
+                            const workletUrl = URL.createObjectURL(blob);
+                            await audioCtx.audioWorklet.addModule(workletUrl);
+
+                            // Get microphone
+                            mic = await navigator.mediaDevices.getUserMedia({
+                                audio: {
+                                    echoCancellation: true,
+                                    noiseSuppression: true,
+                                    autoGainControl: true
+                                },
+                                video: false
+                            });
+
+                            // Create audio nodes
+                            const source = audioCtx.createMediaStreamSource(mic);
+                            workletNode = new AudioWorkletNode(audioCtx, 'vad-processor', {
+                                processorOptions: { frameSize: Math.floor(SAMPLE_RATE * FRAME_MS / 1000) }
+                            });
+
+                            source.connect(workletNode);
+
+                            // Connect to WebSocket
+                            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                            const wsUrl = `${protocol}//${window.location.host}/ws/vad-stream`;
+                            console.log('🔗 Connecting to WebSocket:', wsUrl);
+                            socket = new WebSocket(wsUrl);
+
+                            socket.onopen = () => {
+                                console.log('✅ VAD WebSocket connected');
+                                updateVADStatus('🟢 Voice Mode Active');
+                            };
+
+                            socket.onmessage = (event) => {
+                                try {
+                                    const data = JSON.parse(event.data);
+                                    console.log('📨 Received WebSocket message:', data);
+
+                                    if (data.type === 'TRANSCRIPT') {
+                                        console.log('📝 Received transcript:', data.text);
+                                        addTranscriptToInput(data.text);
+                                    } else if (data.type === 'STATUS') {
+                                        console.log('ℹ️ Status:', data.message);
+                                    } else if (data.type === 'ERROR') {
+                                        console.error('❌ Server error:', data.message);
+                                        updateVADStatus('🔴 Error: ' + data.message);
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Failed to parse WebSocket message:', error);
+                                }
+                            };
+
+                            socket.onerror = (error) => {
+                                console.error('❌ WebSocket error:', error);
+                                updateVADStatus('🔴 WebSocket Error');
+                            };
+
+                            socket.onclose = () => {
+                                console.log('🔌 WebSocket closed');
+                                updateVADStatus('🔴 Voice Mode Off');
+                                vadEnabled = false;
+                            };
+
+                            // Handle audio processing
+                            workletNode.port.onmessage = (event) => {
+                                const { pcm, energy } = event.data;
+
+                                // Keep pre-roll
+                                preRollFrames.push(pcm);
+                                if (preRollFrames.length > maxPreRollFrames) preRollFrames.shift();
+
+                                // VAD logic with hysteresis
+                                if (!speaking) {
+                                    if (energy > ENERGY_ON) {
+                                        speechMs += FRAME_MS;
+                                        if (speechMs >= MIN_SPEECH_MS) {
+                                            speaking = true;
+                                            silenceMs = 0;
+                                            console.log('🎙️ Speech detected');
+                                            updateVADStatus('🟠 Listening...');
+
+                                            // Send pre-roll frames
+                                            for (const frame of preRollFrames) {
+                                                socket.send(frame.buffer);
+                                            }
+                                            preRollFrames.length = 0;
+                                        }
+                                    } else {
+                                        speechMs = Math.max(0, speechMs - FRAME_MS);
+                                    }
+                                }
+
+                                if (speaking) {
+                                    socket.send(pcm.buffer);
+                                    if (energy < ENERGY_OFF) {
+                                        silenceMs += FRAME_MS;
+                                        if (silenceMs >= END_SILENCE_MS) {
+                                            speaking = false;
+                                            speechMs = 0;
+                                            silenceMs = 0;
+                                            console.log('🔇 Speech ended');
+                                            updateVADStatus('🟢 Voice Mode Active');
+
+                                            // Signal utterance end
+                                            socket.send(JSON.stringify({ type: 'UTTERANCE_END' }));
+                                        }
+                                    } else {
+                                        silenceMs = 0;
+                                    }
+                                }
+                            };
+
+                            vadEnabled = true;
+                            return true;
+
+                        } catch (error) {
+                            console.error('❌ VAD start error:', error);
+                            updateVADStatus('🔴 VAD Start Failed: ' + error.message);
+                            return false;
+                        }
+                    }
+
+                    function stopVAD() {
+                        try {
+                            console.log('🛑 Stopping VAD...');
+
+                            if (workletNode) workletNode.port.postMessage({ type: 'STOP' });
+                            if (mic) mic.getTracks().forEach(t => t.stop());
+                            if (audioCtx) audioCtx.close();
+                            if (socket) socket.close();
+
+                            speaking = false;
+                            silenceMs = 0;
+                            speechMs = 0;
+                            preRollFrames.length = 0;
+                            vadEnabled = false;
+
+                            updateVADStatus('🔴 Voice Mode Off');
+
+                        } catch (error) {
+                            console.error('❌ VAD stop error:', error);
+                        }
+                    }
+
+                    function updateVADStatus(status) {
+                        // Find the VAD status textbox and update it
+                        console.log('🔄 Updating VAD status to:', status);
+
+                        // More robust selector approach
+                        const statusInputs = document.querySelectorAll('input[type="text"], textarea');
+                        statusInputs.forEach(input => {
+                            const label = input.parentElement.querySelector('label');
+                            if (label && label.textContent.includes('Voice Mode')) {
+                                input.value = status;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                                console.log('✅ Updated VAD status input');
+                            }
+                        });
+
+                        // Also try to find by data attributes or nearby text
+                        const allInputs = document.querySelectorAll('input[type="text"]');
+                        allInputs.forEach(input => {
+                            if (input.value && (input.value.includes('Voice Mode') || input.value.includes('🔴') || input.value.includes('🟢'))) {
+                                input.value = status;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                console.log('✅ Updated status by content match');
+                            }
+                        });
+                    }
+
+                    function addTranscriptToInput(text) {
+                        console.log('📝 Adding transcript to input:', text);
+
+                        // Filter out very short or common spurious transcriptions
+                        const spuriousWords = ['thank you', 'thanks', 'yeah', 'yes', 'ok', 'okay', 'um', 'uh'];
+                        const isSpurious = text.trim().length < 4 ||
+                                         spuriousWords.includes(text.trim().toLowerCase()) ||
+                                         text.trim().split(' ').length < 2; // Require at least 2 words
+
+                        if (isSpurious) {
+                            console.log('⚠️ Filtering out spurious transcription:', text);
+                            return;
+                        }
+
+                        // More robust approach to find the message input
+                        let messageInput = null;
+
+                        // Method 1: Look for textareas (Gradio often uses these)
+                        const textareas = document.querySelectorAll('textarea');
+                        textareas.forEach(textarea => {
+                            const placeholder = textarea.placeholder || '';
+                            const label = textarea.closest('.gradio-container')?.querySelector('label')?.textContent || '';
+
+                            if (placeholder.includes('Type your message') ||
+                                placeholder.includes('message') ||
+                                label.includes('Message')) {
+
+                                messageInput = textarea;
+                            }
+                        });
+
+                        // Method 2: Look for any input that might be the message field
+                        if (!messageInput) {
+                            const inputs = document.querySelectorAll('input[type="text"]');
+                            inputs.forEach(input => {
+                                const placeholder = input.placeholder || '';
+                                const label = input.closest('.gradio-container')?.querySelector('label')?.textContent || '';
+
+                                if (placeholder.includes('Type your message') ||
+                                    placeholder.includes('message') ||
+                                    label.includes('Message')) {
+
+                                    messageInput = input;
+                                }
+                            });
+                        }
+
+                        // Method 3: Fallback - look for the first textarea/input that looks like a message field
+                        if (!messageInput) {
+                            const allInputs = document.querySelectorAll('textarea, input[type="text"]');
+                            for (const input of allInputs) {
+                                // Skip if it's clearly not the message input (status fields, etc.)
+                                const isStatusField = input.value && (
+                                    input.value.includes('🟢') ||
+                                    input.value.includes('🔴') ||
+                                    input.value.includes('Agent') ||
+                                    input.value.includes('Voice Mode')
+                                );
+
+                                if (!isStatusField && !input.disabled && !input.readOnly) {
+                                    messageInput = input;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (messageInput) {
+                            // Clear the input and set the new text
+                            messageInput.value = text.trim();
+
+                            // Trigger multiple events to ensure Gradio detects the change
+                            messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            messageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            messageInput.focus();
+
+                            console.log('✅ Updated input with transcript');
+
+                            // Auto-send the message after a short delay
+                            setTimeout(() => {
+                                // Find and click the Send button
+                                const sendButtons = document.querySelectorAll('button');
+                                sendButtons.forEach(button => {
+                                    if (button.textContent.includes('Send') ||
+                                        button.textContent.includes('send') ||
+                                        button.querySelector('[data-testid="send-button"]')) {
+
+                                        console.log('🚀 Auto-sending voice message');
+                                        button.click();
+                                    }
+                                });
+                            }, 500); // Small delay to ensure the input is properly set
+
+                        } else {
+                            console.error('❌ Could not find message input field');
+                            console.log('Available textareas:', document.querySelectorAll('textarea'));
+                            console.log('Available text inputs:', document.querySelectorAll('input[type="text"]'));
+                        }
+                    }
+
+                    // Attach to VAD toggle button
+                    document.addEventListener('click', async (event) => {
+                        if (event.target.textContent.includes('Voice Mode')) {
+                            event.preventDefault();
+
+                            if (!vadEnabled) {
+                                updateVADStatus('🟡 Starting Voice Mode...');
+                                const success = await startVAD();
+                                if (!success) {
+                                    updateVADStatus('🔴 Voice Mode Failed');
+                                }
+                            } else {
+                                stopVAD();
+                            }
+                        }
+                    });
+
+                    console.log('✅ VAD JavaScript loaded');
+                }
+                """
+            )
 
         return interface
 
