@@ -13,7 +13,10 @@ import re
 import io
 from typing import Any, Optional
 from datetime import datetime
-from src.analysis.enhanced_visualisation import create_sentiment_dashboard_plotly, create_emotion_dashboard_plotly
+from src.analysis.enhanced_visualisation import (
+    create_sentiment_dashboard_plotly,
+    create_emotion_dashboard_plotly,
+)
 from src.analysis.sentiment_dashboard_tabs import build_dashboard_tabbed
 from src.analysis.circumplex_plot import create_circumplex_plot
 from src.analysis.distortion_detection import detect_distortions
@@ -22,7 +25,10 @@ from src.analysis.emotion_mapping import modernbert_va_map
 from src.graphs.framework_analysis import process_therapy_session
 from src.graphs.create_kg import process_kg_creation
 from src.ui.langgraph_chat import create_chat_app
-from src.voice_service import voice_service
+from src.voice_service_whisper import fasterwhisperservice
+
+# for the whisperx version
+# from src.voice_service import voice_service
 import gradio as gr
 import math
 import io
@@ -30,7 +36,9 @@ import io
 # Removed torch configuration - focusing on gpt-oss only
 
 # Initialize FastAPI app
-app = FastAPI(title="SentimentSuite", description="AI-Powered Therapy Analysis Platform")
+app = FastAPI(
+    title="SentimentSuite", description="AI-Powered Therapy Analysis Platform"
+)
 
 # Mount Gradio chat interface
 try:
@@ -40,10 +48,11 @@ try:
 except Exception as e:
     print(f"❌ Error mounting Gradio app: {e}")
 
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
     """Main homepage with navigation to all features"""
-    return '''
+    return """
         <html>
             <head>
                 <title>SentimentSuite - AI Therapy Analysis Platform</title>
@@ -198,7 +207,8 @@ async def home():
                 </div>
             </body>
         </html>
-    '''
+    """
+
 
 # Updated the Sentiment2D class with
 # more emotions and patterns
@@ -207,38 +217,38 @@ class Sentiment2D:
         """Initialize the sentiment analyzer with expanded emotion keywords and their values"""
         self.emotion_map = {
             # Basic emotions
-            'happy': (0.8, 0.5),
-            'sad': (-0.6, -0.4),
-            'angry': (-0.6, 0.8),
-            'calm': (0.3, -0.6),
-            'excited': (0.5, 0.8),
-            'nervous': (-0.3, 0.7),
-            'peaceful': (0.4, -0.7),
-            'gloomy': (-0.5, -0.5),
+            "happy": (0.8, 0.5),
+            "sad": (-0.6, -0.4),
+            "angry": (-0.6, 0.8),
+            "calm": (0.3, -0.6),
+            "excited": (0.5, 0.8),
+            "nervous": (-0.3, 0.7),
+            "peaceful": (0.4, -0.7),
+            "gloomy": (-0.5, -0.5),
             # Additional emotions and phrases to fit the forge
-            'welcome': (0.6, 0.2),
-            'problem': (-0.4, 0.3),
-            'inform': (0.1, -0.2),
-            'await': (0.0, 0.3),
-            'service': (0.4, 0.0),
-            'expletive': (-0.5, 0.6),
-            'good': (0.7, 0.3),
-            'bad': (-0.7, 0.3),
-            'great': (0.8, 0.4),
-            'terrible': (-0.8, 0.5),
-            'wonderful': (0.9, 0.5),
-            'awful': (-0.8, 0.4),
-            'pleasant': (0.6, -0.2),
-            'unpleasant': (-0.6, 0.2),
-            'system': (0.0, -0.3),
-            'leave': (-0.2, 0.1)
+            "welcome": (0.6, 0.2),
+            "problem": (-0.4, 0.3),
+            "inform": (0.1, -0.2),
+            "await": (0.0, 0.3),
+            "service": (0.4, 0.0),
+            "expletive": (-0.5, 0.6),
+            "good": (0.7, 0.3),
+            "bad": (-0.7, 0.3),
+            "great": (0.8, 0.4),
+            "terrible": (-0.8, 0.5),
+            "wonderful": (0.9, 0.5),
+            "awful": (-0.8, 0.4),
+            "pleasant": (0.6, -0.2),
+            "unpleasant": (-0.6, 0.2),
+            "system": (0.0, -0.3),
+            "leave": (-0.2, 0.1),
         }
 
         # Enhanced pattern matching
         self.patterns = {}
         for emotion in self.emotion_map:
             # Create patterns that match word boundaries and handle potential plurals
-            pattern = r'\b' + emotion + r'(?:s|es|ing|ed)?\b'
+            pattern = r"\b" + emotion + r"(?:s|es|ing|ed)?\b"
             self.patterns[emotion] = re.compile(pattern, re.IGNORECASE)
 
     def get_utterance_class_scores(self, utterance: str) -> Dict[str, float]:
@@ -291,8 +301,10 @@ class Sentiment2D:
         """Process the utterance and return valence-arousal pair"""
         return self.get_utterance_valence_arousal(utterance)
 
+
 # Initialize Sentiment2D
 sentiment2d = Sentiment2D()
+
 
 class SentimentSummary(BaseModel):
     emotion: str
@@ -301,11 +313,13 @@ class SentimentSummary(BaseModel):
     max_val: float
     min_val: float
 
+
 def build_dashboard_tabbed(model_name: str, data, kind: str = "utterance"):
     if kind == "utterance":
         df = pd.DataFrame(data)
         df["distortions"] = df["utterance"].apply(
-            lambda x: ", ".join([d["distortion"] for d in detect_distortions(x)]) or "None"
+            lambda x: ", ".join([d["distortion"] for d in detect_distortions(x)])
+            or "None"
         )
 
         main_figs = create_sentiment_dashboard_plotly(df)
@@ -314,20 +328,22 @@ def build_dashboard_tabbed(model_name: str, data, kind: str = "utterance"):
         html_parts = [
             f"<h3>Model: {model_name}</h3>",
             f"<p><strong>Distortions Detected:</strong><br><pre style='color:#ccc'>{df[['utterance', 'distortions']].to_string(index=False)}</pre></p>",
-            main_figs['scatter'].to_html(full_html=False, include_plotlyjs='cdn'),
-            main_figs['valence_hist'].to_html(full_html=False, include_plotlyjs=False),
-            main_figs['arousal_hist'].to_html(full_html=False, include_plotlyjs=False),
-            circ_fig.to_html(full_html=False, include_plotlyjs=False)
+            main_figs["scatter"].to_html(full_html=False, include_plotlyjs="cdn"),
+            main_figs["valence_hist"].to_html(full_html=False, include_plotlyjs=False),
+            main_figs["arousal_hist"].to_html(full_html=False, include_plotlyjs=False),
+            circ_fig.to_html(full_html=False, include_plotlyjs=False),
         ]
 
     elif kind == "summary":
-        df = pd.DataFrame([s.__dict__ if isinstance(s, SentimentSummary) else s for s in data])
+        df = pd.DataFrame(
+            [s.__dict__ if isinstance(s, SentimentSummary) else s for s in data]
+        )
         summary_figs = create_emotion_dashboard_plotly(df)
         html_parts = [
             f"<h3>Model: {model_name}</h3>",
-            summary_figs['box'].to_html(full_html=False, include_plotlyjs='cdn'),
-            summary_figs['mean_std'].to_html(full_html=False, include_plotlyjs=False),
-            summary_figs['range_bar'].to_html(full_html=False, include_plotlyjs=False)
+            summary_figs["box"].to_html(full_html=False, include_plotlyjs="cdn"),
+            summary_figs["mean_std"].to_html(full_html=False, include_plotlyjs=False),
+            summary_figs["range_bar"].to_html(full_html=False, include_plotlyjs=False),
         ]
     else:
         html_parts = ["<p>Unsupported data type</p>"]
@@ -338,6 +354,7 @@ def build_dashboard_tabbed(model_name: str, data, kind: str = "utterance"):
 @app.get("/dashboard_all", response_class=HTMLResponse)
 def dashboard_all_models():
     from SentimentSuite import analysis_store
+
     tabs_html = []
 
     for model_name, result_data in analysis_store.results.items():
@@ -345,20 +362,26 @@ def dashboard_all_models():
             continue
         kind = "utterance" if model_name in ["nous-hermes"] else "summary"
         tab_html = build_dashboard_tabbed(model_name, result_data, kind)
-        tabs_html.append(f'''
+        tabs_html.append(
+            f"""
             <div class='tab-content' id='{model_name}' style='display:none'>
                 <div class="tab-container">
                     {tab_html}
                 </div>
             </div>
-        ''')
+        """
+        )
 
-    buttons = "".join([
-        f"<button class='tab-button' onclick=\"showTab('{model}')\">{model.title()}</button>"
-        for model in analysis_store.results if analysis_store.results[model]
-    ])
+    buttons = "".join(
+        [
+            f"<button class='tab-button' onclick=\"showTab('{model}')\">{model.title()}</button>"
+            for model in analysis_store.results
+            if analysis_store.results[model]
+        ]
+    )
 
-    return HTMLResponse(content=f"""
+    return HTMLResponse(
+        content=f"""
         <html>
         <head>
             <title>SentimentSuite Dashboard</title>
@@ -482,7 +505,9 @@ def dashboard_all_models():
             </script>
         </body>
         </html>
-    """)
+    """
+    )
+
 
 # Removed ModernBERT - focusing on gpt-oss only
 classifier = None
@@ -504,18 +529,15 @@ class AnalysisResults:
 
 
 analysis_store = AnalysisResults()
-analysis_store.results = {
-    'modernbert': [],
-    'nous-hermes': [],
-    'psychological': {}
-}
+analysis_store.results = {"modernbert": [], "nous-hermes": [], "psychological": {}}
+
 
 def infer_emotion_from_va(valence: float, arousal: float) -> str:
     """
     Match a valence/arousal pair to the closest ModernBERT emotion using Euclidean distance.
     """
     closest = "neutral"
-    min_dist = float('inf')
+    min_dist = float("inf")
     for emotion, (vx, vy) in modernbert_va_map.items():
         dist = math.sqrt((valence - vx) ** 2 + (arousal - vy) ** 2)
         if dist < min_dist:
@@ -523,13 +545,16 @@ def infer_emotion_from_va(valence: float, arousal: float) -> str:
             closest = emotion
     return closest
 
+
 @app.post("/analyze/nous-hermes")
 def analyze_nous_hermes(file: UploadFile = File(...)):
     content = file.file.read()
     df = pd.read_csv(io.StringIO(content.decode("utf-8")))
     df.columns = [c.strip().lower() for c in df.columns]
     if "utterance" not in df.columns:
-        raise HTTPException(status_code=400, detail="CSV must contain an 'utterance' column")
+        raise HTTPException(
+            status_code=400, detail="CSV must contain an 'utterance' column"
+        )
 
     speaker_col = "speaker" if "speaker" in df.columns else None
     results = []
@@ -544,7 +569,7 @@ def analyze_nous_hermes(file: UploadFile = File(...)):
             payload = {
                 "prompt": f"Analyze the emotional tone of: '{utt}' and return in format: {{valence: float, arousal: float}}.",
                 "temperature": 0.7,
-                "max_tokens": 200
+                "max_tokens": 200,
             }
 
             try:
@@ -552,13 +577,13 @@ def analyze_nous_hermes(file: UploadFile = File(...)):
                 response = requests.post(
                     "http://localhost:1234/v1/completions",
                     json=payload,
-                    timeout=1  # 1 second timeout
+                    timeout=1,  # 1 second timeout
                 )
                 response_data = response.json()
                 record = {
-                "utterance": utt,
-                "model": "nous-hermes",
-                "raw_output": response_data.get("choices", [{}])[0].get("text", "")
+                    "utterance": utt,
+                    "model": "nous-hermes",
+                    "raw_output": response_data.get("choices", [{}])[0].get("text", ""),
                 }
                 if speaker_col:
                     record["speaker"] = speaker
@@ -569,33 +594,30 @@ def analyze_nous_hermes(file: UploadFile = File(...)):
                 valence, arousal = sentiment2d(utt)
                 emotion = infer_emotion_from_va(valence, arousal)
                 record = {
-                "utterance": utt,
-                "model": "sentiment2d-fallback",
-                "valence": round(valence, 3),
-                "arousal": round(arousal, 3),
-                "emotion": emotion
+                    "utterance": utt,
+                    "model": "sentiment2d-fallback",
+                    "valence": round(valence, 3),
+                    "arousal": round(arousal, 3),
+                    "emotion": emotion,
                 }
                 if speaker_col:
                     record["speaker"] = speaker
                 results.append(record)
         except Exception as e:
-            record = {
-            "utterance": utt,
-            "model": "error",
-            "error": str(e)
-        }
+            record = {"utterance": utt, "model": "error", "error": str(e)}
             if speaker_col:
                 record["speaker"] = speaker
             results.append(record)
 
     # Store the results before returning
-    analysis_store.results['nous-hermes'] = results
+    analysis_store.results["nous-hermes"] = results
     analysis_store.timestamp = datetime.now()
     return results
 
+
 @app.get("/upload-csv", response_class=HTMLResponse)
 async def upload_form():
-    return '''
+    return """
         <html>
             <head>
                 <style>
@@ -759,13 +781,17 @@ async def upload_form():
                 </script>
             </body>
         </html>
-    '''
+    """
+
 
 @app.post("/upload-csv-process", response_model=List[SentimentSummary])
 async def upload_csv_process(file: UploadFile = File(...)):
     if classifier is None:
-        raise HTTPException(status_code=503, detail="ModernBERT model not available. Please ensure the model is properly installed.")
-    
+        raise HTTPException(
+            status_code=503,
+            detail="ModernBERT model not available. Please ensure the model is properly installed.",
+        )
+
     try:
         content = await file.read()
         df = pd.read_csv(io.StringIO(content.decode("utf-8")))
@@ -791,14 +817,18 @@ async def upload_csv_process(file: UploadFile = File(...)):
                     std_val = float(series.std())
                     max_val = float(series.max())
                     min_val = float(series.min())
-                    if all(abs(x) < 1e308 for x in [mean_val, std_val, max_val, min_val]):
-                        summary.append(SentimentSummary(
-                            emotion=emotion,
-                            mean=mean_val,
-                            std=std_val,
-                            max_val=max_val,
-                            min_val=min_val
-                        ))
+                    if all(
+                        abs(x) < 1e308 for x in [mean_val, std_val, max_val, min_val]
+                    ):
+                        summary.append(
+                            SentimentSummary(
+                                emotion=emotion,
+                                mean=mean_val,
+                                std=std_val,
+                                max_val=max_val,
+                                min_val=min_val,
+                            )
+                        )
                 except Exception as e:
                     print(f"Error calculating stats for emotion {emotion}: {str(e)}")
                     continue
@@ -806,12 +836,13 @@ async def upload_csv_process(file: UploadFile = File(...)):
         if not summary:
             return []
 
-        analysis_store.results['modernbert'] = summary
+        analysis_store.results["modernbert"] = summary
         analysis_store.timestamp = datetime.now()
         return summary
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/analyze/psychological")
 async def analyze_psychological(file: UploadFile = File(...)):
@@ -821,25 +852,28 @@ async def analyze_psychological(file: UploadFile = File(...)):
     try:
         content = await file.read()
         csv_content = content.decode("utf-8")
-        
+
         # Process the therapy session
         results = process_therapy_session(csv_content)
-        
+
         # Store results
-        analysis_store.results['psychological'] = results
+        analysis_store.results["psychological"] = results
         analysis_store.timestamp = datetime.now()
-        
+
         return results
-    
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing psychological analysis: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing psychological analysis: {str(e)}"
+        )
+
 
 @app.get("/upload-therapy-csv", response_class=HTMLResponse)
 async def upload_therapy_form():
     """
     Upload form specifically for therapy CSV files for psychological analysis.
     """
-    return '''
+    return """
         <html>
             <head>
                 <style>
@@ -1051,15 +1085,20 @@ async def upload_therapy_form():
                 </script>
             </body>
         </html>
-    '''
+    """
+
 
 @app.get("/psychological-results", response_class=HTMLResponse)
 async def psychological_results():
     """
     Display psychological analysis results with download functionality.
     """
-    if 'psychological' not in analysis_store.results or not analysis_store.results['psychological']:
-        return HTMLResponse(content='''
+    if (
+        "psychological" not in analysis_store.results
+        or not analysis_store.results["psychological"]
+    ):
+        return HTMLResponse(
+            content="""
             <html>
                 <head>
                     <style>
@@ -1076,11 +1115,16 @@ async def psychological_results():
                     </div>
                 </body>
             </html>
-        ''')
-    
-    results = analysis_store.results['psychological']
-    timestamp_str = analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S") if analysis_store.timestamp else "Unknown"
-    
+        """
+        )
+
+    results = analysis_store.results["psychological"]
+    timestamp_str = (
+        analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        if analysis_store.timestamp
+        else "Unknown"
+    )
+
     # Generate summary statistics
     summary_html = f"""
         <div class="summary">
@@ -1091,12 +1135,12 @@ async def psychological_results():
             <p><strong>Processing Time:</strong> {timestamp_str}</p>
         </div>
     """
-    
+
     # Generate results table
     results_html = "<div class='results-table'><h3>Individual Results</h3>"
-    if 'results' in results:
-        for i, result in enumerate(results['results'][:10]):  # Show first 10
-            status_color = "#4CAF50" if result['status'] == 'success' else "#ff4444"
+    if "results" in results:
+        for i, result in enumerate(results["results"][:10]):  # Show first 10
+            status_color = "#4CAF50" if result["status"] == "success" else "#ff4444"
             results_html += f"""
                 <div class="result-item">
                     <h4>QA Pair {result.get('qa_id', i+1)} <span style="color: {status_color};">({result['status']})</span></h4>
@@ -1104,11 +1148,14 @@ async def psychological_results():
                     <p><strong>Answer:</strong> {result.get('answer', '')[:200]}...</p>
                 </div>
             """
-        if len(results['results']) > 10:
-            results_html += f"<p><em>... and {len(results['results']) - 10} more results</em></p>"
+        if len(results["results"]) > 10:
+            results_html += (
+                f"<p><em>... and {len(results['results']) - 10} more results</em></p>"
+            )
     results_html += "</div>"
-    
-    return HTMLResponse(content=f'''
+
+    return HTMLResponse(
+        content=f"""
         <html>
             <head>
                 <title>Psychological Analysis Results</title>
@@ -1167,21 +1214,28 @@ async def psychological_results():
                 {results_html}
             </body>
         </html>
-    ''')
+    """
+    )
+
 
 @app.get("/download-psychological-results")
 async def download_psychological_results():
     """
     Download the psychological analysis results as a text file.
     """
-    if 'psychological' not in analysis_store.results or not analysis_store.results['psychological']:
-        raise HTTPException(status_code=404, detail="No psychological analysis results found")
-    
+    if (
+        "psychological" not in analysis_store.results
+        or not analysis_store.results["psychological"]
+    ):
+        raise HTTPException(
+            status_code=404, detail="No psychological analysis results found"
+        )
+
     from fastapi.responses import Response
-    
+
     # Extract just the serializable data, filtering out LangGraph objects
-    results = analysis_store.results['psychological']
-    
+    results = analysis_store.results["psychological"]
+
     # Create a clean summary for download
     download_content = f"""Psychological Analysis Results
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -1192,27 +1246,28 @@ Errors: {results.get('errors', 0)}
 === ANALYSIS RESULTS ===
 
 """
-    
+
     # Add each QA pair result
-    if 'results' in results:
-        for i, result in enumerate(results['results'], 1):
+    if "results" in results:
+        for i, result in enumerate(results["results"], 1):
             download_content += f"\n--- QA Pair {result.get('qa_id', i)} ---\n"
             download_content += f"Question: {result.get('question', 'N/A')}\n"
             download_content += f"Answer: {result.get('answer', 'N/A')[:200]}...\n"
             download_content += f"Status: {result.get('status', 'unknown')}\n"
-            if result.get('status') == 'error':
+            if result.get("status") == "error":
                 download_content += f"Error: {result.get('error', 'N/A')}\n"
             download_content += "\n"
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"psychological_analysis_{timestamp}.txt"
-    
+
     response = Response(
         content=download_content,
         media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
     return response
+
 
 @app.post("/create-graph")
 async def create_knowledge_graph():
@@ -1221,26 +1276,28 @@ async def create_knowledge_graph():
     """
     try:
         results = process_kg_creation()
-        
+
         # Store results in analysis_store for later viewing
-        analysis_store.results['knowledge_graph'] = results
+        analysis_store.results["knowledge_graph"] = results
         analysis_store.timestamp = datetime.now()
-        
+
         return results
-    
+
     except Exception as e:
-        return {
-            "error": str(e),
-            "status": "failed"
-        }
+        return {"error": str(e), "status": "failed"}
+
 
 @app.get("/graph-results", response_class=HTMLResponse)
 async def graph_results():
     """
     Display knowledge graph creation results.
     """
-    if 'knowledge_graph' not in analysis_store.results or not analysis_store.results['knowledge_graph']:
-        return HTMLResponse(content='''
+    if (
+        "knowledge_graph" not in analysis_store.results
+        or not analysis_store.results["knowledge_graph"]
+    ):
+        return HTMLResponse(
+            content="""
             <html>
                 <head>
                     <style>
@@ -1257,11 +1314,16 @@ async def graph_results():
                     </div>
                 </body>
             </html>
-        ''')
-    
-    results = analysis_store.results['knowledge_graph']
-    timestamp_str = analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S") if analysis_store.timestamp else "Unknown"
-    
+        """
+        )
+
+    results = analysis_store.results["knowledge_graph"]
+    timestamp_str = (
+        analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        if analysis_store.timestamp
+        else "Unknown"
+    )
+
     # Generate summary statistics
     summary_html = f"""
         <div class="summary">
@@ -1272,23 +1334,26 @@ async def graph_results():
             <p><strong>Processing Time:</strong> {timestamp_str}</p>
         </div>
     """
-    
+
     # Generate results table
     results_html = "<div class='results-table'><h3>Individual Results</h3>"
-    if 'results' in results:
-        for i, result in enumerate(results['results'][:10]):  # Show first 10
-            status_color = "#4CAF50" if result['status'] == 'success' else "#ff4444"
+    if "results" in results:
+        for i, result in enumerate(results["results"][:10]):  # Show first 10
+            status_color = "#4CAF50" if result["status"] == "success" else "#ff4444"
             results_html += f"""
                 <div class="result-item">
                     <h4>Analysis {result.get('analysis_id', i+1)} <span style="color: {status_color};">({result['status']})</span></h4>
                     <p><strong>Content:</strong> {result.get('content', 'N/A')}</p>
                 </div>
             """
-        if len(results['results']) > 10:
-            results_html += f"<p><em>... and {len(results['results']) - 10} more results</em></p>"
+        if len(results["results"]) > 10:
+            results_html += (
+                f"<p><em>... and {len(results['results']) - 10} more results</em></p>"
+            )
     results_html += "</div>"
-    
-    return HTMLResponse(content=f'''
+
+    return HTMLResponse(
+        content=f"""
         <html>
             <head>
                 <title>Knowledge Graph Results</title>
@@ -1346,7 +1411,8 @@ async def graph_results():
                 {results_html}
             </body>
         </html>
-    ''')
+    """
+    )
 
 
 def create_sentiment_dashboard(data):
@@ -1360,55 +1426,62 @@ def create_sentiment_dashboard(data):
 
     # Convert data to DataFrame if it's not already
     if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame([
-            {
-                'utterance': item['utterance'],
-                'valence': item.get('valence', 0),
-                'arousal': item.get('arousal', 0)
-            } for item in data if 'utterance' in item
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "utterance": item["utterance"],
+                    "valence": item.get("valence", 0),
+                    "arousal": item.get("arousal", 0),
+                }
+                for item in data
+                if "utterance" in item
+            ]
+        )
     else:
         df = data
 
     # 1. Valence-Arousal Scatter Plot
     ax1 = fig.add_subplot(gs[0, :])
-    scatter = ax1.scatter(df['valence'], df['arousal'],
-                          c=np.arange(len(df)), cmap='viridis',
-                          s=100)
-    ax1.set_title('Valence-Arousal Space')
-    ax1.set_xlabel('Valence')
-    ax1.set_ylabel('Arousal')
+    scatter = ax1.scatter(
+        df["valence"], df["arousal"], c=np.arange(len(df)), cmap="viridis", s=100
+    )
+    ax1.set_title("Valence-Arousal Space")
+    ax1.set_xlabel("Valence")
+    ax1.set_ylabel("Arousal")
 
     # Set specific axis limits
     ax1.set_xlim(-0.37, 0.28)
-    ax1.set_ylim(df['arousal'].min() - 0.1, df['arousal'].max() + 0.1)
+    ax1.set_ylim(df["arousal"].min() - 0.1, df["arousal"].max() + 0.1)
 
-    ax1.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
-    ax1.axvline(x=0, color='gray', linestyle='-', alpha=0.3)
+    ax1.axhline(y=0, color="gray", linestyle="-", alpha=0.3)
+    ax1.axvline(x=0, color="gray", linestyle="-", alpha=0.3)
 
     # Add colorbar
     cbar = plt.colorbar(scatter, ax=ax1)
-    cbar.set_label('Utter')
+    cbar.set_label("Utter")
 
     # Add tooltips with smaller font and adjusted position
-    for i, txt in enumerate(df['utterance']):
-        shortened_text = txt[:20] + '...' if len(txt) > 20 else txt
-        ax1.annotate(shortened_text,
-                     (df['valence'].iloc[i], df['arousal'].iloc[i]),
-                     xytext=(5, 5), textcoords='offset points',
-                     fontsize=8,  # Smaller font size
-                     alpha=0.8,
-                     bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
+    for i, txt in enumerate(df["utterance"]):
+        shortened_text = txt[:20] + "..." if len(txt) > 20 else txt
+        ax1.annotate(
+            shortened_text,
+            (df["valence"].iloc[i], df["arousal"].iloc[i]),
+            xytext=(5, 5),
+            textcoords="offset points",
+            fontsize=8,  # Smaller font size
+            alpha=0.8,
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.7),
+        )
 
     # 2. Valence Distribution
     ax2 = fig.add_subplot(gs[1, 0])
-    sns.histplot(data=df, x='valence', kde=True, ax=ax2)
-    ax2.set_title('Valence Distribution')
+    sns.histplot(data=df, x="valence", kde=True, ax=ax2)
+    ax2.set_title("Valence Distribution")
 
     # 3. Arousal Distribution
     ax3 = fig.add_subplot(gs[1, 1])
-    sns.histplot(data=df, x='arousal', kde=True, ax=ax3)
-    ax3.set_title('Arousal Distribution')
+    sns.histplot(data=df, x="arousal", kde=True, ax=ax3)
+    ax3.set_title("Arousal Distribution")
 
     plt.tight_layout()
     return fig
@@ -1424,40 +1497,42 @@ def create_emotion_dashboard(data):
 
     # Convert data to DataFrame if it's not already
     if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame([
-            {
-                'emotion': item.emotion,
-                'mean': item.mean,
-                'std': item.std,
-                'max_val': item.max_val,
-                'min_val': item.min_val
-            } for item in data
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "emotion": item.emotion,
+                    "mean": item.mean,
+                    "std": item.std,
+                    "max_val": item.max_val,
+                    "min_val": item.min_val,
+                }
+                for item in data
+            ]
+        )
     else:
         df = data
 
     # 1. Boxplot of emotion statistics
     ax1 = fig.add_subplot(gs[0, :])
-    df_melted = pd.melt(df, id_vars=['emotion'],
-                        value_vars=['mean', 'std', 'max_val', 'min_val'])
-    sns.boxplot(data=df_melted, x='emotion', y='value',
-                hue='variable', ax=ax1)
-    ax1.set_title('Distribution of Emotion Statistics')
+    df_melted = pd.melt(
+        df, id_vars=["emotion"], value_vars=["mean", "std", "max_val", "min_val"]
+    )
+    sns.boxplot(data=df_melted, x="emotion", y="value", hue="variable", ax=ax1)
+    ax1.set_title("Distribution of Emotion Statistics")
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45)
 
     # 2. Mean vs Std scatter with adjusted legend
     ax2 = fig.add_subplot(gs[1, 0])
-    scatter = sns.scatterplot(data=df, x='mean', y='std', ax=ax2,
-                              s=100, hue='emotion')
+    scatter = sns.scatterplot(data=df, x="mean", y="std", ax=ax2, s=100, hue="emotion")
     # Move legend outside the plot
-    ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
-    ax2.set_title('Mean vs Standard Deviation')
+    ax2.legend(bbox_to_anchor=(1.05, 1), loc="upper left", borderaxespad=0)
+    ax2.set_title("Mean vs Standard Deviation")
 
     # 3. Range plot
     ax3 = fig.add_subplot(gs[1, 1])
-    df['range'] = df['max_val'] - df['min_val']
-    sns.barplot(data=df, x='emotion', y='range', ax=ax3)
-    ax3.set_title('Emotion Range (Max - Min)')
+    df["range"] = df["max_val"] - df["min_val"]
+    sns.barplot(data=df, x="emotion", y="range", ax=ax3)
+    ax3.set_title("Emotion Range (Max - Min)")
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=45)
 
     plt.tight_layout()
@@ -1468,8 +1543,10 @@ def create_emotion_dashboard(data):
 @app.get("/dashboard/{analysis_type}")
 async def get_dashboard(analysis_type: str):
     if analysis_type not in analysis_store.results:
-        raise HTTPException(status_code=404,
-                            detail=f"No {analysis_type} analysis results found. Please run analysis first.")
+        raise HTTPException(
+            status_code=404,
+            detail=f"No {analysis_type} analysis results found. Please run analysis first.",
+        )
 
     # Get the latest analysis results
     if analysis_type == "modernbert":
@@ -1493,10 +1570,13 @@ async def get_dashboard(analysis_type: str):
         buf.seek(0)
         plot_url = base64.b64encode(buf.getvalue()).decode()"""
 
-
         # Create HTML with timestamp
-        timestamp_str = analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S") if analysis_store.timestamp else "Unknown"
-        html_content = f'''
+        timestamp_str = (
+            analysis_store.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            if analysis_store.timestamp
+            else "Unknown"
+        )
+        html_content = f"""
             <html>
                 <head>
                     <title>Sentiment Analysis Dashboard</title>
@@ -1534,13 +1614,13 @@ async def get_dashboard(analysis_type: str):
                     </div>
                 </body>
             </html>
-        '''
+        """
         return HTMLResponse(content=html_content)
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_home():
-    return '''
+    return """
         <html>
             <head>
                 <title>Sentiment Analysis Dashboard</title>
@@ -1582,40 +1662,43 @@ async def dashboard_home():
                 </div>
             </body>
         </html>
-    '''
+    """
+
 
 # Voice API endpoints
 @app.post("/api/voice/transcribe")
 async def transcribe_voice(file: UploadFile = File(...)):
     """Transcribe uploaded audio file to text"""
     try:
-        result = await voice_service.process_audio_file(file)
+        result = await fasterwhisperservice.process_audio_file(file)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/voice/synthesize")
 async def synthesize_voice(text: str):
     """Convert text to speech and return audio"""
     try:
-        audio_data = voice_service.synthesize_speech(text)
+        audio_data = fasterwhisperservice.synthesize_speech(text)
         if audio_data:
             return StreamingResponse(
                 io.BytesIO(audio_data),
                 media_type="audio/wav",
-                headers={"Content-Disposition": "attachment; filename=speech.wav"}
+                headers={"Content-Disposition": "attachment; filename=speech.wav"},
             )
         else:
             raise HTTPException(status_code=500, detail="TTS generation failed")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/api/voice/status")
 async def voice_status():
     """Get voice service status"""
     return {
-        "available": voice_service.is_available(),
-        "stt_enabled": voice_service._initialized,
+        "available": fasterwhisperservice.is_available(),
+        "stt_enabled": fasterwhisperservice._initialized,
         "tts_enabled": True,  # Piper should generally be available
-        "device": voice_service.device
+        "device": fasterwhisperservice.device,
     }

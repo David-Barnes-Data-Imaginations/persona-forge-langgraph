@@ -1,0 +1,15 @@
+{
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["-q"],
+
+  // Optional: stricter type checking per project
+  // "python.analysis.typeCheckingMode": "strict"
+  
+  // If this project uses notebooks, make Black apply there too
+  "[jupyter]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  }
+}

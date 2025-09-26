@@ -1,0 +1,74 @@
+
+Hello! So you've previously helped me with my hybrid graph-rag project, which has a bunch of workflows for tagging a simulated therapy script, then generating Cypher to be input to neo4j.
+The project is a demo I am doing, both for my portfolio, but also as an 'art of the possible' demo for the UK's largest mental health hospital.
+For this part of the demo, I wanted to add a small functionality for transcribing a therapy session between the client and the therapist.
+The wider project has functionality for providing helpful analysis of such transcriptions, so a demo of a tool for transcribing would fit in nicely.
+I've been working with Claude in my browser on the functionality, and that code is in './src/voice_main.py'.
+
+## Tasks
+1. I want to merge the code in voice_main.py, so that it fits neatly into the main app which is in './SentimentSuite.py', although it doesn't need to be in the main file if it makes sense to keep the functions in a separate one.
+2. Since I can't actually simulate a vocal therapy session myself (it's just me in the house!), i'd like to demonstrate the STT/TTS in a separate way.
+### Functionality to demonstrate
+- Add functionality to the sentiment suite app on the '/chat' page. The chat page is currently used as a 'langraph agent chatbot' which uses 'Hybrid Graph-RAG' to query the therapy data I created with my analysis workjflows.
+The goal is to add functionality so that the chat page has a button that the user can press to transcribe their 'vocal' query into the chatbot.
+- The second goal is to add functionality for the chatbots output to be read back to the user vocally using the 'piper'.
+
+
+## Basic Project structure:
+The main file is './SentimentSuite.py', which contains a fastAPI app.
+Currently the user goes to the 'upload-therapy-csv' app, then uploads a CSV file of a simulated 'Therapy' session (this is finished so no need to do anything).
+The user would then query that data via the chatbot. The project is fairly large but most of it is not relevant to this small task.
+The only files we're interested in for this task are:
+---
+## The Project Structure
+There are loads of files in this project but most of them are irrelevant for this task. Below are the one's of interest:
+PROJECT_DIR/
+├─ sentiment_suite.py # this is the main app and file.
+├─ src/
+│  ├─ voice_main.py # This is the file I created with Claude in my browser. Includes all the voice functionality prior to adaptation.
+│  ├─ graphs/
+│  │  ├─ chat_agent.py # Workflow 4 - Chat Agent for Hybrid Graph-RAG'.
+│  ├─ ui/
+│  │  ├─ langgraph_chat.py # The gradio front end for the actual chatbot
+│  ├─ utils/
+│  │  ├─ hybrid_rag_tools.py # The hybrid rag tools for workflow 4. Not really needed for this
+
+Does that all make sense? Let me know if there are any questions, thanks! :)
+
+
+
+
+
+
+PROJECT_DIR/
+├─ sentiment_suite.py # this is the main file.
+├─ src/
+│  ├─ graphs/
+│  │  ├─ framework_analysis.py # **Workflow 1 - tagging,  Used for the 'psychological-results' **.
+│  │  ├─ create_kg.py # **Workflow 2 - 'Knowledge Graph', adjusted from 'framework_analysis'**.
+│  │  ├─ text_embedder.py # **Workflow 3 - 'Text Chunks & Embedding', adjusted from 'create_kg'**.
+│  │  ├─ chat_agent.py # Workflow 4 - Chat Agent for Hybrid Graph-RAG'. Not needed for this task.
+│  ├─ analysis/ # These files are from another workflow in sentiment_suite.py, they can be ignored.
+│  ├─ prompts/
+│  │  ├─ text_prompts.py # workflow 1-4 prompts.
+│  ├─ ui/
+│  │  ├─ langgraph_chat.py # The gradio front end for workflow 4.
+│  ├─ utils/
+│  │  ├─ text_graph_tools.py # **This has the tools used in workflows 1-3. The functionality for the workflows is actually in the tools opposed to graphs.**
+│  │  ├─ hybrid_rag_tools.py # The hybrid rag tools for workflow 4. Not really needed for this
+│  │  ├─ embeddings.py # **functionality for embedding with ollama.**
+├─ output/
+│  ├─ psychological_analysis/ # This is where framework_analysis outputs 'to', where 'create_kg' outputs both 'from'.
+│  │  ├─ graph_output/ # This is where 'create_kg' outputs to.
+│  │  │    ├─ psychological_graph_20250916.cypher # the output from 'workflow 1 - framework_analysis'. it's a giant file so best not to read! :) .
+│  │  │    ├─ psychological_graph_examples.txt # a small example of the data in 'psychological_graph_20250916.cypher' in case you need to read :) .
+│  ├─ chunks_for_embedding
+│  │  ├─ 20250917/ # calamity from my previous workflow 3
+│  ├─ workflow_1_and_2_examples.txt # Output examples from 'workflow 1 - framework_analysis' & 'workflow 2 - create_kg'. **Read if needed to save getting trapped in the giant output files :)**.
+│  ├─ workflow_3_examples.txt # Output examples from 'workflow 3 - text_embedder', these were all wrong and should just be ignored
+├─ data/
+│  │  ├─ therapy_csvs/ # Where this project structure diagram is stored if you need to refer to it
+│  │  │    ├─ therapy-fin.csv # the input file that I upload for 'workflow 1 - framework_analysis', it's 24k tokens so best not to read! :)
+│  │  │    ├─ therapy_data_example.csv # a small snippet of 'therapy_fin.csv' in case you need to read it :)
+
+Does that all make sense? Let me know if there are any questions, thanks! :)
