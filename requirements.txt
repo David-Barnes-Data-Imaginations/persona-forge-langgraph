@@ -50,33 +50,21 @@ anyio
 asttokens
 attrs
 authlib
-brotli
-certifi
 cffi
-charset-normalizer
 click
-contourpy
-cryptography
 ctranslate2
-cycler
-cyclopts
-decorator
-distro
 dnspython
 docstring-parser
 docutils
-duckdb
 email-validator
-exceptiongroup
-executing
 fastapi
 fastmcp
 ffmpy
 filelock
 fonttools
 fsspec
-gradio
-gradio-client
+gradio == 5.47.1
+gradio-client == 1.13.2
 groovy
 h11
 hf-xet
@@ -121,7 +109,6 @@ neo4j
 networkx
 numpy
 ollama
-omegaconf
 openai
 openapi-core
 openapi-pydantic
@@ -131,9 +118,6 @@ orjson
 ormsgpack
 packaging
 pandas
-parse
-parso
-pexpect
 pillow
 platformdirs
 plotly
@@ -157,11 +141,6 @@ referencing
 regex
 requests
 requests-toolbelt
-rfc3339-validator
-rich
-rich-rst
-rpds-py
-ruff
 safehttpx
 safetensors
 scikit-learn
@@ -171,9 +150,6 @@ semantic-version
 sentence-transformers
 setuptools
 sqlite-vec
-sse-starlette
-stack-data
-starlette
 sympy
 tenacity
 threadpoolctl
@@ -187,9 +163,4 @@ typing-inspection
 tzdata
 urllib3
 uvicorn
-wcwidth
-websockets
-werkzeug
-xxhash
-zstandard
-whisperx
+faster-whisper
