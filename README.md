@@ -45,6 +45,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <img src="./personality_summary.png" alt="chat-page">
 </p>
 
+You can see a Beta version of the voice chat [here](https://drive.google.com/file/d/1RHgKL3jps7CymCbSs76krzC1u2mVVN8-/view?usp=sharing)
 
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
