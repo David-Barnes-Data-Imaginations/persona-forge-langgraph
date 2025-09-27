@@ -1,208 +1,110 @@
-
-Yes!! It works like a dream. The only thing is that I forgot to mention we need it to play the wav file as well.
-Sorry my brain wasn't engaged. It creates the wav, but then the workflow should play the wav using `aplay filename.wav`
-Then it's truly finished!! :)
-Thank you so much for your help, i didn't expect we'd get this much done today, you're so clever!
-Terminal Output:
-```
-🚀 Loading faster-whisper model...
-🎯 Loading model with CPU (cuDNN issues detected)...
-✅ faster-whisper model loaded successfully with CPU!
-✅ LangGraph agent initialized successfully
-new /chat
-✅ Gradio chat interface mounted at /chat
-INFO:     Started server process [121650]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-🔊 Generating TTS for: 'You’re very welcome! If you’d like to try somethin...'
-✅ TTS generated successfully
-INFO:     127.0.0.1:53788 - "WebSocket /ws/vad-stream" [accepted]
-🎤 VAD WebSocket connection established
-INFO:     connection open
-INFO:     127.0.0.1:53806 - "GET /chat/gradio_api/app_id HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53796 - "GET /chat/ HTTP/1.1" 200 OK
-INFO:     connection closed
-INFO:     127.0.0.1:53796 - "GET /chat/theme.css?v=8dfd16b47676dbe0bd2d20e826b5d724de3e33c3b92d54f2f650bb70c640fed1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45718 - "GET /manifest.json HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:57608 - "POST /chat/gradio_api/queue/join HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57620 - "WebSocket /ws/vad-stream" [accepted]
-🎤 VAD WebSocket connection established
-INFO:     connection open
-INFO:     127.0.0.1:57608 - "GET /chat/gradio_api/queue/data?session_hash=2c2e2j5dqb6 HTTP/1.1" 200 OK
-🎯 Processing utterance from VAD...
-🎤 Transcribing 61440 samples...
-📁 Transcribing file: /tmp/tmpe7px4t14.wav
-✅ File transcription: 'Hello, this is the test.'
-✅ Sent transcription: 'Hello, this is the test.'
-INFO:     127.0.0.1:52998 - "POST /chat/gradio_api/queue/join HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52998 - "GET /chat/gradio_api/queue/data?session_hash=2c2e2j5dqb6 HTTP/1.1" 200 OK
-🔊 Generating TTS for response...
-🔊 Generating TTS for: 'Hello! How can I help you today?...'
-✅ TTS generated successfully
-INFO:     127.0.0.1:53002 - "POST /api/voice/synthesize?text=Hello%21+How+can+I+help+you+today%3F HTTP/1.1" 200 OK
-✅ TTS generated: /tmp/tmp2ipe5ob3.wav
-
+Hello, please can you help me finalise the work on my project.
+There are lots of files in the project directory, but there are only a few of relevance to this task.
+The main file is './SentimentSuite.py', which contains a fastAPI app. Currently the user goes to the 'upload-therapy-csv' app, then uploads a CSV file of a simulated 'Therapy' session. 
+The Therapy session is analyzed by an LLM via LangGraph (in 'src/graphs/framework_analysis.py'). 
+The analysis uses 7 Psychology Frameworks to 'tag' the Clients answers, adding them to a file 'src/output/psychological_analysis/psychological_analysis_master.txt'
+Tasks:
+Context: The langgraph workflow for the graph is in 'src/graphs/create_kg.py', which I created by copying the currently working graph from 'src/graphs/framework_analysis.py.
+I then adjusted the logic to add the functionality for processing the text file ('./output/psychological_analysis/psychological_analysis_master.txt') so that the LLM in this workflow receives the output in chunks using 'extract_analyses_from_master_file()' and 'batch_process_master_file()'. 
+The new langgraph workflow in './src/graphs/create_kg.py' sends the chunks to the LLM, which would then use the 'create_cypher' tool, inputting the Cypher that aligns with the Psychology frameworks.
+The block in 'src/output/psychological_analysis/psychological_analysis_master.txt'  look like this:
 ```
 
+================================================================================
+ANALYSIS ENTRY - 2025-09-13 15:52:46
+================================================================================
 
-Yes! Thats transcribing perfectly. There is one strange thing. It put my transcription in the message box. I pressed send, and the LLM replied with `Hello! How can I assist you today?`.
-I checked the langsmith api and that's definitly all it said. But then the terminal showed a message with `Thank you` again. So i think that 'thank you' is actually coming from somewhere else!
-The good news is that the TTS is working, do you know if it's possible to send the voice transcription directly to the LLM so the user then doesn't need to press 'send'. It's not a big issue if thats really hard to do, it just gives it more polish.
-After that, all we need to do is stop the random 'thank you' from wherever it's coming, and then we can have a quick look for te bonus task to see if we can get the TTS working.
-For the TTS, when i test it in my cli (I have piper installed on my ubuntu here), i just use a command like this:
-`$ echo "This is a test. Is my transcription working?" | piper --model ~/piper/en_US-libritts-high.onnx --output_file test5.wav
-and then it creates the wav file. I'm not sure if that's helpful.
+Analysis:
 
-Here's the terminal output:
+Valence and Arousal:
+Empathy: valence 0.2, arousal 0.3, confidence 0.8
+Evidence: "If I’m with someone who’s happy, I feel happy. If I’m with someone sad, I feel sad."
+Anger visualization: valence 0.5, arousal 0.7, confidence 0.7
+Evidence: "I will typically visualise something that would make me angry, as it ‘feels’ like it gives me extra strength."
+Sadness when others sad: valence -0.4, arousal 0.4, confidence 0.7
+Evidence: "If I’m with someone sad, I feel sad."
 
-```
-✅ LangGraph agent initialized successfully
-new /chat
-✅ Gradio chat interface mounted at /chat
-INFO:     Started server process [110444]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     127.0.0.1:45008 - "GET /chat/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45008 - "GET /chat/theme.css?v=8dfd16b47676dbe0bd2d20e826b5d724de3e33c3b92d54f2f650bb70c640fed1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45020 - "GET /manifest.json HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:45008 - "POST /chat/gradio_api/queue/join HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45008 - "GET /chat/gradio_api/queue/data?session_hash=qdj7skp6l8p HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45034 - "WebSocket /ws/vad-stream" [accepted]
-🎤 VAD WebSocket connection established
-INFO:     connection open
-🎯 Processing utterance from VAD...
-🎤 Transcribing 61120 samples...
-📁 Transcribing file: /tmp/tmpxx9wr4gy.wav
-✅ File transcription: 'Hello, this is a test.'
-✅ Sent transcription: 'Hello, this is a test.'
-INFO:     127.0.0.1:45018 - "POST /chat/gradio_api/queue/join HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45018 - "GET /chat/gradio_api/queue/data?session_hash=qdj7skp6l8p HTTP/1.1" 200 OK
-🎯 Processing utterance from VAD...
-🎤 Transcribing 26880 samples...
-📁 Transcribing file: /tmp/tmph49y_vwf.wav
-✅ File transcription: 'Thank you.'
-✅ Sent transcription: 'Thank you.'
-```
+Cognitive Distortions:
+Rationalization, confidence 0.7
+Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
 
+Erikson Developmental Stage:
+Identity vs role confusion, confidence 0.7
+Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
 
-oh! Exciting! So this time the terminal also showed the response from the LLM. Also we got input in the chatbot app.
-The app put this message inside the 'message' box, but the words "Thank you" were from the LLM.
-```
-Hello, this is a test. Thank you. Thank you. Thank you.
-```
+Attachment Style:
+Anxious preoccupied, confidence 0.7
+Evidence: "I feel emotions through others, reflecting their feelings, or my perception of their feelings."
 
-I think the LLM probably said more than just "Thank you", but i've had this problem before with Langgraph.
-Last time I had the problem, it was only submitting the last few tokens of the message, I 'think' (but not 100% sure) it might have been to do with the 'messagesstate' field for the langgraph agent.
-But it also might be because it seems to be adding the LLM's message to mine by adding Thank you twice on the end.
-Here's the terminal output:
-```
-✅ Gradio chat interface mounted at /chat
-INFO:     Started server process [97226]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-WARNING:  StatReload detected changes in 'src/ui/langgraph_chat.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [97226]
-🚀 Loading faster-whisper model...
-🎯 Loading model with CPU (cuDNN issues detected)...
-✅ faster-whisper model loaded successfully with CPU!
-✅ LangGraph agent initialized successfully
-new /chat
-✅ Gradio chat interface mounted at /chat
-INFO:     Started server process [97379]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     127.0.0.1:47530 - "GET /chat/ HTTP/1.1" 200 OK
-INFO:     127.0.0.1:47530 - "GET /chat/theme.css?v=8dfd16b47676dbe0bd2d20e826b5d724de3e33c3b92d54f2f650bb70c640fed1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:47546 - "GET /manifest.json HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:47538 - "POST /chat/gradio_api/queue/join HTTP/1.1" 200 OK
-INFO:     127.0.0.1:47538 - "GET /chat/gradio_api/queue/data?session_hash=rlz51za6ei HTTP/1.1" 200 OK
-INFO:     127.0.0.1:47556 - "WebSocket /ws/vad-stream" [accepted]
-🎤 VAD WebSocket connection established
-INFO:     connection open
-🎯 Processing utterance from VAD...
-🎤 Transcribing 46720 samples...
-📁 Transcribing file: /tmp/tmpz8b84sez.wav
-✅ File transcription: 'Hello, this is a test.'
-✅ Sent transcription: 'Hello, this is a test.'
-🎯 Processing utterance from VAD...
-🎤 Transcribing 15680 samples...
-📁 Transcribing file: /tmp/tmpweu4ajte.wav
-✅ File transcription: 'Thank you.'
-✅ Sent transcription: 'Thank you.'
-🎯 Processing utterance from VAD...
-🎤 Transcribing 23680 samples...
-📁 Transcribing file: /tmp/tmpdsu0q2nx.wav
-✅ File transcription: 'Thank you.'
-✅ Sent transcription: 'Thank you.'
-🎯 Processing utterance from VAD...
-🎤 Transcribing 17920 samples...
-📁 Transcribing file: /tmp/tmpfac___fv.wav
-✅ File transcription: 'Thank you.'
-✅ Sent transcription: 'Thank you.'
-❌ VAD WebSocket error: Cannot call "receive" once a disconnect message has been received.
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/SentimentSuite.py", line 1684, in vad_websocket_endpoint
-    data = await websocket.receive()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/websockets.py", line 57, in receive
-    raise RuntimeError('Cannot call "receive" once a disconnect message has been received.')
-RuntimeError: Cannot call "receive" once a disconnect message has been received.
+Defense Mechanisms:
+Denial, confidence 0.6
+Evidence: "I literally never remember even seeing them."
+Intellectualization, confidence 0.6
+Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
 
-During handling of the above exception, another exception occurred:
+Schema Therapy:
+Emotional deprivation, confidence 0.7
+Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
 
-Traceback (most recent call last):
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/uvicorn/protocols/websockets/websockets_impl.py", line 244, in run_asgi
-    result = await self.app(self.scope, self.asgi_receive, self.asgi_send)  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/fastapi/applications.py", line 1082, in __call__
-    await super().__call__(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 151, in __call__
-    await self.app(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/routing.py", line 364, in handle
-    await self.app(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/routing.py", line 97, in app
-    await wrap_app_handling_exceptions(app, session)(scope, receive, send)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/routing.py", line 95, in app
-    await func(session)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/fastapi/routing.py", line 390, in app
-    await dependant.call(**solved_result.values)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/SentimentSuite.py", line 1754, in vad_websocket_endpoint
-    await websocket.close()
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/websockets.py", line 181, in close
-    await self.send({"type": "websocket.close", "code": code, "reason": reason or ""})
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/websockets.py", line 86, in send
-    await self._send(message)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 39, in sender
-    await send(message)
-  File "/home/david-barnes/Documents/Projects/sentiment_suite/.venv/lib/python3.13/site-packages/uvicorn/protocols/websockets/websockets_impl.py", line 360, in asgi_send
-    raise RuntimeError(msg % message_type)
-RuntimeError: Unexpected ASGI message 'websocket.close', after sending 'websocket.close' or response already completed.
-INFO:     connection closed
+Big Five Personality Traits:
+Openness 0.8, Conscientiousness 0.6, Extraversion 0.4, Agreeableness 0.5, Neuroticism 0.5
+Overall confidence 0.7
+
+Summary: The client reports a predominantly other‑oriented emotional experience with minimal self‑directed affect. They employ creative visualization to generate emotions for functional purposes, suggesting a rationalization defense. The pattern indicates possible identity confusion and emotional deprivation schemas, with an anxious preoccupied attachment style. Personality assessment shows high openness and moderate conscientiousness, low extraversion, and moderate neuroticism, aligning with a reflective, internally focused individual who may benefit from interventions targeting self‑affect awareness and emotional integration.
+
+================================================================================
+
+================================================================================
+ANALYSIS ENTRY - 2025-09-13 15:53:07
+================================================================================
+
+# and so on... This is a long file with thousands of tokens so i tried to save you from reading it! :)
 
 ```
+Then the output would follow the structure as written in 'src/utils/text_graph_tools.py'
+
+TODO:
+1. Please can you help me debug 'src/graphs/create_kg.py'
+It is 'similar' to 'src/graphs/framework_analysis.py', so it 'should' work, however there were some bugs. 
+Bugs: Initially I had it working and I could see the output produced perfectly on LangSmith. However it didn't save the new file to ''./output/psychological_analysis/graph_output/'.
+- I tried to fix that, but now when i run the workflow, it instantly shows all chunks as processed, and on LangSmith it produces an error for each submitted chunk (see end of this prompt for error.)
+
+Once I have that working my project will be finished!
+
+The files that are relevant are below, ignore all the other files as they are part of different workflows in the same project:
+---
+PROJECT_DIR/
+├─ SentimentSuite.py # this is the main file
+├─ src/
+│  ├─ graphs/
+│  │  ├─ framework_analysis.py # **Used for the 'psychological-results' workflow from sentiment_suite.py**
+│  │  ├─ create_kg.py # **My new 'Knowledge Graph' workflow, copied from 'framework_analysis' then adjusted but needs debugging**
+│  │  ├─ agent.py # ignore this
+│  │  ├─ __init.py__
+│  ├─ __init.py__
+│  ├─ analysis/ # These files are from another workflow in sentiment_suite.py, they can be ignored
+│  ├─ prompts/
+│  │  ├─ __init.py__
+│  │  ├─ text_prompts.py # the prompts. 'CYPHER_PROMPT' is the only one relevant
+│  ├─ utils/
+│  │  ├─ __init.py__
+│  │  ├─ text_graph_tools.py # This has the tool used in 'create_kg', the tool is 'write_cypher'.
+│  │  ├─ voice_tools.py # ignore this
+├─ output/
+│  ├─ psychological_analysis/ # This is where framework_analysis outputs 'to', where 'create_kg' will output both 'from'
+│  │  ├─ psychological_analysis_master.txt # This is where 'create_kg' will output 'to'
+│  │  ├─ graph_output/ # This is where 'create_kg' will output 'to'
+├─ run_notes/
+---
+Here is the error message currently produced is:
+```aiignore
+
+error example
+
+```
+Does that make sense?
+Thanks!!
+
 
 Hello! So you've previously helped me with my hybrid graph-rag project, which has a bunch of workflows for tagging a simulated therapy script, then generating Cypher to be input to neo4j.
 The project is a demo I am doing, both for my portfolio, but also as an 'art of the possible' demo for the UK's largest mental health hospital.
