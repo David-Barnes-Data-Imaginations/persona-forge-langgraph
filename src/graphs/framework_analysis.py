@@ -11,7 +11,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 from ..prompts.text_prompts import SYSTEM_PROMPT
-from ..utils.text_graph_tools import submit_analysis
+from ..tools.text_graph_tools import submit_analysis
 
 # LLM
 llm = ChatOllama(
@@ -19,8 +19,11 @@ llm = ChatOllama(
     temperature=0.1,
     # other params...
 )
+
+
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+
 
 class Assistant:
     def __init__(self, runnable: Runnable):
@@ -43,6 +46,7 @@ class Assistant:
                 break
         return {"messages": result}
 
+
 def handle_tool_error(state) -> dict:
     error = state.get("error")
     tool_calls = state["messages"][-1].tool_calls
@@ -55,10 +59,13 @@ def handle_tool_error(state) -> dict:
             for tc in tool_calls
         ]
     }
+
+
 def create_tool_node_with_fallback(tools: list) -> dict:
     return ToolNode(tools).with_fallbacks(
         [RunnableLambda(handle_tool_error)], exception_key="error"
     )
+
 
 def _print_event(event: dict, _printed: set, max_length=1500):
     current_state = event.get("dialog_state")
@@ -74,6 +81,7 @@ def _print_event(event: dict, _printed: set, max_length=1500):
                 msg_repr = msg_repr[:max_length] + " ... (truncated)"
             print(msg_repr)
             _printed.add(message.id)
+
 
 assistant_prompt = ChatPromptTemplate.from_messages(
     [
@@ -104,10 +112,8 @@ builder.add_edge("tools", "assistant")
 framework_graph = builder.compile()
 
 # Set configuration for recursion limit
-graph_config = {
-    "recursion_limit": 50,  # Increased from default 25
-    "configurable": {}
-}
+graph_config = {"recursion_limit": 50, "configurable": {}}  # Increased from default 25
+
 
 def parse_therapy_csv(csv_content: str) -> list:
     """
@@ -122,45 +128,51 @@ def parse_therapy_csv(csv_content: str) -> list:
     """
     try:
         from io import StringIO
+
         df = pd.read_csv(StringIO(csv_content))
 
         # Clean column names
         df.columns = [col.strip() for col in df.columns]
 
         # Verify required columns
-        required_cols = ['Therapist', 'Client', 'message_id']
+        required_cols = ["Therapist", "Client", "message_id"]
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"CSV must contain columns: {required_cols}")
 
         # Group by message_id to handle multi-line cells
         qa_pairs = []
-        grouped = df.groupby('message_id', dropna=True)
+        grouped = df.groupby("message_id", dropna=True)
 
         for message_id, group in grouped:
             # Combine non-null values for each column
-            therapist_parts = group['Therapist'].dropna().astype(str).str.strip()
-            client_parts = group['Client'].dropna().astype(str).str.strip()
+            therapist_parts = group["Therapist"].dropna().astype(str).str.strip()
+            client_parts = group["Client"].dropna().astype(str).str.strip()
 
             # Filter out empty strings and combine
-            therapist_text = ' '.join([part for part in therapist_parts if part and part != 'nan'])
-            client_text = ' '.join([part for part in client_parts if part and part != 'nan'])
+            therapist_text = " ".join(
+                [part for part in therapist_parts if part and part != "nan"]
+            )
+            client_text = " ".join(
+                [part for part in client_parts if part and part != "nan"]
+            )
 
             # Only include if we have both question and answer
             if therapist_text and client_text:
                 qa_pair = {
-                    'question': therapist_text,
-                    'answer': client_text,
-                    'message_id': f"qa_pair_{int(message_id):03d}"  # Format as qa_pair_001, qa_pair_002, etc.
+                    "question": therapist_text,
+                    "answer": client_text,
+                    "message_id": f"qa_pair_{int(message_id):03d}",  # Format as qa_pair_001, qa_pair_002, etc.
                 }
                 qa_pairs.append(qa_pair)
 
         # Sort by message_id to ensure consistent ordering
-        qa_pairs.sort(key=lambda x: x['message_id'])
+        qa_pairs.sort(key=lambda x: x["message_id"])
 
         return qa_pairs
 
     except Exception as e:
         raise ValueError(f"Error parsing CSV: {str(e)}")
+
 
 def enhance_analysis_with_qa(question: str, answer: str) -> None:
     """
@@ -173,14 +185,20 @@ def enhance_analysis_with_qa(question: str, answer: str) -> None:
     """
     try:
         import os
-        master_file = os.path.join(os.getcwd(), "output", "psychological_analysis", "psychological_analysis_master.txt")
+
+        master_file = os.path.join(
+            os.getcwd(),
+            "output",
+            "psychological_analysis",
+            "psychological_analysis_master.txt",
+        )
 
         if not os.path.exists(master_file):
             print("Warning: Master analysis file doesn't exist yet")
             return
 
         # Read the entire file
-        with open(master_file, 'r', encoding='utf-8') as f:
+        with open(master_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Split by entry separators to find the last entry
@@ -195,7 +213,7 @@ def enhance_analysis_with_qa(question: str, answer: str) -> None:
         last_entry = entries[-1]
 
         # Split the last entry to separate the timestamp line from the analysis
-        lines = last_entry.split('\n')
+        lines = last_entry.split("\n")
         if len(lines) < 3:
             print("Warning: Last entry format is unexpected")
             return
@@ -215,19 +233,23 @@ def enhance_analysis_with_qa(question: str, answer: str) -> None:
         header_lines = lines[:analysis_start_idx]
 
         # Extract the existing analysis content
-        existing_analysis = '\n'.join(lines[analysis_start_idx:]).strip()
+        existing_analysis = "\n".join(lines[analysis_start_idx:]).strip()
 
         # Create the enhanced analysis with Q&A prepended
         enhanced_analysis = f"Original Question: {question}\n\nOriginal Answer: {answer}\n\n{existing_analysis}"
 
         # Reconstruct the last entry with enhanced content
-        enhanced_entry = '\n'.join(header_lines) + '\n' + enhanced_analysis
+        enhanced_entry = "\n".join(header_lines) + "\n" + enhanced_analysis
 
         # Reconstruct the full file with the enhanced last entry
-        enhanced_content = f"\n{separator}\nANALYSIS ENTRY".join(entries[:-1]) + f"\n{separator}\nANALYSIS ENTRY" + enhanced_entry
+        enhanced_content = (
+            f"\n{separator}\nANALYSIS ENTRY".join(entries[:-1])
+            + f"\n{separator}\nANALYSIS ENTRY"
+            + enhanced_entry
+        )
 
         # Write the enhanced content back to the file
-        with open(master_file, 'w', encoding='utf-8') as f:
+        with open(master_file, "w", encoding="utf-8") as f:
             f.write(enhanced_content)
 
         print(f"Enhanced analysis with original Q&A text")
@@ -235,13 +257,14 @@ def enhance_analysis_with_qa(question: str, answer: str) -> None:
     except Exception as e:
         print(f"Warning: Failed to enhance analysis with Q&A: {str(e)}")
 
+
 def process_qa_pair(qa_pair: dict) -> dict:
     """
     Process a single QA pair through the LangGraph workflow.
-    
+
     Args:
         qa_pair: Dictionary with question, answer, message_id
-        
+
     Returns:
         Dictionary with processing results
     """
@@ -256,72 +279,67 @@ def process_qa_pair(qa_pair: dict) -> dict:
         
         Analyze ONLY the Client's answer and return the psychological analysis on its own without the Question and Answer.
         """
-        
+
         # Initial state with the prompt
-        initial_state = {
-            "messages": [HumanMessage(content=prompt_text)]
-        }
-        
+        initial_state = {"messages": [HumanMessage(content=prompt_text)]}
+
         # Run the graph with increased recursion limit
         result = framework_graph.invoke(initial_state, config=graph_config)
 
         # Post-process: Add original question and answer to the analysis file
-        enhance_analysis_with_qa(qa_pair['question'], qa_pair['answer'])
+        enhance_analysis_with_qa(qa_pair["question"], qa_pair["answer"])
 
         return {
-            "qa_id": qa_pair['message_id'],
-            "question": qa_pair['question'],
-            "answer": qa_pair['answer'],
+            "qa_id": qa_pair["message_id"],
+            "question": qa_pair["question"],
+            "answer": qa_pair["answer"],
             "result": result,
-            "status": "success"
+            "status": "success",
         }
-    
+
     except Exception as e:
         return {
-            "qa_id": qa_pair['message_id'],
-            "question": qa_pair['question'],
-            "answer": qa_pair['answer'],
+            "qa_id": qa_pair["message_id"],
+            "question": qa_pair["question"],
+            "answer": qa_pair["answer"],
             "error": str(e),
-            "status": "error"
+            "status": "error",
         }
+
 
 def process_therapy_session(csv_content: str) -> dict:
     """
     Process entire therapy session CSV through the LangGraph workflow.
-    
+
     Args:
         csv_content: Raw CSV content as string
-        
+
     Returns:
         Dictionary with processing results and statistics
     """
     try:
         qa_pairs = parse_therapy_csv(csv_content)
-        
+
         results = []
         successful_count = 0
         error_count = 0
-        
+
         for qa_pair in qa_pairs:
             result = process_qa_pair(qa_pair)
             results.append(result)
-            
-            if result['status'] == 'success':
+
+            if result["status"] == "success":
                 successful_count += 1
             else:
                 error_count += 1
-        
+
         return {
             "total_pairs": len(qa_pairs),
             "successful": successful_count,
             "errors": error_count,
             "results": results,
-            "status": "completed"
-        }
-    
-    except Exception as e:
-        return {
-            "error": str(e),
-            "status": "failed"
+            "status": "completed",
         }
 
+    except Exception as e:
+        return {"error": str(e), "status": "failed"}
