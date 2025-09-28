@@ -6,6 +6,7 @@ Configuration for LLM models used in voice interface
 class LLMConfigVoice:
     """Configuration for voice-enabled chat interface"""
 
+    # gpt-oss:20b is 14GB VRAM
     model_name = "gpt-oss:20b"  # Default model for chat
     temperature = 0.7
     max_tokens = 2000
@@ -59,7 +60,7 @@ class LLMConfigOverseer:
 class LLMConfigScribe:
     """Configuration for summarization model. Run on separate GPU if possible."""
 
-    # qwen3:1.7b is 7.1GB VRAM
+    # "mistral-nemo:12b is 7.1GB VRAM
     model_name = "mistral-nemo:12b"  # Default model for summarization
     temperature = 0.0
     max_tokens = 4096
@@ -70,10 +71,10 @@ class LLMConfigScribe:
 
 
 class LLMConfigSmolScribe:
-    """Configuration for summarization model. Run on separate GPU if possible."""
+    """Configuration for summarization model."""
 
-    # gemma3:1b is 815MB VRAM
-    model_name = "gemma3:1b"  # Default model for summarization
+    # granite3.3:8b is 4.9GB VRAM
+    model_name = "granite3.3:8b"  # Default model for summarization with only 1 GPU
     temperature = 0.0
     max_tokens = 4096
     reasoning = False  # Add reasoning parameter for LangGraph compatibility

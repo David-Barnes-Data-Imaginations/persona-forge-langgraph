@@ -18,13 +18,20 @@ from langchain_core.tools import InjectedToolCallId, tool
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
+from ..tools.file_tools import ls, read_file, write_file
+from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
+from ..tools.todo_tools import write_todos, read_todos
+from ..tools.research_tools import tavily_search, think_tool, get_today_str
+from ..tools.task_tool import _create_task_tool
+
 from ..agent_utils.state import DeepAgentState, Todo
-from ..agent_utils.deep_utils import show_prompt
+from ..agent_utils.deep_utils import show_prompt, stream_agent
 from ..prompts.deep_prompts import (
     WRITE_TODOS_DESCRIPTION,
-    TODO_USAGE_INSTRUCTIONS,
+    ARCHITECT_INSTRUCTIONS,
     RESEARCH_OVERSEER_INSTRUCTIONS,
     SUBAGENT_USAGE_INSTRUCTIONS,
+    TODO_USAGE_INSTRUCTIONS,
 )
 
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -33,29 +40,43 @@ from ..io_py.edge.config import (
     LLMConfigArchitect,
     LLMConfigPeon,
     LLMConfigOverseer,
-)  # this just contains basic info to see up gpt-oss
-from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
-from ..tools.todo_tools import write_todos, read_todos
+    LLMConfigScribe,
+    LLMConfigSmolScribe,
+)
+
 from ..prompts.deep_prompts import (
     LS_DESCRIPTION,
     READ_FILE_DESCRIPTION,
     WRITE_FILE_DESCRIPTION,
 )
-from ..prompts.deep_prompts import ARCHITECT_INSTRUCTIONS
-from ..tools.research_tools import tavily_search, think_tool
-from ..tools.task_tool import _create_task_tool
 
 # Create agent using create_react_agent directly
 
 SYSTEM_PROMPT = "You are a helpful AI agent that can use tools to assist with tasks. Use the provided tools to answer user queries."
 
-tools = [tavily_search, think_tool]
+# Tools
+sub_agent_tools = [tavily_search, think_tool]
+built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
 
 # Set limits
 max_concurrent_research_units = 3
 max_researcher_iterations = 3
 
+# Create task tool to delegate tasks to sub-agents
+task_tool = _create_task_tool(
+    sub_agent_tools,
+    [research_sub_agent],
+    LLMConfigSmolScribe.model_name,
+    DeepAgentState,
+)
+delegation_tools = [task_tool]
+all_tools = (
+    sub_agent_tools + built_in_tools + delegation_tools
+)  # search available to main agent for trivial cases
 
+
+# The architect is the main deep agent to lead the overseers, peons and scribes
+# One agent to rule them all, one agent to find them, one agent to bring them all and in the darkness bind them.
 def get_new_deep_agent(
     config, short_term_memory, long_term_memory
 ) -> CompiledStateGraph:
@@ -66,19 +87,15 @@ def get_new_deep_agent(
     model = ChatOllama(
         model=LLMConfigArchitect.model_name,
         temperature=LLMConfigArchitect.temperature,
-        reasoning=LLMConfigArchitect.reasoning,  # keep your config as-is
+        reasoning=LLMConfigArchitect.reasoning,
     )
 
-    tools = PERSONA_FORGE_TOOLS
+    tools = all_tools
 
     deep_agent = create_react_agent(
         model,
         tools,
-        prompt=TODO_USAGE_INSTRUCTIONS
-        + "\n\n"
-        + "=" * 80
-        + "\n\n"
-        + ARCHITECT_INSTRUCTIONS,
+        prompt=ARCHITECT_INSTRUCTIONS,
         checkpointer=short_term_memory,
         store=long_term_memory,
         state_schema=AgentState,
@@ -90,38 +107,40 @@ def get_new_deep_agent(
 
 
 """Sub Agents for the Research workflow"""
-
 peon_model = ChatOllama(
     model=LLMConfigPeon.model_name,
     temperature=LLMConfigPeon.temperature,
-    reasoning=LLMConfigPeon.reasoning,  # keep your config as-is
+    reasoning=LLMConfigPeon.reasoning,
 )
 
+scribe_model = ChatOllama(
+    model=LLMConfigScribe.model_name,
+    temperature=LLMConfigScribe.temperature,
+    reasoning=LLMConfigScribe.reasoning,
+)
+
+overseer_model = ChatOllama(
+    model=LLMConfigOverseer.model_name,
+    temperature=LLMConfigOverseer.temperature,
+    reasoning=LLMConfigOverseer.reasoning,
+)
 
 # Create research sub-agent
 research_sub_agent = {
     "name": "research-agent",
     "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
-    "prompt": SIMPLE_RESEARCH_INSTRUCTIONS,
-    "tools": ["web_search"],
+    "prompt": RESEARCH_OVERSEER_INSTRUCTIONS,
+    "tools": [tavily_search],
 }
-
-# Tools for sub-agent
-sub_agent_tools = [tavily_search]
-
-# Create task tool to delegate tasks to sub-agents
-task_tool = _create_task_tool(
-    sub_agent_tools, [research_sub_agent], model, DeepAgentState
-)
 
 # Create the Task Agent
 
 # Tools
 delegation_tools = [task_tool]
 
-# Create agent with system prompt
+# Create agent with
 agent = create_react_agent(
-    model,
+    LLMConfigSmolScribe.model_name,
     delegation_tools,
     prompt=SUBAGENT_USAGE_INSTRUCTIONS.format(
         max_concurrent_research_units=max_concurrent_research_units,
@@ -131,6 +150,7 @@ agent = create_react_agent(
     state_schema=DeepAgentState,
 )
 
+# TODO - create agents: graph_retriever (peon), pub_med_searcher (scribe), reviewer (scribe), psychologist (overseer)
 """State management for deep agents with TODO tracking and virtual file systems.
 
 This module defines the extended agent state structure that supports:
