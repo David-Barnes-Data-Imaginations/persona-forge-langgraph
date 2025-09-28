@@ -106,7 +106,7 @@ Output format:
 Today's date: {date}
 """
 
-RESEARCHER_INSTRUCTIONS = """You are a research assistant conducting research on the user's input topic. For context, today's date is {date}.
+RESEARCH_OVERSEER_INSTRUCTIONS = """You are a research assistant conducting research on the user's input topic. For context, today's date is {date}.
 
 <Task>
 Your job is to use tools to gather information about the user's input topic.
@@ -197,3 +197,45 @@ Your role is to coordinate research by delegating specific research tasks to sub
 - Sub-agents can't see each other's work - provide complete standalone instructions
 - Use clear, specific language - avoid acronyms or abbreviations in task descriptions
 </Scaling Rules>"""
+
+# Research Peon Instructions
+RESEARCH_PEON_INSTRUCTIONS = """You are a researcher. Research the topic provided to you. IMPORTANT: Just make a single call to the web_search tool and use the result provided by the tool to answer the provided topic."""
+
+# Graph Peon Instructions
+GRAPH_READER_INSTRUCTIONS = """You are a graph reader."""  # TBC
+
+# Full prompt for Architect agent
+ARCHITECT_INSTRUCTIONS = (
+    WRITE_TODOS_DESCRIPTION
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + TODO_USAGE_INSTRUCTIONS
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + LS_DESCRIPTION
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + READ_FILE_DESCRIPTION
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + WRITE_FILE_DESCRIPTION
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + FILE_USAGE_INSTRUCTIONS
+)
+
+# Full prompt for Research Lead agent
+RESEARCH_OVERSEER_INSTRUCTIONS = (
+    RESEARCHER_INSTRUCTIONS
+    + "\n\n"
+    + "=" * 80
+    + "\n\n"
+    + SUBAGENT_USAGE_INSTRUCTIONS
+    + "\n\n"
+    + "=" * 80
+)

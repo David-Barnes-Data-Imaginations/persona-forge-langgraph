@@ -22,9 +22,15 @@ from typing_extensions import Annotated, Literal
 from ..prompts.deep_prompts import SUMMARIZE_WEB_SEARCH
 from ..agent_utils.state import DeepAgentState
 
+from ..io_py.edge.config import LLMConfigSmolScribe, LLMConfigScribe
+
 # Summarization model
-# summarization_model = init_chat_model(model="openai:gpt-4o-mini")
-summarization_model = init_chat_model(model="ollama:gpt-oss:20b", temperature=0.0)
+# summarization_model = init_chat_model(model="LLMConfigScribe.model_name", temperature=0.0)
+
+# Use reserve scribe until GPU up.
+summarization_model = init_chat_model(
+    model="LLMConfigSmolScribe.model_name", temperature=LLMConfigSmolScribe.temperature
+)
 tavily_client = TavilyClient()
 
 

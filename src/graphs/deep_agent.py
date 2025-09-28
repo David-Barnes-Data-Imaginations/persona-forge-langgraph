@@ -9,6 +9,7 @@ from IPython.display import JSON
 from langchain_core.messages import messages_to_dict
 from typing import Annotated, Literal, NotRequired
 from typing_extensions import TypedDict
+from datetime import datetime
 
 from typing import Annotated
 
@@ -19,22 +20,40 @@ from langgraph.types import Command
 
 from ..agent_utils.state import DeepAgentState, Todo
 from ..agent_utils.deep_utils import show_prompt
-from ..prompts.deep_prompts import WRITE_TODOS_DESCRIPTION
+from ..prompts.deep_prompts import (
+    WRITE_TODOS_DESCRIPTION,
+    TODO_USAGE_INSTRUCTIONS,
+    RESEARCH_OVERSEER_INSTRUCTIONS,
+    SUBAGENT_USAGE_INSTRUCTIONS,
+)
 
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
 from ..io_py.edge.config import (
-    LLMConfigVoice,
+    LLMConfigArchitect,
+    LLMConfigPeon,
+    LLMConfigOverseer,
 )  # this just contains basic info to see up gpt-oss
 from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
-from ..prompts.text_prompts import VOICE_SYSTEM_PROMPT
-from ..tools.research_tools import RESEARCH_TOOLS
+from ..tools.todo_tools import write_todos, read_todos
+from ..prompts.deep_prompts import (
+    LS_DESCRIPTION,
+    READ_FILE_DESCRIPTION,
+    WRITE_FILE_DESCRIPTION,
+)
+from ..prompts.deep_prompts import ARCHITECT_INSTRUCTIONS
+from ..tools.research_tools import tavily_search, think_tool
+from ..tools.task_tool import _create_task_tool
 
 # Create agent using create_react_agent directly
 
 SYSTEM_PROMPT = "You are a helpful AI agent that can use tools to assist with tasks. Use the provided tools to answer user queries."
 
-tools = []
+tools = [tavily_search, think_tool]
+
+# Set limits
+max_concurrent_research_units = 3
+max_researcher_iterations = 3
 
 
 def get_new_deep_agent(
@@ -45,9 +64,9 @@ def get_new_deep_agent(
     from langchain_ollama import ChatOllama
 
     model = ChatOllama(
-        model=LLMConfigVoice.model_name,
-        temperature=LLMConfigVoice.temperature,
-        reasoning=LLMConfigVoice.reasoning,  # keep your config as-is
+        model=LLMConfigArchitect.model_name,
+        temperature=LLMConfigArchitect.temperature,
+        reasoning=LLMConfigArchitect.reasoning,  # keep your config as-is
     )
 
     tools = PERSONA_FORGE_TOOLS
@@ -55,16 +74,62 @@ def get_new_deep_agent(
     deep_agent = create_react_agent(
         model,
         tools,
-        prompt=VOICE_SYSTEM_PROMPT,
+        prompt=TODO_USAGE_INSTRUCTIONS
+        + "\n\n"
+        + "=" * 80
+        + "\n\n"
+        + ARCHITECT_INSTRUCTIONS,
         checkpointer=short_term_memory,
         store=long_term_memory,
         state_schema=AgentState,
     ).with_config(
-        {"recursion_limit": 20}
+        {"recursion_limit": 50}
     )  # recursion_limit limits the number of steps the agent will run
 
     return deep_agent
 
+
+"""Sub Agents for the Research workflow"""
+
+peon_model = ChatOllama(
+    model=LLMConfigPeon.model_name,
+    temperature=LLMConfigPeon.temperature,
+    reasoning=LLMConfigPeon.reasoning,  # keep your config as-is
+)
+
+
+# Create research sub-agent
+research_sub_agent = {
+    "name": "research-agent",
+    "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
+    "prompt": SIMPLE_RESEARCH_INSTRUCTIONS,
+    "tools": ["web_search"],
+}
+
+# Tools for sub-agent
+sub_agent_tools = [tavily_search]
+
+# Create task tool to delegate tasks to sub-agents
+task_tool = _create_task_tool(
+    sub_agent_tools, [research_sub_agent], model, DeepAgentState
+)
+
+# Create the Task Agent
+
+# Tools
+delegation_tools = [task_tool]
+
+# Create agent with system prompt
+agent = create_react_agent(
+    model,
+    delegation_tools,
+    prompt=SUBAGENT_USAGE_INSTRUCTIONS.format(
+        max_concurrent_research_units=max_concurrent_research_units,
+        max_researcher_iterations=max_researcher_iterations,
+        date=datetime.now().strftime("%a %b %-d, %Y"),
+    ),
+    state_schema=DeepAgentState,
+)
 
 """State management for deep agents with TODO tracking and virtual file systems.
 
@@ -120,37 +185,9 @@ class DeepAgentState(AgentState):
     files: Annotated[NotRequired[dict[str, str]], file_reducer]
 
 
-def print_deep_agent_todos():
-    """Prints the todo list to terminal for debugging.
-    Format:
-     Create and manage structured task lists for tracking progress through complex workflows.                         │
-    │                                                                                                                 │
-    │  ## When to Use                                                                                                 │
-    │  - Multi-step or non-trivial tasks requiring coordination                                                       │
-    │  - When user provides multiple tasks or explicitly requests todo list                                           │
-    │  - Avoid for single, trivial actions unless directed otherwise                                                  │
-    │                                                                                                                 │
-    │  ## Structure                                                                                                   │
-    │  - Maintain one list containing multiple todo objects (content, status, id)                                     │
-    │  - Use clear, actionable content descriptions                                                                   │
-    │  - Status must be: pending, in_progress, or completed                                                           │
-    │                                                                                                                 │
-    │  ## Best Practices                                                                                              │
-    │  - Only one in_progress task at a time                                                                          │
-    │  - Mark completed immediately when task is fully done                                                           │
-    │  - Always send the full updated list when making changes                                                        │
-    │  - Prune irrelevant items to keep list focused                                                                  │
-    │                                                                                                                 │
-    │  ## Progress Updates                                                                                            │
-    │  - Call TodoWrite again to change task status or edit content                                                   │
-    │  - Reflect real-time progress; don't batch completions                                                          │
-    │  - If blocked, keep in_progress and add new task describing blocker                                             │
-    │                                                                                                                 │
-    │  ## Parameters                                                                                                  │
-    │  - todos: List of TODO items with content and status fields                                                     │
-    │                                                                                                                 │
-    │  ## Returns                                                                                                     │
-    │  Updates agent state with new todo list.
-    """
-
+def print_deep_agent_prompts():
+    """Display key prompts used by the deep agent to terminal for debugging."""
     show_prompt(WRITE_TODOS_DESCRIPTION)
+    show_prompt(READ_FILE_DESCRIPTION)
+    show_prompt(LS_DESCRIPTION)
+    show_prompt(WRITE_FILE_DESCRIPTION)
