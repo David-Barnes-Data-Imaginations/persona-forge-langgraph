@@ -29,9 +29,12 @@ from ..agent_utils.deep_utils import show_prompt, stream_agent
 from ..prompts.deep_prompts import (
     WRITE_TODOS_DESCRIPTION,
     ARCHITECT_INSTRUCTIONS,
-    RESEARCH_OVERSEER_INSTRUCTIONS,
     SUBAGENT_USAGE_INSTRUCTIONS,
     TODO_USAGE_INSTRUCTIONS,
+    TASK_DESCRIPTION_PREFIX,
+    PUBMED_RESEARCH_INSTRUCTIONS,
+    GRAPH_ANALYSIS_INSTRUCTIONS,
+    REPORT_WRITER_INSTRUCTIONS,
 )
 
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -156,14 +159,14 @@ report_writer_sub_agent = {
 # Create task tool for the Architect to delegate tasks to sub-agents
 single_research_task_tool = _create_task_tool(
     pubmed_research_tools,
-    [research_sub_agent],
+    [pubmed_research_sub_agent],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
 
 single_graph_task_tool = _create_task_tool(
     graph_analysis_tools,
-    [research_sub_agent],
+    [graph_analysis_sub_agent],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
@@ -175,11 +178,15 @@ single_report_task_tool = _create_task_tool(
     DeepAgentState,
 )
 
-all_tools = built_in_tools + [
-    single_research_task_tool,
-    single_graph_task_tool,
-    single_report_task_tool,
-]
+all_tools = (
+    built_in_tools
+    + TASK_DESCRIPTION_PREFIX
+    + [
+        single_research_task_tool,
+        single_graph_task_tool,
+        single_report_task_tool,
+    ]
+)
 
 """**************************** A TODO note on files ***********************************
 Note for implementation of file handling in agents.
