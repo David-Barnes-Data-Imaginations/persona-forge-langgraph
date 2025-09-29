@@ -2,6 +2,7 @@ from IPython.display import Image, display
 from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
+from regex import P
 from utils import format_messages
 from langgraph.graph.state import CompiledStateGraph
 from langchain_ollama import ChatOllama
@@ -27,14 +28,12 @@ from ..tools.task_tool import _create_task_tool
 from ..agent_utils.state import DeepAgentState, Todo
 from ..agent_utils.deep_utils import show_prompt, stream_agent
 from ..prompts.deep_prompts import (
-    WRITE_TODOS_DESCRIPTION,
     ARCHITECT_INSTRUCTIONS,
-    SUBAGENT_USAGE_INSTRUCTIONS,
-    TODO_USAGE_INSTRUCTIONS,
-    TASK_DESCRIPTION_PREFIX,
-    PUBMED_RESEARCH_INSTRUCTIONS,
-    GRAPH_ANALYSIS_INSTRUCTIONS,
+    RESEARCH_INSTRUCTIONS,
+    GRAPH_INSTRUCTIONS,
     REPORT_WRITER_INSTRUCTIONS,
+    RESEARCH_ASSISTANT_INSTRUCTIONS,
+    GRAPH_ASSISTANT_INSTRUCTIONS,
 )
 
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -45,12 +44,6 @@ from ..io_py.edge.config import (
     LLMConfigOverseer,
     LLMConfigScribe,
     LLMConfigSmolScribe,
-)
-
-from ..prompts.deep_prompts import (
-    LS_DESCRIPTION,
-    READ_FILE_DESCRIPTION,
-    WRITE_FILE_DESCRIPTION,
 )
 
 
@@ -79,36 +72,27 @@ overseer_model = ChatOllama(
     reasoning=LLMConfigOverseer.reasoning,
 )
 
-"""*************************** Workflow order (i think)*********************************
-The main deep agent is the architect. It queries how many 'QA Pairs' are in the graph,
-calls the Graph Analysis Agent for each pair to extract the data and write the 
-psychological for the pair to a file. 
-The Report Writer creates a 'Progress Notes' style document for the psychologist to review.
-The Architect then reviews the notes, makes any changes, and uses the Pubmed Researcher 
-to provide an additional section for helpful suggestions or recent studies.
+"""*************************** Workflow*************************************************
+The main deep agent is the architect. Oversight of report and writes the plan.
+It queries how many 'QA Pairs' are in the graph, then sends to Graph Agent to start the workflow.
+The Graph Agent then calls the assistant graph agent for each pair sequentially.
+The assistant graph agent extracts the data and writes the psychological analysis for the pair to a file. 
+Graph Agent checks, then calls the report writer agent.
+Once Report Writer is finished, it calls back to the Architect.
+The Report Writer creates a 'Progress Notes' style document for the Architect to review and edit.
+The Architect then reviews the report and makes any changes.
+The Architect calls the research agent to gather additional information or recent studies.
+The Research sub-agent uses the Assistant Research agent and the Pubmed / Tavily search tool to find relevant information.
+The Architects final report is then printed (add terminal control later, but in the meantime the user can inference and request commands).
 
-main deep agent (Architect)
-├─ query_pair_numbers tool (tbc)
-├─ built-in tools
-│  ├─ ls tool
-│  ├─ read file tool
-│  ├─ write file tool
-│  ├─ write todos tool
-│  ├─ read todos tool
-├─ task tool
-├─ pub_med_research sub-agent (overseer)
-│  ├─ tavily search tool
-│  ├─ pubmed_search_tool (tbc)
-│  ├─ think tool
-├─ Graph Analyzer sub-agent(overseer)
-│  ├─ graph search tool
-│  ├─ write file tool
-│  ├─ read file tool
-│  ├─ think tool
-├─ Report Writer sub-agent (overseer)
-│  ├─ write tool
-│  ├─ read tool
-│  ├─ think tool
+Return calls are made via the 'Think' tool, which allows the agent to call other tools or agents as needed.
+
+<Architect>
+├─ <research sub-agent> (overseer)
+│  │  ├─<assistant research sub-agent> (peon)
+├─ <Graph sub-agent(overseer)>
+│  │  ├─ <Graph Analyzer sub-agent(peon)>
+├─ <Report Writer sub-agent (scribe)>
 
 """
 
@@ -121,72 +105,93 @@ max_researcher_iterations = 3
 built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
 
 # create the tools to delegate to sub-agents
-pubmed_research_tools = [
+research_tools = [
     tavily_search,
     built_in_tools,
 ]  # pubmed_search_tool (tbc), tavily search tool thrown in in-case i decide to use later
-graph_analysis_tools = [built_in_tools]
+graph_analysis_tools = [built_in_tools, PERSONA_FORGE_TOOLS]
 report_writer_tools = [built_in_tools]
+architect_tools = [built_in_tools]
+# *************************** Create Sub-Agents & Assign Tools****************************
 
-# *************************** Create web-research sub-agent ****************************
-# Create the web_search_sub_agent tools
-web_research_sub_agent_tools = [tavily_search, think_tool]
 
-# create the web research sub-agent
-pubmed_research_sub_agent = {
-    "name": "pubmed-search-agent",
-    "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
-    "prompt": PUBMED_RESEARCH_INSTRUCTIONS,  # tbc
-    "tools": ["pubmed_research_tools"],
+# create the research sub-agent
+research_agent = {
+    "name": "research-agent",
+    "description": "Delegate research to the sub-agent researcher. Provide this researcher with a description of your queries to delegate.",
+    "prompt": RESEARCH_INSTRUCTIONS,
+    "tools": ["research_tools"],
+}
+
+# create the research sub-agent
+research_assistant = {
+    "name": "research-assistant",
+    "description": "Delegate research to the sub-agent research assistant. Only give this researcher one topic at a time.",
+    "prompt": RESEARCH_ASSISTANT_INSTRUCTIONS,
+    "tools": ["research_tools"],
 }
 
 # create the web research sub-agent
-graph_analysis_sub_agent = {
-    "name": "graph_analysis-agent",
-    "description": "Request the Graph Agent to extract a specific 'QA Pair' and write the analysis to the file. Only give this researcher one topic at a time.",
-    "prompt": GRAPH_ANALYSIS_INSTRUCTIONS,  # tbc
-    "tools": ["graph_analysis_tools"],
+graph_agent = {
+    "name": "graph-agent",
+    "description": "Request the Graph Agent starts the Graph Analysis & Report workflow. Provide number of QA Pairs as Args.",
+    "prompt": GRAPH_INSTRUCTIONS,
+    "tools": ["graph_tools"],
+}
+
+# create the web research sub-agent
+graph_assistant = {
+    "name": "graph-assistant",
+    "description": "Request the Graph Assistant to extract a specific 'QA Pair' and write the analysis to the file. Only give this researcher one topic at a time.",
+    "prompt": GRAPH_ASSISTANT_INSTRUCTIONS,
+    "tools": ["graph _tools"],
 }
 
 # create the report writer sub-agent
-report_writer_sub_agent = {
-    "name": "pubmed-search-agent",
+report_writer = {
+    "name": "report-agent",
     "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
     "prompt": REPORT_WRITER_INSTRUCTIONS,
     "tools": ["report_writer_tools"],
 }
 
 # Create task tool for the Architect to delegate tasks to sub-agents
-single_research_task_tool = _create_task_tool(
-    pubmed_research_tools,
-    [pubmed_research_sub_agent],
+research_task_tool = _create_task_tool(
+    research_tools,
+    [research_agent],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
 
-single_graph_task_tool = _create_task_tool(
+# Create task tool for the Architect to delegate tasks to sub-agents
+research_assistant_task_tool = _create_task_tool(
+    research_tools,
+    [research_assistant_agent],
+    LLMConfigSmolScribe.model_name,
+    DeepAgentState,
+)
+
+graph_task_tool = _create_task_tool(
     graph_analysis_tools,
-    [graph_analysis_sub_agent],
+    [graph_agent],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
 
-single_report_task_tool = _create_task_tool(
+graph_assistant_task_tool = _create_task_tool(
+    graph_analysis_tools,
+    [graph_assistant],
+    LLMConfigSmolScribe.model_name,
+    DeepAgentState,
+)
+
+report_task_tool = _create_task_tool(
     report_writer_tools,
-    [research_sub_agent],
+    [report_writer],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
 
-all_tools = (
-    built_in_tools
-    + TASK_DESCRIPTION_PREFIX
-    + [
-        single_research_task_tool,
-        single_graph_task_tool,
-        single_report_task_tool,
-    ]
-)
 
 """**************************** A TODO note on files ***********************************
 Note for implementation of file handling in agents.
@@ -243,7 +248,7 @@ def get_new_deep_agent(
         reasoning=LLMConfigArchitect.reasoning,
     )
 
-    tools = all_tools
+    tools = architect_tools
 
     deep_agent = create_react_agent(
         model,
