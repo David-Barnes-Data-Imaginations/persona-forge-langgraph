@@ -30,7 +30,7 @@ class LangGraphChatInterface:
         try:
             # Initialize with empty memory stores for now
             short_term_memory = MemorySaver()
-            long_term_memory = None  # You can add a proper store later
+            long_term_memory = None  # add a proper store later if required
 
             self.agent = get_new_agent(
                 config=LLMConfigVoice,

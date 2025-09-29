@@ -50,7 +50,14 @@ from ..prompts.deep_prompts import (
     WRITE_FILE_DESCRIPTION,
 )
 
-"""Sub Agent models for the workflow"""
+
+"""Sub Agent models for the workflow
+- The reason for different models is to test parrallelism and specialisation of tasks
+- Peon - basic tasks, file handling, simple tasks
+- Scribe/SmolScribe - research, web searching, summarization
+- Overseer - high level tasks, planning, analysis, report writing
+
+"""
 peon_model = ChatOllama(
     model=LLMConfigPeon.model_name,
     temperature=LLMConfigPeon.temperature,
@@ -58,9 +65,9 @@ peon_model = ChatOllama(
 )
 
 scribe_model = ChatOllama(
-    model=LLMConfigScribe.model_name,
-    temperature=LLMConfigScribe.temperature,
-    reasoning=LLMConfigScribe.reasoning,
+    model=LLMConfigSmolScribe.model_name,
+    temperature=LLMConfigSmolScribe.temperature,
+    reasoning=LLMConfigSmolScribe.reasoning,
 )
 
 overseer_model = ChatOllama(
@@ -68,6 +75,41 @@ overseer_model = ChatOllama(
     temperature=LLMConfigOverseer.temperature,
     reasoning=LLMConfigOverseer.reasoning,
 )
+
+"""*************************** Workflow order (i think)*********************************
+The main deep agent is the architect. It queries how many 'QA Pairs' are in the graph,
+calls the Graph Analysis Agent for each pair to extract the data and write the 
+psychological for the pair to a file. 
+The Report Writer creates a 'Progress Notes' style document for the psychologist to review.
+The Architect then reviews the notes, makes any changes, and uses the Pubmed Researcher 
+to provide an additional section for helpful suggestions or recent studies.
+
+main deep agent (Architect)
+├─ query_pair_numbers tool (tbc)
+├─ built-in tools
+│  ├─ ls tool
+│  ├─ read file tool
+│  ├─ write file tool
+│  ├─ write todos tool
+│  ├─ read todos tool
+├─ task tool
+├─ pub_med_research sub-agent (overseer)
+│  ├─ tavily search tool
+│  ├─ pubmed_search_tool (tbc)
+│  ├─ think tool
+├─ Graph Analyzer sub-agent(overseer)
+│  ├─ graph search tool
+│  ├─ write file tool
+│  ├─ read file tool
+│  ├─ think tool
+├─ Report Writer sub-agent (overseer)
+│  ├─ write tool
+│  ├─ read tool
+│  ├─ think tool
+
+"""
+
+# *************************** Tools and Sub-agents**************************************
 # Set limits
 max_concurrent_research_units = 3
 max_researcher_iterations = 3
@@ -75,43 +117,107 @@ max_researcher_iterations = 3
 # Core Admin Tools
 built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
 
+# create the tools to delegate to sub-agents
+pubmed_research_tools = [
+    tavily_search,
+    built_in_tools,
+]  # pubmed_search_tool (tbc), tavily search tool thrown in in-case i decide to use later
+graph_analysis_tools = [built_in_tools]
+report_writer_tools = [built_in_tools]
 
 # *************************** Create web-research sub-agent ****************************
 # Create the web_search_sub_agent tools
 web_research_sub_agent_tools = [tavily_search, think_tool]
 
 # create the web research sub-agent
-web_research_sub_agent = {
-    "name": "web-search-agent",
+pubmed_research_sub_agent = {
+    "name": "pubmed-search-agent",
     "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
-    "prompt": RESEARCH_OVERSEER_INSTRUCTIONS,
-    "tools": ["tavily_search", "think_tool"],
+    "prompt": PUBMED_RESEARCH_INSTRUCTIONS,  # tbc
+    "tools": ["pubmed_research_tools"],
 }
 
-# create the web research tool to delegate to sub-agents
-sub_agent_search_tools = [tavily_search, think_tool]
-built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
+# create the web research sub-agent
+graph_analysis_sub_agent = {
+    "name": "graph_analysis-agent",
+    "description": "Request the Graph Agent to extract a specific 'QA Pair' and write the analysis to the file. Only give this researcher one topic at a time.",
+    "prompt": GRAPH_ANALYSIS_INSTRUCTIONS,  # tbc
+    "tools": ["graph_analysis_tools"],
+}
 
-# Create task tool to delegate tasks to sub-agents
+# create the report writer sub-agent
+report_writer_sub_agent = {
+    "name": "pubmed-search-agent",
+    "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
+    "prompt": REPORT_WRITER_INSTRUCTIONS,
+    "tools": ["report_writer_tools"],
+}
+
+# Create task tool for the Architect to delegate tasks to sub-agents
 single_research_task_tool = _create_task_tool(
-    sub_agent_search_tools,
+    pubmed_research_tools,
     [research_sub_agent],
     LLMConfigSmolScribe.model_name,
     DeepAgentState,
 )
 
+single_graph_task_tool = _create_task_tool(
+    graph_analysis_tools,
+    [research_sub_agent],
+    LLMConfigSmolScribe.model_name,
+    DeepAgentState,
+)
+
+single_report_task_tool = _create_task_tool(
+    report_writer_tools,
+    [research_sub_agent],
+    LLMConfigSmolScribe.model_name,
+    DeepAgentState,
+)
+
+all_tools = built_in_tools + [
+    single_research_task_tool,
+    single_graph_task_tool,
+    single_report_task_tool,
+]
+
+"""**************************** A TODO note on files ***********************************
+Note for implementation of file handling in agents.
+Files are added to the agent using this format:
+```
+result = agent.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "Give me an overview of Model Context Protocol (MCP).",
+            }
+        ],
+        "files": {},
+    }
+)
+format_messages(result["messages"])
+```
+
+
+# or in the streaming case i 'think' like the below:
+
+`result = self.agent.invoke({"messages": messages, "files": {}}, config=self.config)`
+
+
 # *************************** Create Architects Tools **********************************
 
 # Create task tool to delegate tasks to sub-agents
-web_task_tool = _create_task_tool(
-    sub_agent_search_tools,
-    [web_research_sub_agent],
+single_graph_task_tool = _create_task_tool(
+    graph_analysis_tools,
+    [pub_med_research_sub_agent],
     LLMConfigScribe.model_name,
     DeepAgentState,
 )
 
 delegation_tools = [web_task_tool]
 all_tools = built_in_tools + delegation_tools
+"""
 
 
 # *************************** Create The Architect  ************************************
