@@ -107,8 +107,8 @@ You will then add the 'Plan' and the 'Research of Recent Studies' sections to th
 3. **Find the number of QA Pairs in Graph**: Use the query_pair_numbers tool to get the number of QA Pairs in the graph.
 4. **Graph Analysis**: Use the task tool to delegate to the Graph Analysis Agent, providing them with the number of 'QA Pairs' in the description. 
 This agent extracts the data and write's the psychological analysis for the pair to a file.
-5. **Report Writing**: Once all QA Pairs are processed, the Graph Analysis Agent will call the Report Writer Agent to create the 'Progress Notes' style document for you to review.
-6. **Read**: Review the notes, make any changes, and use the Pubmed Researcher to provide an additional section for helpful suggestions or recent studies.
+5. **Report Writing**: Once all QA Pairs are processed by the Graph Analysis Agent, you should call the Report Writer Agent who will create the draft 'Progress Notes' style document for you to review.
+6. **Read**: Review the notes, make any changes, add the 'Plan' (suggested self managed activities such as journalling or meditation etc) and use the 'Research-Agent' (see 'sub-agents' section) to provide an additional section for helpful suggestions or recent studies.
 7. **Finalize**: Use write_file to save the final report in the virtual file system as 'progress_report.md'. 
 8. **Complete**: Mark your task as completed in the todo list and print the output. 
 </Workflow>
@@ -241,22 +241,22 @@ GRAPH_ANALYSIS_INSTRUCTIONS = """You are a Psychologist AI Assistant who coordin
 
 <Task>
 
-Your role is to coordinate the graph workflow by delegating specific tasks to sub-agents.
+Your role is to coordinate the graph workflow by delegating specific tasks to sub-agents. You also have the tools to search the graph yourself if required.
 
 **Graph Analysis**: 
-The user will provide you with the number of 'QA Pairs' in the graph.
+The user will provide you with the number of 'QA Pairs' in the graph. For contexct only, these pairs were asked/answered in sequential order.
 For each 'QA Pair', sequentially use the task tool to delegate to the Graph Analysis Agent.
 The agent will extract the data for that QA Pair from the graph, analyze it using psychological frameworks, and write/append a detailed analysis to a file named 'graph_notes.md'.
 
 Inut:
-The user will provide you with a number in the tool call. That number determines how many QA Pirs are in the graph.
+The user will provide you with a number in the tool call. That number determines how many QA Pairs are in the graph.
 
 ## Workflow Process
 1. **Orient**: Use ls() to see existing files before starting work
 2. **Save**: Use write_file() to store the user's request so that we can keep it for later 
 4. **Graph Analysis**: For each QA Pair, sequentially use the task tool to delegate to the Graph Analysis Agent. 
 5. **Read**: Review the notes, your notes and make any changes. You do not need to review the research-agents notes, that is managed by another agent. 
-6. **Complete**: Mark your task as completed in the todo list. Once all 'QA Pairs' have been analyzed call the report agent. The report-agent will notify you of the file to pass back for your task.
+6. **Complete**: Mark your task as completed in the todo list. Once all 'QA Pairs' have been analyzed and pass the filename to the user. 
 
 Your taskis conducted in a tool-calling loop.
 </Task>
@@ -401,7 +401,7 @@ Your role is to coordinate the workflow by delegating specific tasks to sub-agen
 **Important Reminders:**
 - Each **task** call creates a dedicated research agent with isolated context
 - Sub-agents can't see each other's work - provide complete standalone instructions
-- Use clear, specific language - avoid acronyms or abbreviations in task descriptions
+- Use clear, specific language - avoid acronyms or abreviations in task descriptions
 </Scaling Rules>"""
 
 RESEARCH_THINKING_INSTRUCTIONS = """<Thinking Instructions>
