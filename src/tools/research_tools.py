@@ -24,15 +24,14 @@ from langchain_ollama import ChatOllama
 from ..prompts.deep_prompts import SUMMARIZE_WEB_SEARCH
 from ..agent_utils.state import DeepAgentState
 
-from ..io_py.edge.config import LLMConfigSmolScribe, LLMConfigScribe
-from ..io_py.edge.config import LLMConfigPeon
+from ..io_py.edge.config import LLMConfigArchitect
 
 # Summarization model
 
 summarization_modelmodel = ChatOllama(
-    model=LLMConfigPeon.model_name,
-    temperature=LLMConfigPeon.temperature,
-    reasoning=LLMConfigPeon.reasoning,
+    model=LLMConfigArchitect.model_name,
+    temperature=LLMConfigArchitect.temperature,
+    reasoning=LLMConfigArchitect.reasoning,
 )
 
 # summarization_model = init_chat_model(model="LLMConfigScribe.model_name", temperature=0.0)
@@ -254,6 +253,7 @@ Files: {', '.join(saved_files)}
 
 # ========================== PubMed Search Tool ==========================
 
+
 class PubMedArticle(BaseModel):
     """Schema for PubMed article information."""
 
@@ -267,7 +267,9 @@ class PubMedArticle(BaseModel):
     url: str = Field(description="PubMed URL")
 
 
-def search_pubmed(query: str, max_results: int = 5, min_year: Optional[int] = None) -> List[str]:
+def search_pubmed(
+    query: str, max_results: int = 5, min_year: Optional[int] = None
+) -> List[str]:
     """
     Search PubMed for article IDs matching the query.
 
@@ -369,7 +371,11 @@ def fetch_pubmed_details(pmids: List[str]) -> List[PubMedArticle]:
 
                     # Extract journal
                     journal_elem = article_elem.find(".//Journal/Title")
-                    journal = journal_elem.text if journal_elem is not None else "Unknown Journal"
+                    journal = (
+                        journal_elem.text
+                        if journal_elem is not None
+                        else "Unknown Journal"
+                    )
 
                     # Extract publication date
                     pub_date_elem = article_elem.find(".//PubDate")
@@ -395,7 +401,11 @@ def fetch_pubmed_details(pmids: List[str]) -> List[PubMedArticle]:
                             else:
                                 abstract_texts.append(text)
 
-                    abstract = " ".join(abstract_texts) if abstract_texts else "No abstract available"
+                    abstract = (
+                        " ".join(abstract_texts)
+                        if abstract_texts
+                        else "No abstract available"
+                    )
 
                     # Extract DOI
                     doi = None
@@ -418,7 +428,7 @@ def fetch_pubmed_details(pmids: List[str]) -> List[PubMedArticle]:
                         pub_date=pub_date,
                         abstract=abstract,
                         doi=doi,
-                        url=url
+                        url=url,
                     )
 
                     articles.append(article)
@@ -476,7 +486,7 @@ def pubmed_search(
                 "messages": [
                     ToolMessage(
                         f"⚠️ No PubMed articles found for query: '{query}'",
-                        tool_call_id=tool_call_id
+                        tool_call_id=tool_call_id,
                     )
                 ]
             }
@@ -491,7 +501,7 @@ def pubmed_search(
                 "messages": [
                     ToolMessage(
                         f"⚠️ Found {len(pmids)} articles but could not retrieve details",
-                        tool_call_id=tool_call_id
+                        tool_call_id=tool_call_id,
                     )
                 ]
             }
@@ -504,9 +514,15 @@ def pubmed_search(
 
     for i, article in enumerate(articles, 1):
         # Generate filename
-        safe_title = "".join(c if c.isalnum() or c in (' ', '-', '_') else '' for c in article.title)
-        safe_title = safe_title[:50].strip().replace(' ', '_')
-        uid = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b"=").decode("ascii")[:8]
+        safe_title = "".join(
+            c if c.isalnum() or c in (" ", "-", "_") else "" for c in article.title
+        )
+        safe_title = safe_title[:50].strip().replace(" ", "_")
+        uid = (
+            base64.urlsafe_b64encode(uuid.uuid4().bytes)
+            .rstrip(b"=")
+            .decode("ascii")[:8]
+        )
         filename = f"pubmed_{safe_title}_{uid}.md"
 
         # Create file content
@@ -540,8 +556,14 @@ def pubmed_search(
         saved_files.append(filename)
 
         # Create short summary for tool response
-        abstract_preview = article.abstract[:200] + "..." if len(article.abstract) > 200 else article.abstract
-        summaries.append(f"**{i}. {article.title[:80]}{'...' if len(article.title) > 80 else ''}**\n   ({article.pub_date}) - {filename}")
+        abstract_preview = (
+            article.abstract[:200] + "..."
+            if len(article.abstract) > 200
+            else article.abstract
+        )
+        summaries.append(
+            f"**{i}. {article.title[:80]}{'...' if len(article.title) > 80 else ''}**\n   ({article.pub_date}) - {filename}"
+        )
 
     # Build summary response
     year_filter = " (2020-present)" if recent_only else ""
