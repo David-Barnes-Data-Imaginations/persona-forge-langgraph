@@ -278,10 +278,9 @@ Your research is conducted in a tool-calling loop, and you should write each 'QA
 <Available Tools>
 1. **search_psychological_insights**: For querying the psychological knowledge graph for insights related to the keyword e.g. 'neurotiscism' or 'cognitive distortions'
 2. **get_personality_summary**: For querying the psychological knowledge graph for a summary of the client's personality traits based from the overall therapy session.
-3. **get_cognitive_distortions**: For querying the psychological knowledge graph for a list of cognitive distortions exhibited by the client during the therapy session.
-4. **get_defense_mechanisms**: For querying the psychological knowledge graph for a list of defense mechanisms exhibited by the client during the therapy session.
-5. **get_core_beliefs**: For querying the psychological knowledge graph for a list of deep core beliefs exhibited by the client during the therapy session
-6. **get_qa_pair**: For querying the psychological knowledge graph for the full details of a specific QA Pair, including the question, answer, and any psychological analyses.
+3. **get_extreme_values**: Get QA pairs with extreme (highest/lowest) values for a specific psychological property.
+4. **get_qa_pair_details**: Get complete details for a specific QA pair including all psychological analysis and full text.
+5. **get_graph_statistics**:  Get statistical analysis of psychological patterns across all QA pairs in a session.
 
 **CRITICAL: Use think_tool after each search to reflect on results and plan next steps**
 
@@ -359,7 +358,7 @@ Your research is conducted in a tool-calling loop.
 </Task>
 
 <Available Tools>
-1. **pubmed_search**: For searching PubMed for academic articles and studies (tbc)
+1. **pubmed_search**: For searching PubMed for academic articles and studies
 2. **tavily_search**: For conducting web searches to gather information
 3. **think_tool**: For reflection and strategic planning during research
 
