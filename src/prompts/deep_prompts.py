@@ -260,8 +260,6 @@ The user will provide you with a number in the tool call. That number determines
 
 Your taskis conducted in a tool-calling loop.
 </Task>
-
-
 """
 
 GRAPH_ANALYSIS_ASSISTANT_INSTRUCTIONS = """You are a Psychologist AI Assistant who queries a knowledge graph which outputs data from a therapy session, structured by 'QA Pairs'. 
