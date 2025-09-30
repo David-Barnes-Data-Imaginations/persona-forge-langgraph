@@ -3,7 +3,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from regex import P
-from utils import format_messages
+from ..agent_utils.deep_utils import format_messages
 from langgraph.graph.state import CompiledStateGraph
 from langchain_ollama import ChatOllama
 from IPython.display import JSON
@@ -22,7 +22,7 @@ from langgraph.types import Command
 from ..tools.file_tools import ls, read_file, write_file
 from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
 from ..tools.todo_tools import write_todos, read_todos
-from ..tools.research_tools import tavily_search, think_tool, get_today_str
+from ..tools.research_tools import tavily_search, pubmed_search, think_tool, get_today_str
 from ..tools.task_tool import _create_task_tool
 
 from ..agent_utils.state import DeepAgentState, Todo
@@ -107,11 +107,12 @@ built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool
 # create the tools to delegate to sub-agents
 research_tools = [
     tavily_search,
-    built_in_tools,
-]  # pubmed_search_tool (tbc), tavily search tool thrown in in-case i decide to use later
-graph_analysis_tools = [built_in_tools, PERSONA_FORGE_TOOLS]
-report_writer_tools = [built_in_tools]
-architect_tools = [built_in_tools]
+    pubmed_search,
+] + built_in_tools  # PubMed for academic research, Tavily for general web search
+
+graph_tools = built_in_tools + PERSONA_FORGE_TOOLS
+report_tools = built_in_tools
+architect_tools = built_in_tools
 # *************************** Create Sub-Agents & Assign Tools****************************
 
 
@@ -120,7 +121,7 @@ research_agent = {
     "name": "research-agent",
     "description": "Delegate research to the sub-agent researcher. Provide this researcher with a description of your queries to delegate.",
     "prompt": RESEARCH_INSTRUCTIONS,
-    "tools": ["research_tools"],
+    "tools": [t.name for t in research_tools],
 }
 
 # create the research sub-agent
@@ -128,7 +129,7 @@ research_assistant = {
     "name": "research-assistant",
     "description": "Delegate research to the sub-agent research assistant. Only give this researcher one topic at a time.",
     "prompt": RESEARCH_ASSISTANT_INSTRUCTIONS,
-    "tools": ["research_tools"],
+    "tools": [t.name for t in research_tools],
 }
 
 # create the web research sub-agent
@@ -136,7 +137,7 @@ graph_agent = {
     "name": "graph-agent",
     "description": "Request the Graph Agent starts the Graph Analysis & Report workflow. Provide number of QA Pairs as Args.",
     "prompt": GRAPH_INSTRUCTIONS,
-    "tools": ["graph_tools"],
+    "tools": [t.name for t in graph_tools],
 }
 
 # create the web research sub-agent
@@ -144,7 +145,7 @@ graph_assistant = {
     "name": "graph-assistant",
     "description": "Request the Graph Assistant to extract a specific 'QA Pair' and write the analysis to the file. Only give this researcher one topic at a time.",
     "prompt": GRAPH_ASSISTANT_INSTRUCTIONS,
-    "tools": ["graph _tools"],
+    "tools": [t.name for t in graph_tools],
 }
 
 # create the report writer sub-agent
@@ -152,84 +153,55 @@ report_writer = {
     "name": "report-agent",
     "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
     "prompt": REPORT_WRITER_INSTRUCTIONS,
-    "tools": ["report_writer_tools"],
+    "tools": [t.name for t in report_tools],
 }
 
 # Create task tool for the Architect to delegate tasks to sub-agents
 research_task_tool = _create_task_tool(
     research_tools,
     [research_agent],
-    LLMConfigSmolScribe.model_name,
+    scribe_model,
     DeepAgentState,
 )
 
 # Create task tool for the Architect to delegate tasks to sub-agents
 research_assistant_task_tool = _create_task_tool(
     research_tools,
-    [research_assistant_agent],
-    LLMConfigSmolScribe.model_name,
+    [research_assistant],
+    peon_model,
     DeepAgentState,
 )
 
 graph_task_tool = _create_task_tool(
-    graph_analysis_tools,
+    graph_tools,
     [graph_agent],
-    LLMConfigSmolScribe.model_name,
+    scribe_model,
     DeepAgentState,
 )
 
 graph_assistant_task_tool = _create_task_tool(
-    graph_analysis_tools,
+    graph_tools,
     [graph_assistant],
-    LLMConfigSmolScribe.model_name,
+    peon_model,
     DeepAgentState,
 )
 
 report_task_tool = _create_task_tool(
-    report_writer_tools,
+    report_tools,
     [report_writer],
-    LLMConfigSmolScribe.model_name,
+    scribe_model,
     DeepAgentState,
 )
 
-
-"""**************************** A TODO note on files ***********************************
-Note for implementation of file handling in agents.
-Files are added to the agent using this format:
-```
-result = agent.invoke(
-    {
-        "messages": [
-            {
-                "role": "user",
-                "content": "Give me an overview of Model Context Protocol (MCP).",
-            }
-        ],
-        "files": {},
-    }
-)
-format_messages(result["messages"])
-```
-
-
-# or in the streaming case i 'think' like the below:
-
-`result = self.agent.invoke({"messages": messages, "files": {}}, config=self.config)`
-
-
-# *************************** Create Architects Tools **********************************
-
-# Create task tool to delegate tasks to sub-agents
-single_graph_task_tool = _create_task_tool(
-    graph_analysis_tools,
-    [pub_med_research_sub_agent],
-    LLMConfigScribe.model_name,
-    DeepAgentState,
-)
-
-delegation_tools = [web_task_tool]
-all_tools = built_in_tools + delegation_tools
-"""
+# *************************** Create Architects delegation tools **********************************
+delegation_tools = [
+    research_task_tool,
+    research_assistant_task_tool,
+    graph_task_tool,
+    graph_assistant_task_tool,
+    report_task_tool,
+]
+all_architect_tools = built_in_tools + delegation_tools
 
 
 # *************************** Create The Architect  ************************************
@@ -248,7 +220,7 @@ def get_new_deep_agent(
         reasoning=LLMConfigArchitect.reasoning,
     )
 
-    tools = architect_tools
+    tools = all_architect_tools
 
     deep_agent = create_react_agent(
         model,
@@ -262,26 +234,3 @@ def get_new_deep_agent(
     )  # recursion_limit limits the number of steps the agent will run
 
     return deep_agent
-
-
-# Create agent with
-agent = create_react_agent(
-    LLMConfigSmolScribe.model_name,
-    delegation_tools,
-    prompt=SUBAGENT_USAGE_INSTRUCTIONS.format(
-        max_concurrent_research_units=max_concurrent_research_units,
-        max_researcher_iterations=max_researcher_iterations,
-        date=datetime.now().strftime("%a %b %-d, %Y"),
-    ),
-    state_schema=DeepAgentState,
-)
-
-# TODO - create agents: graph_retriever (peon), pub_med_searcher (scribe), reviewer (scribe), psychologist (overseer)
-
-
-def print_deep_agent_prompts():
-    """Display key prompts used by the deep agent to terminal for debugging."""
-    show_prompt(WRITE_TODOS_DESCRIPTION)
-    show_prompt(READ_FILE_DESCRIPTION)
-    show_prompt(LS_DESCRIPTION)
-    show_prompt(WRITE_FILE_DESCRIPTION)

@@ -1,12 +1,14 @@
 """Research Tools.
 
 This module provides search and content processing utilities for the research agent,
-including web search capabilities and content summarization tools.
+including web search capabilities, PubMed academic search, and content summarization tools.
 """
 
 import os
 from datetime import datetime
 import uuid, base64
+import xml.etree.ElementTree as ET
+from typing import List, Dict, Optional
 
 import httpx
 from langchain.chat_models import init_chat_model
@@ -18,19 +20,23 @@ from markdownify import markdownify
 from pydantic import BaseModel, Field
 from tavily import TavilyClient
 from typing_extensions import Annotated, Literal
-
+from langchain_ollama import ChatOllama
 from ..prompts.deep_prompts import SUMMARIZE_WEB_SEARCH
 from ..agent_utils.state import DeepAgentState
 
 from ..io_py.edge.config import LLMConfigSmolScribe, LLMConfigScribe
+from ..io_py.edge.config import LLMConfigPeon
 
 # Summarization model
+
+summarization_modelmodel = ChatOllama(
+    model=LLMConfigPeon.model_name,
+    temperature=LLMConfigPeon.temperature,
+    reasoning=LLMConfigPeon.reasoning,
+)
+
 # summarization_model = init_chat_model(model="LLMConfigScribe.model_name", temperature=0.0)
 
-# Use reserve scribe until GPU up.
-summarization_model = init_chat_model(
-    model="LLMConfigSmolScribe.model_name", temperature=LLMConfigSmolScribe.temperature
-)
 tavily_client = TavilyClient()
 
 
@@ -237,6 +243,314 @@ def tavily_search(
 
 Files: {', '.join(saved_files)}
 💡 Use read_file() to access full details when needed."""
+
+    return Command(
+        update={
+            "files": files,
+            "messages": [ToolMessage(summary_text, tool_call_id=tool_call_id)],
+        }
+    )
+
+
+# ========================== PubMed Search Tool ==========================
+
+class PubMedArticle(BaseModel):
+    """Schema for PubMed article information."""
+
+    pmid: str = Field(description="PubMed ID")
+    title: str = Field(description="Article title")
+    authors: List[str] = Field(description="List of authors")
+    journal: str = Field(description="Journal name")
+    pub_date: str = Field(description="Publication date")
+    abstract: str = Field(description="Article abstract")
+    doi: Optional[str] = Field(default=None, description="DOI if available")
+    url: str = Field(description="PubMed URL")
+
+
+def search_pubmed(query: str, max_results: int = 5, min_year: Optional[int] = None) -> List[str]:
+    """
+    Search PubMed for article IDs matching the query.
+
+    Args:
+        query: Search query string
+        max_results: Maximum number of results to return
+        min_year: Minimum publication year (e.g., 2020 for recent studies)
+
+    Returns:
+        List of PubMed IDs (PMIDs)
+    """
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+
+    # Build the query with year filter if specified
+    full_query = query
+    if min_year:
+        full_query = f"{query} AND {min_year}[PDAT]:3000[PDAT]"
+
+    params = {
+        "db": "pubmed",
+        "term": full_query,
+        "retmax": max_results,
+        "retmode": "xml",
+        "sort": "relevance",
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            response = client.get(base_url, params=params)
+            response.raise_for_status()
+
+            # Parse XML response
+            root = ET.fromstring(response.text)
+            id_list = root.find("IdList")
+
+            if id_list is not None:
+                return [id_elem.text for id_elem in id_list.findall("Id")]
+
+            return []
+
+    except Exception as e:
+        print(f"Error searching PubMed: {e}")
+        return []
+
+
+def fetch_pubmed_details(pmids: List[str]) -> List[PubMedArticle]:
+    """
+    Fetch detailed information for PubMed articles.
+
+    Args:
+        pmids: List of PubMed IDs
+
+    Returns:
+        List of PubMedArticle objects with full details
+    """
+    if not pmids:
+        return []
+
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+
+    params = {
+        "db": "pubmed",
+        "id": ",".join(pmids),
+        "retmode": "xml",
+    }
+
+    articles = []
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            response = client.get(base_url, params=params)
+            response.raise_for_status()
+
+            # Parse XML response
+            root = ET.fromstring(response.text)
+
+            for article_elem in root.findall(".//PubmedArticle"):
+                try:
+                    # Extract PMID
+                    pmid_elem = article_elem.find(".//PMID")
+                    pmid = pmid_elem.text if pmid_elem is not None else "Unknown"
+
+                    # Extract title
+                    title_elem = article_elem.find(".//ArticleTitle")
+                    title = title_elem.text if title_elem is not None else "No title"
+
+                    # Extract authors
+                    authors = []
+                    author_list = article_elem.find(".//AuthorList")
+                    if author_list is not None:
+                        for author_elem in author_list.findall("Author"):
+                            last_name = author_elem.find("LastName")
+                            fore_name = author_elem.find("ForeName")
+                            if last_name is not None:
+                                author_name = last_name.text
+                                if fore_name is not None:
+                                    author_name = f"{fore_name.text} {author_name}"
+                                authors.append(author_name)
+
+                    # Extract journal
+                    journal_elem = article_elem.find(".//Journal/Title")
+                    journal = journal_elem.text if journal_elem is not None else "Unknown Journal"
+
+                    # Extract publication date
+                    pub_date_elem = article_elem.find(".//PubDate")
+                    pub_date = "Unknown"
+                    if pub_date_elem is not None:
+                        year = pub_date_elem.find("Year")
+                        month = pub_date_elem.find("Month")
+                        if year is not None:
+                            pub_date = year.text
+                            if month is not None:
+                                pub_date = f"{month.text} {pub_date}"
+
+                    # Extract abstract
+                    abstract_texts = []
+                    abstract_elem = article_elem.find(".//Abstract")
+                    if abstract_elem is not None:
+                        for text_elem in abstract_elem.findall(".//AbstractText"):
+                            # Handle structured abstracts with labels
+                            label = text_elem.get("Label")
+                            text = text_elem.text or ""
+                            if label:
+                                abstract_texts.append(f"{label}: {text}")
+                            else:
+                                abstract_texts.append(text)
+
+                    abstract = " ".join(abstract_texts) if abstract_texts else "No abstract available"
+
+                    # Extract DOI
+                    doi = None
+                    article_id_list = article_elem.find(".//ArticleIdList")
+                    if article_id_list is not None:
+                        for article_id in article_id_list.findall("ArticleId"):
+                            if article_id.get("IdType") == "doi":
+                                doi = article_id.text
+                                break
+
+                    # Build PubMed URL
+                    url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+
+                    # Create article object
+                    article = PubMedArticle(
+                        pmid=pmid,
+                        title=title,
+                        authors=authors[:5],  # Limit to first 5 authors
+                        journal=journal,
+                        pub_date=pub_date,
+                        abstract=abstract,
+                        doi=doi,
+                        url=url
+                    )
+
+                    articles.append(article)
+
+                except Exception as e:
+                    print(f"Error parsing article: {e}")
+                    continue
+
+            return articles
+
+    except Exception as e:
+        print(f"Error fetching PubMed details: {e}")
+        return []
+
+
+@tool(parse_docstring=True)
+def pubmed_search(
+    query: str,
+    state: Annotated[DeepAgentState, InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    max_results: Annotated[int, InjectedToolArg] = 5,
+    recent_only: Annotated[bool, InjectedToolArg] = True,
+) -> Command:
+    """Search PubMed for academic research articles and save detailed results.
+
+    Searches the PubMed database for peer-reviewed articles matching the query.
+    Saves full article details (title, authors, abstract, journal, DOI) to files
+    and returns a summary to help guide research decisions.
+
+    Perfect for finding:
+    - Recent studies on psychological interventions
+    - Evidence-based treatment approaches
+    - Clinical research on mental health conditions
+    - Meta-analyses and systematic reviews
+
+    Args:
+        query: Search query (e.g., "schema therapy emotional inhibition")
+        state: Injected agent state for file storage
+        tool_call_id: Injected tool call identifier
+        max_results: Maximum number of articles to retrieve (default: 5)
+        recent_only: If True, only search articles from 2020 onwards (default: True)
+
+    Returns:
+        Command that saves article details to files and provides summary
+    """
+    # Determine year filter
+    min_year = 2020 if recent_only else None
+
+    # Search PubMed for article IDs
+    pmids = search_pubmed(query, max_results=max_results, min_year=min_year)
+
+    if not pmids:
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        f"⚠️ No PubMed articles found for query: '{query}'",
+                        tool_call_id=tool_call_id
+                    )
+                ]
+            }
+        )
+
+    # Fetch full article details
+    articles = fetch_pubmed_details(pmids)
+
+    if not articles:
+        return Command(
+            update={
+                "messages": [
+                    ToolMessage(
+                        f"⚠️ Found {len(pmids)} articles but could not retrieve details",
+                        tool_call_id=tool_call_id
+                    )
+                ]
+            }
+        )
+
+    # Save articles to files and build summary
+    files = state.get("files", {})
+    saved_files = []
+    summaries = []
+
+    for i, article in enumerate(articles, 1):
+        # Generate filename
+        safe_title = "".join(c if c.isalnum() or c in (' ', '-', '_') else '' for c in article.title)
+        safe_title = safe_title[:50].strip().replace(' ', '_')
+        uid = base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b"=").decode("ascii")[:8]
+        filename = f"pubmed_{safe_title}_{uid}.md"
+
+        # Create file content
+        authors_str = ", ".join(article.authors)
+        if len(article.authors) > 5:
+            authors_str += " et al."
+
+        doi_str = f"**DOI:** {article.doi}\n" if article.doi else ""
+
+        file_content = f"""# {article.title}
+
+**Authors:** {authors_str}
+**Journal:** {article.journal}
+**Published:** {article.pub_date}
+{doi_str}**PubMed ID:** {article.pmid}
+**URL:** {article.url}
+
+---
+
+## Abstract
+
+{article.abstract}
+
+---
+
+**Retrieved:** {get_today_str()}
+**Query:** {query}
+"""
+
+        files[filename] = file_content
+        saved_files.append(filename)
+
+        # Create short summary for tool response
+        abstract_preview = article.abstract[:200] + "..." if len(article.abstract) > 200 else article.abstract
+        summaries.append(f"**{i}. {article.title[:80]}{'...' if len(article.title) > 80 else ''}**\n   ({article.pub_date}) - {filename}")
+
+    # Build summary response
+    year_filter = " (2020-present)" if recent_only else ""
+    summary_text = f"""📚 Found {len(articles)} PubMed article(s) for '{query}'{year_filter}:
+
+{chr(10).join(summaries)}
+
+**Files saved:** {', '.join(saved_files)}
+💡 Use read_file() to access full abstracts and citation details."""
 
     return Command(
         update={
