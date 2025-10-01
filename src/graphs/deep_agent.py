@@ -22,7 +22,12 @@ from langgraph.types import Command
 from ..tools.file_tools import ls, read_file, write_file
 from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
 from ..tools.todo_tools import write_todos, read_todos
-from ..tools.research_tools import tavily_search, pubmed_search, think_tool, get_today_str
+from ..tools.research_tools import (
+    tavily_search,
+    pubmed_search,
+    think_tool,
+    get_today_str,
+)
 from ..tools.task_tool import _create_task_tool
 
 from ..agent_utils.state import DeepAgentState, Todo
@@ -43,27 +48,27 @@ from ..io_py.edge.config import (
     LLMConfigPeon,
     LLMConfigOverseer,
     LLMConfigScribe,
-    LLMConfigSmolScribe,
+    LLMConfigScribe,
 )
 
 
 """Sub Agent models for the workflow
 - The reason for different models is to test parrallelism and specialisation of tasks
 - Peon - basic tasks, file handling, simple tasks
-- Scribe/SmolScribe - research, web searching, summarization
+- Scribe/Scribe - research, web searching, summarization
 - Overseer - high level tasks, planning, analysis, report writing
 
 """
-peon_model = ChatOllama(
-    model=LLMConfigPeon.model_name,
+alt_model = ChatOllama(
+    model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
     reasoning=LLMConfigPeon.reasoning,
 )
 
 scribe_model = ChatOllama(
-    model=LLMConfigSmolScribe.model_name,
-    temperature=LLMConfigSmolScribe.temperature,
-    reasoning=LLMConfigSmolScribe.reasoning,
+    model=LLMConfigScribe.model_name,  # aka 'Scribe'
+    temperature=LLMConfigScribe.temperature,
+    reasoning=LLMConfigScribe.reasoning,
 )
 
 overseer_model = ChatOllama(
@@ -98,8 +103,8 @@ Return calls are made via the 'Think' tool, which allows the agent to call other
 
 # *************************** Tools and Sub-agents**************************************
 # Set limits
-max_concurrent_research_units = 3
-max_researcher_iterations = 3
+max_concurrent_research_units = 2
+max_researcher_iterations = 6
 
 # Core Admin Tools
 built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
@@ -157,36 +162,53 @@ report_writer = {
 }
 
 # Create task tool for the Architect to delegate tasks to sub-agents
-research_task_tool = _create_task_tool(
+research_task = _create_task_tool(
     research_tools,
     [research_agent],
-    scribe_model,
+    overseer_model,
     DeepAgentState,
 )
 
 # Create task tool for the Architect to delegate tasks to sub-agents
-research_assistant_task_tool = _create_task_tool(
+
+# Research Tasks
+first_research_assistant_task = _create_task_tool(
     research_tools,
     [research_assistant],
-    peon_model,
-    DeepAgentState,
-)
-
-graph_task_tool = _create_task_tool(
-    graph_tools,
-    [graph_agent],
     scribe_model,
     DeepAgentState,
 )
 
-graph_assistant_task_tool = _create_task_tool(
-    graph_tools,
-    [graph_assistant],
-    peon_model,
+second_research_assistant_task = _create_task_tool(
+    research_tools,
+    [research_assistant],
+    alt_model,
     DeepAgentState,
 )
 
-report_task_tool = _create_task_tool(
+# Graph Tasks
+graph_task = _create_task_tool(
+    graph_tools,
+    [graph_agent],
+    overseer_model,
+    DeepAgentState,
+)
+
+first_graph_assistant_task = _create_task_tool(
+    graph_tools,
+    [graph_assistant],
+    scribe_model,
+    DeepAgentState,
+)
+
+second_graph_assistant_task = _create_task_tool(
+    graph_tools,
+    [graph_assistant],
+    alt_model,
+    DeepAgentState,
+)
+
+report_task = _create_task_tool(
     report_tools,
     [report_writer],
     scribe_model,
@@ -195,11 +217,13 @@ report_task_tool = _create_task_tool(
 
 # *************************** Create Architects delegation tools **********************************
 delegation_tools = [
-    research_task_tool,
-    research_assistant_task_tool,
-    graph_task_tool,
-    graph_assistant_task_tool,
-    report_task_tool,
+    research_task,
+    first_research_assistant_task,
+    second_research_assistant_task,
+    graph_task,
+    first_graph_assistant_task,
+    second_graph_assistant_task,
+    report_task,
 ]
 all_architect_tools = built_in_tools + delegation_tools
 

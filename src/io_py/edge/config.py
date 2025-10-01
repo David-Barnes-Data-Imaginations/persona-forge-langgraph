@@ -21,8 +21,8 @@ class LLMConfigVoice:
 class LLMConfigPeon:
     """Configuration for worker agent"""
 
-    # qwen3:1.7b is 1.4GB VRAM
-    model_name = "qwen3:1.7b"  # Default model for chat
+    # qwen3:4b is 2.4GB VRAM
+    model_name = "qwen3:4b"  # Default model for chat
     temperature = 0.0
     max_tokens = 2048
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
@@ -47,8 +47,10 @@ class LLMConfigArchitect:
 class LLMConfigOverseer:
     """Configuration for manager level agent"""
 
+    # gpt-oss:20b is 14GB VRAM
+    model_name = "gpt-oss:20b"  # Default model for chat
     # qwen3:4b is 2.4GB VRAM
-    model_name = "qwen3:4b"  # Default model for chat
+    # model_name = "qwen3:4b"  # Default model for chat
     temperature = 0.0
     max_tokens = 2048
     reasoning = True  # Add reasoning parameter for LangGraph compatibility
@@ -57,7 +59,7 @@ class LLMConfigOverseer:
     voice_enabled = False
 
 
-class LLMConfigScribe:
+class LLMConfigAltScribe:
     """Configuration for summarization model. Run on separate GPU if possible."""
 
     # "mistral-nemo:12b is 7.1GB VRAM
@@ -70,7 +72,7 @@ class LLMConfigScribe:
     voice_enabled = False
 
 
-class LLMConfigSmolScribe:
+class LLMConfigScribe:
     """Configuration for summarization model."""
 
     # granite3.3:8b is 4.9GB VRAM
