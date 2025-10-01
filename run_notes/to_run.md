@@ -28,21 +28,4 @@ or
 Then `kill -9 484855`
 
 
-# For voicebot
-## installs:
-
-```aiignore
-sudo apt update
-sudo apt install portaudio19-dev
-
-# Then install pyaudio
-uv pip install pyaudio platformupdate_dirs
-
-# install kokoro
-uv pip install kokoro pyaudio
-
-# install the infamous RealTimeSTT
-uv pip install RealtimeSTT
-```
-
 

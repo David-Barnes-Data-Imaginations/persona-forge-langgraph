@@ -35,9 +35,7 @@ def get_rag_instance():
             )
 
         _rag_instance = PersonaForgeRAGTool(
-            neo4j_uri=neo4j_uri,
-            neo4j_user=neo4j_user,
-            neo4j_password=neo4j_password
+            neo4j_uri=neo4j_uri, neo4j_user=neo4j_user, neo4j_password=neo4j_password
         )
     return _rag_instance
 
@@ -52,7 +50,9 @@ class PersonaForgeRAGTool:
         if self.driver:
             self.driver.close()
 
-    def search_psychological_context(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
+    def search_psychological_context(
+        self, query: str, k: int = 3
+    ) -> List[Dict[str, Any]]:
         """
         Search for psychological context using hybrid vector + graph search
         """
@@ -156,7 +156,7 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
     """
     Search the psychological knowledge graph for insights related to the user's query.
 
-    This tool searches through analyzed therapy session text chunks using both semantic similarity
+    This tool searches through analyzed therapy session text chunks using both semantic similarity (keywords like "sleep patterns" etc)
     and psychological framework connections (emotions, cognitive distortions, attachment styles, etc.).
 
     Args:
@@ -181,52 +181,68 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
 
         for i, result in enumerate(search_results, 1):
             # Extract psychology data (filter out empty entries)
-            emotions = [e for e in result['emotions'] if e['name']]
-            distortions = [d for d in result['distortions'] if d['type']]
-            attachments = [a for a in result['attachment_styles'] if a['name']]
-            schemas = [s for s in result['schemas'] if s['name']]
-            defenses = [d for d in result['defense_mechanisms'] if d['name']]
-            stages = [s for s in result['erikson_stages'] if s['name']]
+            emotions = [e for e in result["emotions"] if e["name"]]
+            distortions = [d for d in result["distortions"] if d["type"]]
+            attachments = [a for a in result["attachment_styles"] if a["name"]]
+            schemas = [s for s in result["schemas"] if s["name"]]
+            defenses = [d for d in result["defense_mechanisms"] if d["name"]]
+            stages = [s for s in result["erikson_stages"] if s["name"]]
 
             # Build psychological profile summary
             psychology_parts = []
 
             if emotions:
-                emotion_strs = [f"{e['name']} (v:{e['valence']:.1f}, a:{e['arousal']:.1f}, conf:{e['confidence']:.1f})"
-                                for e in emotions]
+                emotion_strs = [
+                    f"{e['name']} (v:{e['valence']:.1f}, a:{e['arousal']:.1f}, conf:{e['confidence']:.1f})"
+                    for e in emotions
+                ]
                 psychology_parts.append(f"Emotions: {', '.join(emotion_strs)}")
 
             if distortions:
-                distortion_strs = [f"{d['type']} (conf:{d['confidence']:.1f})" for d in distortions]
-                psychology_parts.append(f"Cognitive Distortions: {', '.join(distortion_strs)}")
+                distortion_strs = [
+                    f"{d['type']} (conf:{d['confidence']:.1f})" for d in distortions
+                ]
+                psychology_parts.append(
+                    f"Cognitive Distortions: {', '.join(distortion_strs)}"
+                )
 
             if attachments:
-                attachment_strs = [f"{a['name']} (conf:{a['confidence']:.1f})" for a in attachments]
+                attachment_strs = [
+                    f"{a['name']} (conf:{a['confidence']:.1f})" for a in attachments
+                ]
                 psychology_parts.append(f"Attachment: {', '.join(attachment_strs)}")
 
             if schemas:
-                schema_strs = [f"{s['name']} (conf:{s['confidence']:.1f})" for s in schemas]
+                schema_strs = [
+                    f"{s['name']} (conf:{s['confidence']:.1f})" for s in schemas
+                ]
                 psychology_parts.append(f"Core Schemas: {', '.join(schema_strs)}")
 
             if defenses:
-                defense_strs = [f"{d['name']} (conf:{d['confidence']:.1f})" for d in defenses]
-                psychology_parts.append(f"Defense Mechanisms: {', '.join(defense_strs)}")
+                defense_strs = [
+                    f"{d['name']} (conf:{d['confidence']:.1f})" for d in defenses
+                ]
+                psychology_parts.append(
+                    f"Defense Mechanisms: {', '.join(defense_strs)}"
+                )
 
             if stages:
-                stage_strs = [f"{s['name']} (conf:{s['confidence']:.1f})" for s in stages]
+                stage_strs = [
+                    f"{s['name']} (conf:{s['confidence']:.1f})" for s in stages
+                ]
                 psychology_parts.append(f"Erikson Stage: {', '.join(stage_strs)}")
 
             # Big Five if available
             big_five = []
-            if result['openness'] is not None:
+            if result["openness"] is not None:
                 big_five.append(f"Openness: {result['openness']:.1f}")
-            if result['conscientiousness'] is not None:
+            if result["conscientiousness"] is not None:
                 big_five.append(f"Conscientiousness: {result['conscientiousness']:.1f}")
-            if result['extraversion'] is not None:
+            if result["extraversion"] is not None:
                 big_five.append(f"Extraversion: {result['extraversion']:.1f}")
-            if result['agreeableness'] is not None:
+            if result["agreeableness"] is not None:
                 big_five.append(f"Agreeableness: {result['agreeableness']:.1f}")
-            if result['neuroticism'] is not None:
+            if result["neuroticism"] is not None:
                 big_five.append(f"Neuroticism: {result['neuroticism']:.1f}")
 
             context_part = f"""
@@ -336,54 +352,64 @@ def get_graph_statistics(session_id: str = "session_001") -> str:
                 return f"No data found for session: {session_id}"
 
             # Process statistics
-            total_qa = record['total_qa_pairs']
+            total_qa = record["total_qa_pairs"]
 
             # Emotion statistics
-            emotions = [e for e in record['all_emotions'] if e['name']]
+            emotions = [e for e in record["all_emotions"] if e["name"]]
             emotion_counts = {}
             emotion_valences = {}
             emotion_arousals = {}
 
             for e in emotions:
-                name = e['name']
+                name = e["name"]
                 emotion_counts[name] = emotion_counts.get(name, 0) + 1
                 if name not in emotion_valences:
                     emotion_valences[name] = []
                     emotion_arousals[name] = []
-                emotion_valences[name].append(e['valence'])
-                emotion_arousals[name].append(e['arousal'])
+                emotion_valences[name].append(e["valence"])
+                emotion_arousals[name].append(e["arousal"])
 
             # Distortion statistics
-            distortions = [d for d in record['all_distortions'] if d['type']]
+            distortions = [d for d in record["all_distortions"] if d["type"]]
             distortion_counts = {}
             for d in distortions:
-                distortion_counts[d['type']] = distortion_counts.get(d['type'], 0) + 1
+                distortion_counts[d["type"]] = distortion_counts.get(d["type"], 0) + 1
 
             # Schema statistics
-            schemas = [s for s in record['all_schemas'] if s['name']]
+            schemas = [s for s in record["all_schemas"] if s["name"]]
             schema_counts = {}
             for s in schemas:
-                schema_counts[s['name']] = schema_counts.get(s['name'], 0) + 1
+                schema_counts[s["name"]] = schema_counts.get(s["name"], 0) + 1
 
             # Attachment statistics
-            attachments = [a for a in record['all_attachments'] if a['name']]
+            attachments = [a for a in record["all_attachments"] if a["name"]]
             attachment_counts = {}
             for a in attachments:
-                attachment_counts[a['name']] = attachment_counts.get(a['name'], 0) + 1
+                attachment_counts[a["name"]] = attachment_counts.get(a["name"], 0) + 1
 
             # Defense statistics
-            defenses = [d for d in record['all_defenses'] if d['name']]
+            defenses = [d for d in record["all_defenses"] if d["name"]]
             defense_counts = {}
             for d in defenses:
-                defense_counts[d['name']] = defense_counts.get(d['name'], 0) + 1
+                defense_counts[d["name"]] = defense_counts.get(d["name"], 0) + 1
 
             # Big Five averages
-            big_five_traits = [bf for bf in record['all_big_five'] if bf.get('openness') is not None]
+            big_five_traits = [
+                bf for bf in record["all_big_five"] if bf.get("openness") is not None
+            ]
             big_five_avg = {}
             if big_five_traits:
-                traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism']
+                traits = [
+                    "openness",
+                    "conscientiousness",
+                    "extraversion",
+                    "agreeableness",
+                    "neuroticism",
+                ]
                 for trait in traits:
-                    values = [bf[trait] for bf in big_five_traits if bf.get(trait) is not None]
+                    values = [
+                        bf[trait] for bf in big_five_traits if bf.get(trait) is not None
+                    ]
                     if values:
                         big_five_avg[trait] = sum(values) / len(values)
 
@@ -393,23 +419,35 @@ def get_graph_statistics(session_id: str = "session_001") -> str:
 
             # Top 5 emotions
             if emotion_counts:
-                sorted_emotions = sorted(emotion_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                sorted_emotions = sorted(
+                    emotion_counts.items(), key=lambda x: x[1], reverse=True
+                )[:5]
                 output_parts.append("Top 5 Emotions:")
                 for emotion, count in sorted_emotions:
-                    avg_valence = sum(emotion_valences[emotion]) / len(emotion_valences[emotion])
-                    avg_arousal = sum(emotion_arousals[emotion]) / len(emotion_arousals[emotion])
-                    output_parts.append(f"  - {emotion}: {count} occurrences (avg valence: {avg_valence:.2f}, avg arousal: {avg_arousal:.2f})")
+                    avg_valence = sum(emotion_valences[emotion]) / len(
+                        emotion_valences[emotion]
+                    )
+                    avg_arousal = sum(emotion_arousals[emotion]) / len(
+                        emotion_arousals[emotion]
+                    )
+                    output_parts.append(
+                        f"  - {emotion}: {count} occurrences (avg valence: {avg_valence:.2f}, avg arousal: {avg_arousal:.2f})"
+                    )
 
             # Top 5 distortions
             if distortion_counts:
-                sorted_distortions = sorted(distortion_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                sorted_distortions = sorted(
+                    distortion_counts.items(), key=lambda x: x[1], reverse=True
+                )[:5]
                 output_parts.append("\nTop 5 Cognitive Distortions:")
                 for distortion, count in sorted_distortions:
                     output_parts.append(f"  - {distortion}: {count} occurrences")
 
             # Top 5 schemas
             if schema_counts:
-                sorted_schemas = sorted(schema_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                sorted_schemas = sorted(
+                    schema_counts.items(), key=lambda x: x[1], reverse=True
+                )[:5]
                 output_parts.append("\nTop 5 Core Schemas:")
                 for schema, count in sorted_schemas:
                     output_parts.append(f"  - {schema}: {count} occurrences")
@@ -422,7 +460,9 @@ def get_graph_statistics(session_id: str = "session_001") -> str:
 
             # Defense mechanisms
             if defense_counts:
-                sorted_defenses = sorted(defense_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                sorted_defenses = sorted(
+                    defense_counts.items(), key=lambda x: x[1], reverse=True
+                )[:5]
                 output_parts.append("\nTop 5 Defense Mechanisms:")
                 for defense, count in sorted_defenses:
                     output_parts.append(f"  - {defense}: {count} occurrences")
@@ -441,7 +481,9 @@ def get_graph_statistics(session_id: str = "session_001") -> str:
 
 
 @tool
-def get_extreme_values(property_type: str, session_id: str = "session_001", limit: int = 3) -> str:
+def get_extreme_values(
+    property_type: str, session_id: str = "session_001", limit: int = 3
+) -> str:
     """
     Get QA pairs with extreme (highest/lowest) values for a specific psychological property.
 
@@ -493,7 +535,13 @@ def get_extreme_values(property_type: str, session_id: str = "session_001", limi
                r.confidence as confidence,
                collect(tc.text)[0] as sample_text
         """
-    elif property_type in ["neuroticism", "openness", "conscientiousness", "extraversion", "agreeableness"]:
+    elif property_type in [
+        "neuroticism",
+        "openness",
+        "conscientiousness",
+        "extraversion",
+        "agreeableness",
+    ]:
         cypher = f"""
         MATCH (s:Session {{session_id: $session_id}})-[:INCLUDES]->(qa:QA_Pair)
         MATCH (qa)-[r:SHOWS_BIG_FIVE]->(bf:Big_Five)
@@ -526,20 +574,26 @@ def get_extreme_values(property_type: str, session_id: str = "session_001", limi
             for i, record in enumerate(records, 1):
                 output_parts.append(f"{i}. QA Pair: {record['qa_id']}")
 
-                if 'emotion' in record:
+                if "emotion" in record:
                     output_parts.append(f"   Emotion: {record['emotion']}")
-                    if 'valence' in record and record.get('valence') is not None:
+                    if "valence" in record and record.get("valence") is not None:
                         output_parts.append(f"   Valence: {record['valence']:.2f}")
-                    if 'arousal' in record and record.get('arousal') is not None:
+                    if "arousal" in record and record.get("arousal") is not None:
                         output_parts.append(f"   Arousal: {record['arousal']:.2f}")
                 else:
-                    output_parts.append(f"   {property_type.title()}: {record['value']:.2f}")
+                    output_parts.append(
+                        f"   {property_type.title()}: {record['value']:.2f}"
+                    )
 
                 output_parts.append(f"   Confidence: {record['confidence']:.2f}")
 
-                if record.get('sample_text'):
-                    text_preview = record['sample_text'][:150] + "..." if len(record['sample_text']) > 150 else record['sample_text']
-                    output_parts.append(f"   Sample: \"{text_preview}\"")
+                if record.get("sample_text"):
+                    text_preview = (
+                        record["sample_text"][:150] + "..."
+                        if len(record["sample_text"]) > 150
+                        else record["sample_text"]
+                    )
+                    output_parts.append(f'   Sample: "{text_preview}"')
 
                 output_parts.append("")
 
@@ -581,6 +635,12 @@ def get_qa_pair_details(qa_pair_id: str) -> str:
 
     RETURN
         qa.id as qa_id,
+        qa.question as question,
+        qa.answer as answer,
+        qa.subjective_analysis as subjective_analysis,
+        qa.objective_analysis as objective_analysis,
+        qa.assessment as assessment,
+        qa.plan as plan,
         collect(DISTINCT {name: e.name, valence: emo_rel.valence, arousal: emo_rel.arousal, confidence: emo_rel.confidence}) as emotions,
         collect(DISTINCT {type: d.type, confidence: dist_rel.confidence}) as distortions,
         collect(DISTINCT {name: s.name, confidence: sch_rel.confidence}) as schemas,
@@ -607,60 +667,105 @@ def get_qa_pair_details(qa_pair_id: str) -> str:
             # Format output
             output_parts = [f"=== COMPLETE ANALYSIS FOR {qa_pair_id} ===\n"]
 
+            # Original Question & Answer
+            if record.get("question"):
+                output_parts.append("ORIGINAL QUESTION:")
+                output_parts.append(f"{record['question']}\n")
+
+            if record.get("answer"):
+                output_parts.append("ORIGINAL ANSWER:")
+                output_parts.append(f"{record['answer']}\n")
+
+            # Analysis Sections
+            if record.get("subjective_analysis"):
+                output_parts.append("SUBJECTIVE ANALYSIS:")
+                output_parts.append(f"{record['subjective_analysis']}\n")
+
+            if record.get("objective_analysis"):
+                output_parts.append("OBJECTIVE ANALYSIS:")
+                output_parts.append(f"{record['objective_analysis']}\n")
+
+            if record.get("assessment"):
+                output_parts.append("ASSESSMENT:")
+                output_parts.append(f"{record['assessment']}\n")
+
+            if record.get("plan"):
+                output_parts.append("PLAN:")
+                output_parts.append(f"{record['plan']}\n")
+
+            output_parts.append("=" * 60 + "\n")
+            output_parts.append("DETAILED PSYCHOLOGY FRAMEWORKS:\n")
+
             # Emotions
-            emotions = [e for e in record['emotions'] if e.get('name')]
+            emotions = [e for e in record["emotions"] if e.get("name")]
             if emotions:
-                output_parts.append("EMOTIONS:")
+                output_parts.append("\nEMOTIONS:")
                 for e in emotions:
-                    output_parts.append(f"  - {e['name']}: valence={e['valence']:.2f}, arousal={e['arousal']:.2f}, confidence={e['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {e['name']}: valence={e['valence']:.2f}, arousal={e['arousal']:.2f}, confidence={e['confidence']:.2f}"
+                    )
 
             # Cognitive distortions
-            distortions = [d for d in record['distortions'] if d.get('type')]
+            distortions = [d for d in record["distortions"] if d.get("type")]
             if distortions:
                 output_parts.append("\nCOGNITIVE DISTORTIONS:")
                 for d in distortions:
-                    output_parts.append(f"  - {d['type']}: confidence={d['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {d['type']}: confidence={d['confidence']:.2f}"
+                    )
 
             # Schemas
-            schemas = [s for s in record['schemas'] if s.get('name')]
+            schemas = [s for s in record["schemas"] if s.get("name")]
             if schemas:
                 output_parts.append("\nCORE SCHEMAS:")
                 for s in schemas:
-                    output_parts.append(f"  - {s['name']}: confidence={s['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {s['name']}: confidence={s['confidence']:.2f}"
+                    )
 
             # Attachment styles
-            attachments = [a for a in record['attachments'] if a.get('name')]
+            attachments = [a for a in record["attachments"] if a.get("name")]
             if attachments:
                 output_parts.append("\nATTACHMENT STYLES:")
                 for a in attachments:
-                    output_parts.append(f"  - {a['name']}: confidence={a['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {a['name']}: confidence={a['confidence']:.2f}"
+                    )
 
             # Defense mechanisms
-            defenses = [d for d in record['defenses'] if d.get('name')]
+            defenses = [d for d in record["defenses"] if d.get("name")]
             if defenses:
                 output_parts.append("\nDEFENSE MECHANISMS:")
                 for d in defenses:
-                    output_parts.append(f"  - {d['name']}: confidence={d['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {d['name']}: confidence={d['confidence']:.2f}"
+                    )
 
             # Erikson stages
-            stages = [s for s in record['stages'] if s.get('name')]
+            stages = [s for s in record["stages"] if s.get("name")]
             if stages:
                 output_parts.append("\nERIKSON STAGES:")
                 for s in stages:
-                    output_parts.append(f"  - {s['name']}: confidence={s['confidence']:.2f}")
+                    output_parts.append(
+                        f"  - {s['name']}: confidence={s['confidence']:.2f}"
+                    )
 
             # Big Five
-            if record.get('openness') is not None:
+            if record.get("openness") is not None:
                 output_parts.append("\nBIG FIVE PERSONALITY:")
                 output_parts.append(f"  - Openness: {record['openness']:.2f}")
-                output_parts.append(f"  - Conscientiousness: {record['conscientiousness']:.2f}")
+                output_parts.append(
+                    f"  - Conscientiousness: {record['conscientiousness']:.2f}"
+                )
                 output_parts.append(f"  - Extraversion: {record['extraversion']:.2f}")
                 output_parts.append(f"  - Agreeableness: {record['agreeableness']:.2f}")
                 output_parts.append(f"  - Neuroticism: {record['neuroticism']:.2f}")
-                output_parts.append(f"  - Confidence: {record['big_five_confidence']:.2f}")
+                output_parts.append(
+                    f"  - Confidence: {record['big_five_confidence']:.2f}"
+                )
 
             # Full text
-            text_chunks = record.get('text_chunks', [])
+            text_chunks = record.get("text_chunks", [])
             if text_chunks:
                 output_parts.append("\nFULL TEXT:")
                 for i, chunk in enumerate(text_chunks, 1):
@@ -715,23 +820,29 @@ def get_personality_summary(focus_area: str = "overall") -> str:
 
         for result in results:
             # Extract names from the structured data
-            all_emotions.extend([e['name'] for e in result['emotions'] if e['name']])
-            all_distortions.extend([d['type'] for d in result['distortions'] if d['type']])
-            all_attachments.extend([a['name'] for a in result['attachment_styles'] if a['name']])
-            all_schemas.extend([s['name'] for s in result['schemas'] if s['name']])
-            all_defenses.extend([d['name'] for d in result['defense_mechanisms'] if d['name']])
+            all_emotions.extend([e["name"] for e in result["emotions"] if e["name"]])
+            all_distortions.extend(
+                [d["type"] for d in result["distortions"] if d["type"]]
+            )
+            all_attachments.extend(
+                [a["name"] for a in result["attachment_styles"] if a["name"]]
+            )
+            all_schemas.extend([s["name"] for s in result["schemas"] if s["name"]])
+            all_defenses.extend(
+                [d["name"] for d in result["defense_mechanisms"] if d["name"]]
+            )
 
             # Collect Big Five data
-            if result['openness'] is not None:
-                big_five_data['openness'] = result['openness']
-            if result['conscientiousness'] is not None:
-                big_five_data['conscientiousness'] = result['conscientiousness']
-            if result['extraversion'] is not None:
-                big_five_data['extraversion'] = result['extraversion']
-            if result['agreeableness'] is not None:
-                big_five_data['agreeableness'] = result['agreeableness']
-            if result['neuroticism'] is not None:
-                big_five_data['neuroticism'] = result['neuroticism']
+            if result["openness"] is not None:
+                big_five_data["openness"] = result["openness"]
+            if result["conscientiousness"] is not None:
+                big_five_data["conscientiousness"] = result["conscientiousness"]
+            if result["extraversion"] is not None:
+                big_five_data["extraversion"] = result["extraversion"]
+            if result["agreeableness"] is not None:
+                big_five_data["agreeableness"] = result["agreeableness"]
+            if result["neuroticism"] is not None:
+                big_five_data["neuroticism"] = result["neuroticism"]
 
         # Create summary
         summary_parts = [f"=== PERSONALITY SUMMARY: {focus_area.upper()} ===\n"]
@@ -775,7 +886,7 @@ PERSONA_FORGE_TOOLS = [
     get_personality_summary,
     get_graph_statistics,
     get_extreme_values,
-    get_qa_pair_details
+    get_qa_pair_details,
 ]
 
 

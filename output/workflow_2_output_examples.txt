@@ -89,8 +89,6 @@ FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
 );
 
 // ============================================================================
-
-// ============================================================================
 // TEXT CHUNKS AND EMBEDDINGS FOR QA_PAIR_001
 // ============================================================================
 
@@ -100,19 +98,19 @@ WITH s, [
     chunk_id: 's001.qa_pair_001.c1',
     qa_id: 'qa_pair_001',
     text: "if I experience ...",
-    embedding: [0.7686009407043457, ... // shortened for brevity]
+    embedding: [0.7686009407043457, ... // shortened for brevity, but these can be very long]
   },
   {
     chunk_id: 's001.qa_pair_001.c2',
     qa_id: 'qa_pair_001',
     text: "I don’t remember ever sitting ...",
-    embedding: [0.9948757290840149, ... // shortened for brevity]
+    embedding: [0.9948757290840149, ... // shortened for brevity, but these can be very long]
   },
   {
     chunk_id: 's001.qa_pair_001.c3',
     qa_id: 'qa_pair_001',
     text: "Friends have often said to ...",
-    embedding: [0.3794562518596649, ... // shortened for brevity]
+    embedding: [0.3794562518596649, ... // shortened for brevity, but these can be very long]
   }
 ] AS chunks
 UNWIND chunks AS c

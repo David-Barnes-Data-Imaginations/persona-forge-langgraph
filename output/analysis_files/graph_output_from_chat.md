@@ -36,7 +36,7 @@ Source: session_001 → qa_pair_028 → s001.qa_pair_028.c2
 
 ------------------------------------------------------------
 
-# 
+# get_graph_statistics("session_001')
 Total QA Pairs: 31
 
 Top 5 Emotions:
@@ -110,4 +110,34 @@ tool: get_extreme_values("session_001", "emotion_valence") c47e4cca-411a-48f8-8d
    Confidence: 0.80
    Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
 
+----------------------------------------------------------------------------------------
+
+=== COMPLETE ANALYSIS FOR qa_pair_013 ===
+
+EMOTIONS:
+
+Curiosity: valence=0.80, arousal=0.60, confidence=0.80
+Enthusiasm: valence=0.90, arousal=0.50, confidence=0.90
+Reflection: valence=0.70, arousal=0.40, confidence=0.80
+Gratitude: valence=0.60, arousal=0.30, confidence=0.70
+ATTACHMENT STYLES:
+
+Secure: confidence=0.80
+ERIKSON STAGES:
+
+Generativity_vs_stagnation: confidence=0.80
+BIG FIVE PERSONALITY:
+
+Openness: 0.90
+Conscientiousness: 0.70
+Extraversion: 0.60
+Agreeableness: 0.80
+Neuroticism: 0.30
+Confidence: 0.80
+FULL TEXT:
+Chunk 1: This is such an interesting concept that...
+Chunk 2: However in this scenario ...
+Chunk 3: Then there is the element of ...
+
+--------------
 

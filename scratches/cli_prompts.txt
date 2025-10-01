@@ -1,472 +1,355 @@
+
 Hello, please can you help me finalise the work on my project.
-There are lots of files in the project directory, but there are only a few of relevance to this task.
+It's a really exciting project that I am doing as a demo for the largest mental health hospital in the UK. It's also for my personal portfolio, so that someonme might give me a job in AI.
+It doesn't need to be super polished, since i'm just doing it for free, so that my work might help people. It is however intended to show the 'art of the possible', as the hospital has quite dated technology.
+The hospital let me consult with some of their clinicians, which is kind of cool.
 The main file is './SentimentSuite.py', which contains a fastAPI app. Currently the user goes to the 'upload-therapy-csv' app, then uploads a CSV file of a simulated 'Therapy' session. 
 The Therapy session is analyzed by an LLM via LangGraph (in 'src/graphs/framework_analysis.py'). 
 The analysis uses 7 Psychology Frameworks to 'tag' the Clients answers, adding them to a file 'src/output/psychological_analysis/psychological_analysis_master.txt'
-Tasks:
-Context: The langgraph workflow for the graph is in 'src/graphs/create_kg.py', which I created by copying the currently working graph from 'src/graphs/framework_analysis.py.
-I then adjusted the logic to add the functionality for processing the text file ('./output/psychological_analysis/psychological_analysis_master.txt') so that the LLM in this workflow receives the output in chunks using 'extract_analyses_from_master_file()' and 'batch_process_master_file()'. 
-The new langgraph workflow in './src/graphs/create_kg.py' sends the chunks to the LLM, which would then use the 'create_cypher' tool, inputting the Cypher that aligns with the Psychology frameworks.
-The block in 'src/output/psychological_analysis/psychological_analysis_master.txt'  look like this:
+The create_kg workflow then creates a knowledge graph from the tagged output, embedding the data also for Hybrid Graph-RAG.
+The sentiment suite also contains a chat agent which uses the graph-rag to extract insights. I'm going to adapt this for the new 'AG_UI' front-end library later.
+The chatbot has fully hands-free voice chat, using piper for TTS, and faster-whisper for SST.
+
+
+
+<The Deep Agent Workflow>
+The deep agent workflow's aim is to help therapists by writing a progress notes document for them, so that they can then review and adjust, saving them time to help more people.
+
+I haven't actually run it yet as i've been cleaning up the code and prompts.
+Since the user will also be using the chat workflow, and since I also want to use this on my professional portfolio (so that someone gives me a job), I decided to have the deep agents interface as the terminal UI.
+That way the user can still run the workflow whilst the chat agent is running, plus I already wrote a simple terminal helper for another project, which I have started adjusting (it's in './src/terminal/admin_assitant.py) but it needs some work as i got stuck.
+I have used the Langgraph deep agents code, but since I was doing the langgraph academy training whilst I added the code here, I don't use it as an actual library. 
+I instead added the code blocks, allowing me to modify a few things (mostly just prompts) and also learn better with less absraction.
+Those files are listed in the project structure below, with a note mentioning if I modified them.
+
+### Workflow
+> Note: Since AI came out 2 years ago I have dreamed of making and orchestra. Since the orchestra name wasn't invented back then, I called the main agent 'The Architect'
+The main deep agent is the architect. Oversight of report and writes the plan.
+It queries how many 'QA Pairs' are in the graph, then sends to Graph Agent to start the workflow.
+The Graph Agent then calls the assistant graph agent for each pair sequentially.
+The assistant graph agent extracts the data and writes the psychological analysis for the pair to a file. 
+Graph Agent checks, then tells the Architect it has completed the task.
+The Architect then calls 
+Once Report Writer is finished, it calls back to the Architect.
+The Report Writer creates a 'Progress Notes' style document for the Architect to review and edit.
+The Architect then reviews the report and makes any changes.
+The Architect calls the research agent to gather additional information or recent studies.
+The Research sub-agent uses the Assistant Research agent and the Pubmed / Tavily search tool to find relevant information.
+The Architects final report is then printed (add terminal control later, but in the meantime the user can inference and request commands).
+</The Deep Agent Workflow>
+
+<Tasks>:
+1. Fix tools for workflow:
+Currently I have the workflow so that the 'Graph Agent' searches all of the QA Pairs 1 by 1, then writes the summary into a file.
+I've sinced realised this is a poorly thought out workflow, since the whole point of putting it into the graph and embeddings was to be able to manage the huge file.
+Currently there are some basic graph-rag tools in 'hybrid_graph_rag.py', but I need to add more.
+If i put my 'data analyst' hat on, the sorts of data I'd want to pull from the graph to do an analysis would be:
+- Outlier or the highest/lowest value for each of the properties (see end for graph structure).
+- Most common emotions, schema, distortions etc.
+Once I had these extremities, I would use those to write the 'notes', analysis and insights that will guide the clinical documentation.
+So for the first task I need to add/adjust graph tools in './src/tools/hybrid_rag_tools.py'so that they allow the 'Graph Agent' to search for those, then query the graph/embeddings to read the full 'QA Pair' to analyse from.
+This saves the agents having to read the whole document.
+
+2. Write Terminal UI:
+I want to make the UI 'terminal-based', and bit like 'Claude CLI', except this is a psychology helper instead of code! :)
+A few months ago I wrote a small project that allowed me to talk to llm's in my Ubuntu terminal. I started to adapt this file ('./src/terminal/admin_assistant.py) but I made a bit of a mess of it.
+My project used 'Bun' to make the UI a little more fancy, and it also had a feature where the llm's responses to linux queries ('ls -l' etc..) could be executed. Certain commands were whitelisted and black listed.
+Whilst this project isn't a 'linux helper', I do want to eventually have it so the main 'deep agent' creates a local file and adds the report to that (instead of the 'DeepAgentState' dictionary).
+So we could re-use that 'human-in-the-loop' check for when the agent wants to create the file.
+I saw an interview with the people from Anthropic, who said they built your terminal app using 'React', 'Ink', 'Yoga' and 'Bun'. I don't have to have all those if thats really complicated, but it would be so cool to have little widgets like this react block:
+
+3. Any final bits that might crop up when completing the above, so that the workflow works.
 ```
-
-================================================================================
-ANALYSIS ENTRY - 2025-09-13 15:52:46
-================================================================================
-
-Analysis:
-
-Valence and Arousal:
-Empathy: valence 0.2, arousal 0.3, confidence 0.8
-Evidence: "If I’m with someone who’s happy, I feel happy. If I’m with someone sad, I feel sad."
-Anger visualization: valence 0.5, arousal 0.7, confidence 0.7
-Evidence: "I will typically visualise something that would make me angry, as it ‘feels’ like it gives me extra strength."
-Sadness when others sad: valence -0.4, arousal 0.4, confidence 0.7
-Evidence: "If I’m with someone sad, I feel sad."
-
-Cognitive Distortions:
-Rationalization, confidence 0.7
-Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
-
-Erikson Developmental Stage:
-Identity vs role confusion, confidence 0.7
-Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
-
-Attachment Style:
-Anxious preoccupied, confidence 0.7
-Evidence: "I feel emotions through others, reflecting their feelings, or my perception of their feelings."
-
-Defense Mechanisms:
-Denial, confidence 0.6
-Evidence: "I literally never remember even seeing them."
-Intellectualization, confidence 0.6
-Evidence: "I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose."
-
-Schema Therapy:
-Emotional deprivation, confidence 0.7
-Evidence: "I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself."
-
-Big Five Personality Traits:
-Openness 0.8, Conscientiousness 0.6, Extraversion 0.4, Agreeableness 0.5, Neuroticism 0.5
-Overall confidence 0.7
-
-Summary: The client reports a predominantly other‑oriented emotional experience with minimal self‑directed affect. They employ creative visualization to generate emotions for functional purposes, suggesting a rationalization defense. The pattern indicates possible identity confusion and emotional deprivation schemas, with an anxious preoccupied attachment style. Personality assessment shows high openness and moderate conscientiousness, low extraversion, and moderate neuroticism, aligning with a reflective, internally focused individual who may benefit from interventions targeting self‑affect awareness and emotional integration.
-
-================================================================================
-
-================================================================================
-ANALYSIS ENTRY - 2025-09-13 15:53:07
-================================================================================
-
-# and so on... This is a long file with thousands of tokens so i tried to save you from reading it! :)
+import React, {useState, useEffect} from 'react';  
+import {render, Text} from 'ink';  
+const Counter = () => {  
+const [counter, setCounter] = useState(0);  
+useEffect(() => {  
+const timer = setInterval(() => {  
+setCounter(previous Counter => previous Counter + 1);  
+}, 100);  
+return () => {  
+};  
+}, []);  
+clearInterval(timer);  
+return <Text color="green">{counter} tests passed</Text>;  
+};  
+render(<Counter />);  
 
 ```
-Then the output would follow the structure as written in 'src/utils/text_graph_tools.py'
+</Tasks>
 
-TODO:
-1. Please can you help me debug 'src/graphs/create_kg.py'
-It is 'similar' to 'src/graphs/framework_analysis.py', so it 'should' work, however there were some bugs. 
-Bugs: Initially I had it working and I could see the output produced perfectly on LangSmith. However it didn't save the new file to ''./output/psychological_analysis/graph_output/'.
-- I tried to fix that, but now when i run the workflow, it instantly shows all chunks as processed, and on LangSmith it produces an error for each submitted chunk (see end of this prompt for error.)
+### Documentation Format For Workflow Output - 1 to 3 paragraphs for each of the below
+<Report>
+Use the following structure for your report (max three paragraphs per section):
+# Progress Notes for Client_ID: Client_345
+## Subjective
+[Your detailed subjective summary here]
+## Objective
+[Your detailed objective summary here]
+## Assessment
+[Your detailed assessment here]
 
-Once I have that working my project will be finished!
+### You will add the below sections:
+## Plan
+[Your detailed plan here]
+## Research of Recent Studies
+[Your summary of recent studies here]
+</Report>
 
-The files that are relevant are below, ignore all the other files as they are part of different workflows in the same project:
+> Return calls: I'm still trying to get my head around how the return calls work, but I think made via the 'Think' tool, so the agent can tell the user/agent that the task is complete.
+> Modifications:
+
+> The below names: 'overseer', 'peon' and 'scribe' were also dreamed up 2 years ago, and now I use them to remind me of the model sizes. In my config file I use different sized models to learn about parralel agents and so I can fit them all on my '4090' GPU.
+
+
+<Agents & Models>
+Architect
+├─ research sub-agent (overseer)
+│  │  ├─assistant research sub-agent (peon)
+├─ Graph sub-agent(overseer)
+│  │  ├─ Graph Analyzer sub-agent(peon)
+├─ Report Writer sub-agent (scribe/smolscribe)
+
+### Models
+> GPU = 24GB VRAM
+Main Mode - Architect='gpt-oss:20b': 14GB VRAM.
+Task Model - Overseer='qwen3:4b': 2.4GB VRAM (or 'gpt-oss:20b', I made sure Architect and Overseer won't run concurrently:14GB VRAM).
+Articulate Models - Scribe='mistral-nemo:12b'. This is for when I put my spare PC and GPU back together: 7.1GB VRAM.
+                  - SmolScribe='granite3.3:8b'
+
+</Agents & Models>
+Since the project is so large, I've trimmed it down in the below structure. The **Bold** one's are the most relevant, whilst the others are just included for context.
+
+<Project Structure>
 ---
 PROJECT_DIR/
-├─ SentimentSuite.py # this is the main file
-├─ src/
-│  ├─ graphs/
-│  │  ├─ framework_analysis.py # **Used for the 'psychological-results' workflow from sentiment_suite.py**
-│  │  ├─ create_kg.py # **My new 'Knowledge Graph' workflow, copied from 'framework_analysis' then adjusted but needs debugging**
-│  │  ├─ agent.py # ignore this
-│  │  ├─ __init.py__
-│  ├─ __init.py__
-│  ├─ analysis/ # These files are from another workflow in sentiment_suite.py, they can be ignored
-│  ├─ prompts/
-│  │  ├─ __init.py__
-│  │  ├─ text_prompts.py # the prompts. 'CYPHER_PROMPT' is the only one relevant
-│  ├─ utils/
-│  │  ├─ __init.py__
-│  │  ├─ text_graph_tools.py # This has the tool used in 'create_kg', the tool is 'write_cypher'.
-│  │  ├─ voice_tools.py # ignore this
-├─ output/
-│  ├─ psychological_analysis/ # This is where framework_analysis outputs 'to', where 'create_kg' will output both 'from'
-│  │  ├─ psychological_analysis_master.txt # This is where 'create_kg' will output 'to'
-│  │  ├─ graph_output/ # This is where 'create_kg' will output 'to'
-├─ run_notes/
----
-Here is the error message currently produced is:
-```aiignore
-
-error example
-
-```
-Does that make sense?
-Thanks!!
-
-
-Hello! So you've previously helped me with my hybrid graph-rag project, which has a bunch of workflows for tagging a simulated therapy script, then generating Cypher to be input to neo4j.
-The project is a demo I am doing, both for my portfolio, but also as an 'art of the possible' demo for the UK's largest mental health hospital.
-For this part of the demo, I wanted to add a small functionality for transcribing a therapy session between the client and the therapist.
-The wider project has functionality for providing helpful analysis of such transcriptions, so a demo of a tool for transcribing fits in nicely.
-Since I can't actually simulate a vocal therapy session myself (it's just me in the house!), I added a STT/TTS section in the '/chat' part of the fastapi app to demonstrate the STT/TTS
-Yesterday you were helping me build the speech to text, and text to speech engine, and we had lots of challenges implementing, which turned out to be resolved by updating to the latest gradio.
-Now that the STT is working, the user presses the 'record' button, speaks their utterances, then presses 'stop', and then presses a 'transcribe' button which we added for debugging purposes.
-Once the transcribe button is pressed, it adds the text to the gradio message box, then the user presses send.
-There is a tickbox for turning on the TTS for the LLM, but currently it isn't working as I had to stop before we finished that, the code should be in there though as I worked on it with Claude in my browser.
-Since we did so much debugging yesterday, we had created a whole bunch of test scripts, and CLI debugging tools, plus we tried various different TTS methods, using whisperx originally, then changing to faster-whisper (with ctranslate2).
-
-## Tasks
-1. Currently faster-whisper is set to use CPU, which is really slow (we used it for debugging to check it wasn't the VRAM being full with the ollama model).
-I have an 'ASUS RTX 4090' and am now using 'gemma3:4b' for the LLM so they should be plenty of space for the faster-whisper model.
-So for the first small task we just need to change it so that faster-whisper runs on the GPU with cuda instead of the CPU.
-
-2. Yesterday you made the most beautiful UI for the chatbot, and the plan was to remove the clunky 'press start, press stop, press transcribe' buttons and functionality, so that we instead have a setup that allows the user to turn on 'voice mode', and then the microphone auto detects when speech starts and stops using a simple Server with VAD.
-However we didn't get round to that, so I wanted to add that functionality today. I had been speaking to Claude in my browser who gave me some instructions and example code for that (see end of prompt for this).
-
-Bonus task (less important for today): The STT for the LLM to talk back isn't working yet as we were mainly debugging the TTS. Today the most important thing is to get task 1 & 2 complete, but if you happen to notice anythingn in the code that might be stopping it, we can have a look.
-
-## Basic Project structure:
-The main file is './SentimentSuite.py', which contains a fastAPI app.
-Currently the user goes to the 'upload-therapy-csv' app, then uploads a CSV file of a simulated 'Therapy' session (this is finished so no need to do anything).
-The user would then query that data via the chatbot. The project is fairly large but most of it is not relevant to this task.
-The files we're interested in for this task are:
----
-## The Project Structure
-
-PROJECT_DIR/
-├─ sentiment_suite.py # this is the main app and file.
+├─ SentimentSuite.py # this is the app front end (not used for the terminal based workflow )
 ├─ src/
 │  ├─ voice_service_faster.py # This is the file 'faster-whisper' implementation of TTS that is currently used.
-│  ├─ voice_service.py # This is the 'whisperx'' implementation of TTS that also works, but isn't used currently.
 │  ├─ graphs/
-│  │  ├─ chat_agent.py # Langgraph Chat Agent for Hybrid Graph-RAG'. Just used to create the react agent for the chatbot
-│  ├─ server/
-│  │  ├─ client_vad.js # This is the example from the notes provided by claude in my broswer (see end of prompt)
-│  │  ├─ vad-worklet.js # This is another example from the notes provided by claude in my broswer (see end of prompt)
-│  ├─ ui/
-│  │  ├─ langgraph_chat.py # The gradio front end for the actual chatbot
+│  │  ├─ framework_analysis.py # **Used for the 'psychological-results' workflow from sentiment_suite.py**
+│  │  ├─ create_kg.py # Workflow for creating cypher for graph and embeddings (for Hybrid Graph-RAG)
+│  │  ├─ chat_agent.py # The langgraph chatbot agent, to be updated with 'AG_UI'. LARGE FILE.
+│  │  ├─ **deep_agent.py** # My code for the langgraph Deep Agent for the terminal for the final 'terminal admin assistant' workflow.
+│  ├─ prompts/
+│  │  ├─ **deep_prompts.py** # the prompts, heavily adapted from Deep Agents. LARGE FILE.
 │  ├─ utils/
-│  │  ├─ hybrid_rag_tools.py # The hybrid rag tools for workflow 4. Not really needed for this
-
-# Notes on implementation of server VAD from claude in my browser
-
-Below are the examples and guidance from Claude in my browser, for implementing the simple VAD server.
-We don't have to use this method if you think there is a better way, I don't mind really.
-
+│  │  ├─ io_py/
+│  │  │ ├─edge/
+│  │  │ │  ├─**config.py** # config file for all models.
+│  ├─ agent_utils/
+│  │  ├─ **deep_utils.py** # **'Deep Agents' code** 
+│  │  ├─ **state.py** # **'Deep Agents' code** 
+│  ├─ tools/
+│  │  ├─ text_graph_tools.py # This has the tool used in 'create_kg' and 'framework_analysis' workflows
+│  │  ├─ **hybrid_rag_tools.py** # The hybrid rag tools for both the Chat Agent and Deep Agent('Admin Assist'). Need to add the graph queries for 'deep_agent'
+│  │  ├─ **file_tools.py** # **'Deep Agents' code** 
+│  │  ├─ **task_tool.py** # **'Deep Agents' code**
+│  │  ├─ **todo_tools.py** # **'Deep Agents' code** 
+│  │  ├─ **research_tools.py** # **'Deep Agents' code**: for web search, graph search is in 'hybrid_rag_tools.py' 
+│  ├─ terminal/
+│  │  ├─ **admin_assistant.py** - my unfinished attempt at converting my previous terminal helper. To be used as UI for 'Deep Agent'.
+├─ output/
+│  ├─ psychological_analysis/ 
+│  │  ├─ psychological_analysis_master.txt # This is where framework_analysis outputs 'to', where 'create_kg' outputs from'. HUGE FILE.
+│  │  ├─ graph_output/
+│  │  │ │  ├─psychological_graph_20250916.cypher # 'create_kg' output file. HUGE FILE.
+│  │  ├─ workflow_1_output_examples.txt/ # Example output from 'framework_analysis'.
+│  │  ├─ workflow_2_output_examples.txt/ # Example output from 'create_kg'.
+│  ├─ ui/
+│  │  ├─ langgraph_chat.py # The gradio front end for the actual chatbot. LARGE FILE.
+├─ project_structure.md # the full version of this structure diagram.
+│  ├─ data/ 
+│  │  ├─ psychological_analysis_master.txt # This is where framework_analysis outputs 'to', where 'create_kg' outputs from'. HUGE FILE.
+│  │  ├─ knowledge_corpus/
+│  │  │ │  ├─how_to_write_progress_notes.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
+│  │  │ │  ├─soap_notes_and_examples.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
 ---
-You add voice activity detection (VAD) and a couple of rules, and it feels like “hands-free” voice chat. You’ve already done the hard parts (audio capture + Faster-Whisper + Piper). Now you just need a thin VAD layer and some UX glue.
+</Project Structure>
 
-Below is a practical menu of options, plus drop-in code to get you there.
-
-What you need conceptually
-
-VAD to say “someone is speaking” vs “silence/noise.”
-
-Endpointing rules to decide when to:
-
-start a recording (when speech begins), and
-
-stop (after N ms of silence).
-
-(Optional) buffering so the first phonemes aren’t clipped (pre-roll ~200–500 ms).
-
-Noise safeguards (aggressiveness threshold, noise gate, or NS/AGC).
-
-That’s it.
-
-
-Silero-VAD via ONNX Runtime Web
-
-More robust to noise; runs entirely in the browser with WASM/WebGPU.
-
-Slightly heavier than WebRTC VAD, but still fast on modern machines.
-
-Option C (server-side VAD gate)
-
-Send low-bitrate PCM/Opus continuously to your server and run webrtcvad (Python) or Silero-VAD there to carve utterances. This is nice if you want exactly one place to tune thresholds and log audio decisions.
-
-# server_vad.py
-import webrtcvad
-
-vad = webrtcvad.Vad()
-vad.set_mode(2)  # 0-3 (3 = most aggressive)
-
-# Feed 10/20/30 ms 16-bit mono PCM @16kHz frames:
-is_speech = vad.is_speech(frame_bytes, sample_rate=16000)
-
-
-Use a small state machine:
-
-idle → pre_speech (collect pre-roll) → in_speech → maybe_silence (count silence ms) → endpoint (ship buffer to Faster-Whisper).
-
-Minimal client-side example (no external model, energy-based VAD)
-
-Example code
-
-This is a pragmatic starter that works surprisingly well in quiet rooms and is easy to tune. It uses an AudioWorklet to get PCM, calculates short-term energy, and toggles speech on/off with hysteresis. Add it to your existing “Open Mic” button.
+<Graph Format>
+The graph nodes are like the below example:
 ```
-// @Claude: See './src/server/client_vad.js' where i placed the example code
+MERGE (c:Client {id: 'client_001'})
+MERGE (s:Session {session_id: 'session_001'})
+MERGE (c)-[:PARTICIPATED_IN]->(s);
+
+// ============================================================================
+
+// ============================================================================
+// CYPHER ENTRY - 2025-09-21 08:40:57
+// ============================================================================
+
+MATCH (s:Session {session_id: 'session_001'})
+WITH s, [
+  {
+    qa_id: 'qa_pair_001',
+    emotions: [
+      {name:'Empathy', valence:0.6, arousal:0.4, confidence:0.8},
+      {name:'Apathy', valence:0.0, arousal:0.1, confidence:0.7},
+      {name:'Visualization-Induced Anger', valence:-0.7, arousal:0.8, confidence:0.8},
+      {name:'Vacant Detachment', valence:0.0, arousal:0.2, confidence:0.6}
+    ],
+    distortions: [
+      {type:'Minimization', confidence:0.8},
+      {type:'Mind Reading', confidence:0.7},
+      {type:'All or Nothing', confidence:0.6}
+    ],
+    stages: [
+      {name:'Identity vs Role Confusion', confidence:0.8}
+    ],
+    attachments: [
+      {name:'Anxious Preoccupied', confidence:0.7}
+    ],
+    defenses: [
+      {name:'Suppression', confidence:0.8}
+    ],
+    schemas: [
+      {name:'Emotional Inhibition', confidence:0.8}
+    ],
+    bigfive: {
+      profile:'individual',
+      openness:0.8,
+      conscientiousness:0.7,
+      extraversion:0.3,
+      agreeableness:0.5,
+      neuroticism:0.7,
+      confidence:0.7
+    }
+  }
+] AS rows
+UNWIND rows AS r
+MERGE (qa:QA_Pair {id: r.qa_id})
+MERGE (s)-[:INCLUDES]->(qa)
+WITH qa, r
+FOREACH (emo IN coalesce(r.emotions, []) |
+  MERGE (e:Emotion {name: emo.name})
+  MERGE (qa)-[:REVEALS_EMOTION {valence: emo.valence, arousal: emo.arousal, confidence: emo.confidence}]->(e)
+)
+FOREACH (cd IN coalesce(r.distortions, []) |
+  MERGE (d:Cognitive_Distortion {type: cd.type})
+  MERGE (qa)-[:EXHIBITS_DISTORTION {confidence: cd.confidence}]->(d)
+)
+FOREACH (st IN coalesce(r.stages, []) |
+  MERGE (es:Erikson_Stage {name: st.name})
+  MERGE (qa)-[:EXHIBITS_STAGE {confidence: st.confidence}]->(es)
+)
+FOREACH (as IN coalesce(r.attachments, []) |
+  MERGE (a:Attachment_Style {name: as.name})
+  MERGE (qa)-[:REVEALS_ATTACHMENT_STYLE {confidence: as.confidence}]->(a)
+)
+FOREACH (dm IN coalesce(r.defenses, []) |
+  MERGE (m:Defense_Mechanism {name: dm.name})
+  MERGE (qa)-[:USES_DEFENSE_MECHANISM {confidence: dm.confidence}]->(m)
+)
+FOREACH (sch IN coalesce(r.schemas, []) |
+  MERGE (s2:Schema {name: sch.name})
+  MERGE (qa)-[:REVEALS_SCHEMA {confidence: sch.confidence}]->(s2)
+)
+FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
+  MERGE (b:Big_Five {profile: bf.profile})
+  MERGE (qa)-[:SHOWS_BIG_FIVE {
+    openness: bf.openness, conscientiousness: bf.conscientiousness, extraversion: bf.extraversion,
+    agreeableness: bf.agreeableness, neuroticism: bf.neuroticism, confidence: bf.confidence
+  }]->(b)
+);
+
+// ============================================================================
+// TEXT CHUNKS AND EMBEDDINGS FOR QA_PAIR_001
+// ============================================================================
+
+MATCH (s:Session {session_id: 'session_001'})
+WITH s, [
+  {
+    chunk_id: 's001.qa_pair_001.c1',
+    qa_id: 'qa_pair_001',
+    text: "if I experience ...",
+    embedding: [0.7686009407043457, ... // shortened for brevity, but these can be very long]
+  },
+  {
+    chunk_id: 's001.qa_pair_001.c2',
+    qa_id: 'qa_pair_001',
+    text: "I don’t remember ever sitting ...",
+    embedding: [0.9948757290840149, ... // shortened for brevity, but these can be very long]
+  },
+  {
+    chunk_id: 's001.qa_pair_001.c3',
+    qa_id: 'qa_pair_001',
+    text: "Friends have often said to ...",
+    embedding: [0.3794562518596649, ... // shortened for brevity, but these can be very long]
+  }
+] AS chunks
+UNWIND chunks AS c
+MERGE (tc:TextChunk {id: c.chunk_id})
+SET tc.text = c.text,
+    tc.embedding = c.embedding
+WITH c, tc
+MATCH (qa:QA_Pair {id: c.qa_id})
+MERGE (qa)-[:HAS_CHUNK]->(tc);
+
+// ============================================================================
 ```
-
-And the AudioWorkletProcessor:
-```
-// @Claude: See './src/server/vad-worklet.js' where i placed the example code
-
-```
-
-Tune the thresholds (ENERGY_ON, ENERGY_OFF, END_SILENCE_MS) and consider a calibration step: collect background noise for 1 second, compute mean energy, and set thresholds relative to that (e.g., on = mean*4, off = mean*2).
-
-Backend sketch (WebSocket + Faster-Whisper per utterance)
-
-This accumulates frames while the client is “speaking”, and on UTTERANCE_END it runs transcription:
-```
-# @Claude: We could just adapt this instead of a whole new file maybe?
-# server.py
-import asyncio, websockets, wave, io, numpy as np, json
-from faster_whisper import WhisperModel
-from datetime import datetime
-
-model = WhisperModel("small", compute_type="float16")  # choose your model
-
-async def handler(ws):
-  current_frames = []
-  async for msg in ws:
-    if isinstance(msg, bytes):
-      # PCM int16 mono 16kHz
-      current_frames.append(np.frombuffer(msg, dtype=np.int16))
-    else:
-      try:
-        data = json.loads(msg)
-      except:
-        continue
-      if data.get("type") == "UTTERANCE_END":
-        if not current_frames:
-          continue
-        pcm = np.concatenate(current_frames)
-        current_frames = []
-
-        # Write to in-memory WAV
-        buf = io.BytesIO()
-        with wave.open(buf, 'wb') as wf:
-          wf.setnchannels(1)
-          wf.setsampwidth(2)
-          wf.setframerate(16000)
-          wf.writeframes(pcm.tobytes())
-        buf.seek(0)
-
-        segments, info = model.transcribe(
-          buf, language="en", vad_filter=True,
-          vad_parameters=dict(min_silence_duration_ms=300)
-        )
-        text = "".join(seg.text for seg in segments).strip()
-        await ws.send(json.dumps({"type":"TRANSCRIPT", "text": text, "ts": datetime.utcnow().isoformat()}))
-
-async def main():
-  async with websockets.serve(handler, "0.0.0.0", 8765, max_size=2**23):
-    await asyncio.Future()
-
-if __name__ == "__main__":
-  asyncio.run(main())
-```
-
-Note: you can remove client VAD and rely solely on server VAD  by sending every frame; just add a server-side state machine (like the client logic) and call transcribe when your server VAD fires an endpoint.
-
-- UX polish (to feel like “Claude Voice Chat”)
-- Open-mic toggle: One switch to enter “listening mode”; show a subtle waveform/LED when speech is detected.
-- Timeout: If no speech for N seconds, auto-exit open-mic or keep it idle (your choice).
-- Barge-in: While TTS is talking, if VAD fires, duck TTS and pause it so the user can interrupt naturally.
-- Beep cues: tiny start/stop earcons help users trust the system.
-
-
-Practical tips
-
-- Start with energy-based VAD + hysteresis (above). It’s 20 lines, easy to reason about, and works in quiet spaces.
-- If you need robustness: switch to WebRTC VAD (Python webrtcvad or JS ports) or Silero-VAD (ONNX).
-- Tune silence windows per language (fast vs slow talkers). 400–800 ms is a sweet spot for English.
-- Add pre-roll (>=300 ms) or your first consonant will get clipped.
-- Turn on browser constraints: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }.
-- For a “never sends silence” design, do VAD on the client; for “simpler troubleshooting,” do it on the server.
+</Graph Format>
 ---
-### End notes from Claude in browser
+<Graph Guidelines and Scoring>
 
-Does that all make sense? Let me know if there are any questions.
-This is all to help people at the hospital, so we're doing something good for the world. 
-Thanks! :)
+**Valence-Arousal Analysis:**
+- Use Russell coordinates: valence [-1.0 to 1.0], arousal [-1.0 to 1.0]
+- Include up to 4 emotions with highest intensity
+- Always include confidence scores [0.0 to 1.0]
+
+**Cognitive Distortions** (choose from):
+all_or_nothing, overgeneralization, mental_filter, disqualifying_the_positive, jumping_to_conclusions, mind_reading, fortune_telling, magnification, minimization, emotional_reasoning, should_statements, labeling, personalization, catastrophizing
+
+**Erikson Stages** (choose from):
+trust_vs_mistrust, autonomy_vs_shame_doubt, initiative_vs_guilt, industry_vs_inferiority, identity_vs_role_confusion, intimacy_vs_isolation, generativity_vs_stagnation, integrity_vs_despair
+
+**Attachment Styles:**
+secure, anxious_preoccupied, dismissive_avoidant, fearful_avoidant
+
+**Defense Mechanisms** (choose from):
+denial, projection, rationalization, intellectualization, reaction_formation, displacement, sublimation, repression, suppression, regression, splitting
+
+**Schema Therapy** (choose from):
+abandonment, mistrust_abuse, emotional_deprivation, defectiveness_shame, social_isolation_alienation, dependence_incompetence, vulnerability_to_harm, enmeshment_undeveloped_self, failure, entitlement_grandiosity, insufficient_self_control, subjugation, self_sacrifice, approval_seeking, negativity_pessimism, emotional_inhibition, unrelenting_standards, punitiveness
+
+**Big Five Traits:**
+Score each trait from 0.0 to 1.0: openness, conscientiousness, extraversion, agreeableness, neuroticism
+
+## Evidence Requirements
+- Include short quotes from the client's response (under 120 characters)
+- Use these to justify your assessments
+- Remove any personally identifiable information
+---
+</Graph Guidelines and Scoring>
+
+Does that all make sense? Thanks! :)
 
 
-
-
-
-
-PROJECT_DIR/
-├─ sentiment_suite.py # this is the main file.
+<PROJECT_DIR>
+├─ SentimentSuite.py # this is the app front end (not used for the terminal based workflow).
 ├─ src/
 │  ├─ graphs/
-│  │  ├─ framework_analysis.py # **Workflow 1 - tagging,  Used for the 'psychological-results' **.
-│  │  ├─ create_kg.py # **Workflow 2 - 'Knowledge Graph', adjusted from 'framework_analysis'**.
-│  │  ├─ text_embedder.py # **Workflow 3 - 'Text Chunks & Embedding', adjusted from 'create_kg'**.
-│  │  ├─ chat_agent.py # Workflow 4 - Chat Agent for Hybrid Graph-RAG'. Not needed for this task.
-│  ├─ analysis/ # These files are from another workflow in sentiment_suite.py, they can be ignored.
+│  │  ├─ framework_analysis.py # **Used for the 'psychological-results' workflow from sentiment_suite.py**.
+│  │  ├─ create_kg.py # Workflow for creating cypher for graph and embeddings (for Hybrid Graph-RAG).
 │  ├─ prompts/
-│  │  ├─ text_prompts.py # workflow 1-4 prompts.
-│  ├─ ui/
-│  │  ├─ langgraph_chat.py # The gradio front end for workflow 4.
+│  │  ├─ **text_prompts.py** # the prompts for the sentiment app
 │  ├─ utils/
-│  │  ├─ text_graph_tools.py # **This has the tools used in workflows 1-3. The functionality for the workflows is actually in the tools opposed to graphs.**
-│  │  ├─ hybrid_rag_tools.py # The hybrid rag tools for workflow 4. Not really needed for this
-│  │  ├─ embeddings.py # **functionality for embedding with ollama.**
+│  │  ├─ io_py/
+│  │  │ ├─edge/
+│  │  │ │  ├─config.py # config file for all models.
+│  ├─ tools/
+│  │  ├─ text_graph_tools.py # This has the tool used in 'create_kg' and 'framework_analysis' workflows.
+│  │  ├─ **hybrid_rag_tools.py** # The hybrid rag tools for both the Chat Agent and Deep Agent('Admin Assist'). Need to add the graph queries for 'deep_agent'.
 ├─ output/
-│  ├─ psychological_analysis/ # This is where framework_analysis outputs 'to', where 'create_kg' outputs both 'from'.
-│  │  ├─ graph_output/ # This is where 'create_kg' outputs to.
-│  │  │    ├─ psychological_graph_20250916.cypher # the output from 'workflow 1 - framework_analysis'. it's a giant file so best not to read! :) .
-│  │  │    ├─ psychological_graph_examples.txt # a small example of the data in 'psychological_graph_20250916.cypher' in case you need to read :) .
-│  ├─ chunks_for_embedding
-│  │  ├─ 20250917/ # calamity from my previous workflow 3
-│  ├─ workflow_1_and_2_examples.txt # Output examples from 'workflow 1 - framework_analysis' & 'workflow 2 - create_kg'. **Read if needed to save getting trapped in the giant output files :)**.
-│  ├─ workflow_3_examples.txt # Output examples from 'workflow 3 - text_embedder', these were all wrong and should just be ignored
-├─ data/
-│  │  ├─ therapy_csvs/ # Where this project structure diagram is stored if you need to refer to it
-│  │  │    ├─ therapy-fin.csv # the input file that I upload for 'workflow 1 - framework_analysis', it's 24k tokens so best not to read! :)
-│  │  │    ├─ therapy_data_example.csv # a small snippet of 'therapy_fin.csv' in case you need to read it :)
-
-Does that all make sense? Let me know if there are any questions, thanks! :)
-
-
-
-You add voice activity detection (VAD) and a couple of rules, and it feels like “hands-free” voice chat. You’ve already done the hard parts (audio capture + Faster-Whisper + Piper). Now you just need a thin VAD layer and some UX glue.
-
-Below is a practical menu of options, plus drop-in code to get you there.
-
-What you need conceptually
-
-VAD to say “someone is speaking” vs “silence/noise.”
-
-Endpointing rules to decide when to:
-
-start a recording (when speech begins), and
-
-stop (after N ms of silence).
-
-(Optional) buffering so the first phonemes aren’t clipped (pre-roll ~200–500 ms).
-
-Noise safeguards (aggressiveness threshold, noise gate, or NS/AGC).
-
-That’s it.
-
-
-Silero-VAD via ONNX Runtime Web
-
-More robust to noise; runs entirely in the browser with WASM/WebGPU.
-
-Slightly heavier than WebRTC VAD, but still fast on modern machines.
-
-Option C (server-side VAD gate)
-
-Send low-bitrate PCM/Opus continuously to your server and run webrtcvad (Python) or Silero-VAD there to carve utterances. This is nice if you want exactly one place to tune thresholds and log audio decisions.
-
-# server_vad.py
-import webrtcvad
-
-vad = webrtcvad.Vad()
-vad.set_mode(2)  # 0-3 (3 = most aggressive)
-
-# Feed 10/20/30 ms 16-bit mono PCM @16kHz frames:
-is_speech = vad.is_speech(frame_bytes, sample_rate=16000)
-
-
-Use a small state machine:
-
-idle → pre_speech (collect pre-roll) → in_speech → maybe_silence (count silence ms) → endpoint (ship buffer to Faster-Whisper).
-
-Minimal client-side example (no external model, energy-based VAD)
-
-Example code
-
-This is a pragmatic starter that works surprisingly well in quiet rooms and is easy to tune. It uses an AudioWorklet to get PCM, calculates short-term energy, and toggles speech on/off with hysteresis. Add it to your existing “Open Mic” button.
-```
-// @Claude: See './src/server/client_vad.js' where i placed the example code
-```
-
-And the AudioWorkletProcessor:
-```
-// @Claude: See './src/server/vad-worklet.js' where i placed the example code
-
-```
-
-Tune the thresholds (ENERGY_ON, ENERGY_OFF, END_SILENCE_MS) and consider a calibration step: collect background noise for 1 second, compute mean energy, and set thresholds relative to that (e.g., on = mean*4, off = mean*2).
-
-Backend sketch (WebSocket + Faster-Whisper per utterance)
-
-This accumulates frames while the client is “speaking”, and on UTTERANCE_END it runs transcription:
-```
-# @Claude: We could just adapt this instead of a whole new file maybe?
-# server.py
-import asyncio, websockets, wave, io, numpy as np, json
-from faster_whisper import WhisperModel
-from datetime import datetime
-
-model = WhisperModel("small", compute_type="float16")  # choose your model
-
-async def handler(ws):
-  current_frames = []
-  async for msg in ws:
-    if isinstance(msg, bytes):
-      # PCM int16 mono 16kHz
-      current_frames.append(np.frombuffer(msg, dtype=np.int16))
-    else:
-      try:
-        data = json.loads(msg)
-      except:
-        continue
-      if data.get("type") == "UTTERANCE_END":
-        if not current_frames:
-          continue
-        pcm = np.concatenate(current_frames)
-        current_frames = []
-
-        # Write to in-memory WAV
-        buf = io.BytesIO()
-        with wave.open(buf, 'wb') as wf:
-          wf.setnchannels(1)
-          wf.setsampwidth(2)
-          wf.setframerate(16000)
-          wf.writeframes(pcm.tobytes())
-        buf.seek(0)
-
-        segments, info = model.transcribe(
-          buf, language="en", vad_filter=True,
-          vad_parameters=dict(min_silence_duration_ms=300)
-        )
-        text = "".join(seg.text for seg in segments).strip()
-        await ws.send(json.dumps({"type":"TRANSCRIPT", "text": text, "ts": datetime.utcnow().isoformat()}))
-
-async def main():
-  async with websockets.serve(handler, "0.0.0.0", 8765, max_size=2**23):
-    await asyncio.Future()
-
-if __name__ == "__main__":
-  asyncio.run(main())
-```
-
-Note: you can remove client VAD and rely solely on server VAD  by sending every frame; just add a server-side state machine (like the client logic) and call transcribe when your server VAD fires an endpoint.
-
-- UX polish (to feel like “Claude Voice Chat”)
-- Open-mic toggle: One switch to enter “listening mode”; show a subtle waveform/LED when speech is detected.
-- Timeout: If no speech for N seconds, auto-exit open-mic or keep it idle (your choice).
-- Barge-in: While TTS is talking, if VAD fires, duck TTS and pause it so the user can interrupt naturally.
-- Beep cues: tiny start/stop earcons help users trust the system.
-
-
-Practical tips
-
-- Start with energy-based VAD + hysteresis (above). It’s 20 lines, easy to reason about, and works in quiet spaces.
-- If you need robustness: switch to WebRTC VAD (Python webrtcvad or JS ports) or Silero-VAD (ONNX).
-- Tune silence windows per language (fast vs slow talkers). 400–800 ms is a sweet spot for English.
-- Add pre-roll (>=300 ms) or your first consonant will get clipped.
-- Turn on browser constraints: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }.
-- For a “never sends silence” design, do VAD on the client; for “simpler troubleshooting,” do it on the server.
----
-### End notes from Claude in browser
-
+│  ├─ psychological_analysis/ 
+│  │  ├─ psychological_analysis_master.txt # This is where framework_analysis outputs 'to', where 'create_kg' outputs from': HUGE FILE.
+│  │  ├─ graph_output/
+│  │  │ │  ├─psychological_graph_20250916.cypher # 'create_kg' output file: HUGE FILE.
+│  │  ├─ workflow_1_output_examples.txt/ # Example output from 'framework_analysis'.
+│  │  ├─ workflow_2_output_examples.txt/ # Example output from 'create_kg'.
+├─ run_notes/
+│  ├─ data/ 
+│  │  ├─ psychological_analysis_master.txt # This is where framework_analysis outputs 'to', where 'create_kg' outputs from'. HUGE FILE.
+│

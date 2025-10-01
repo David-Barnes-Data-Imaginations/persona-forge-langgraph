@@ -185,50 +185,32 @@ flowchart TD
 ### get_personality_summary Example Tool Flow (flowchart)
 ```mermaid
 flowchart TD
-    START([@tool get_personality_summary(focus_area)]):::start
+    Start["get_personality_summary(focus_area)"]
+    Map["Map focus_area -> query string\n(overall / emotions / cognition / attachment / personality)"]
+    RAG["get_rag_instance()"]
+    Search["rag.search_psychological_context(query, k=5)"]
+    Any{"Any results?"}
+    NoRes["Return: No personality data for focus area"]
+    Loop["For each result:\n- collect emotions, distortions\n- attachment, schemas, defenses\n- Big Five scores"]
+    Agg["Aggregate unique lists\nCompute Big Five levels\nBuild summary"]
+    Ret["Return summary string"]
+    Err{"Exception?"}
+    ErrT["Return: Error generating personality summary"]
 
-    MAP[Map focus_area ➜ query<br/><code>overall/emotions/cognition/attachment/personality</code><br/>else: passthrough]:::step
-    RAG[get_rag_instance()]:::step
-    SRCH[rag.search_psychological_context(query, k=5)]:::step
+    Start --> Map --> RAG --> Search --> Any
+    Any -- "No" --> NoRes
+    Any -- "Yes" --> Loop --> Agg --> Ret
+    Search --> Err
+    Agg --> Err
+    Err -- "Yes" --> ErrT
+    Err -- "No" --> Ret
 
-    EMPTY{Any results?}:::gate
-    NORES[Return:<br/>'No personality data for focus area']:::term
+    %% Conceptual stores (hybrid Graph-RAG)
+    GDB["Graph DB (tagged therapy data)"]
+    VEC["Vector Index (psych context chunks)"]
+    Search -. "may traverse via Cypher" .-> GDB
+    Search -. "may retrieve kNN" .-> VEC
 
-    LOOP[[For each result:<br/>• collect emotions/distortions<br/>• attachment/schemas/defenses<br/>• Big Five scores]]:::loop
-
-    AGG[Aggregate & uniquify lists<br/>Compute Big Five levels<br/>Build summary text]:::step
-    RET[(Return summary string)]:::term
-
-    ERR{Exception?}:::error
-    ERRT[Return:<br/>'Error generating personality summary: …']:::term
-
-    %% --- Data Stores (conceptual) ---
-    GDB[(Graph DB:<br/>tagged therapy data)]:::store
-    VEC[(Vector Index:<br/>psych context chunks)]:::store
-
-    %% --- Flow --
-    START --> MAP --> RAG --> SRCH --> EMPTY
-    EMPTY -- "No" --> NORES
-    EMPTY -- "Yes" --> LOOP --> AGG --> RET
-
-    %% --- Under-the-hood lookups (hybrid) ---
-    SRCH -. may traverse via Cypher .-> GDB
-    SRCH -. may retrieve kNN .-> VEC
-
-    %% --- Error path ---
-    SRCH --> ERR
-    AGG  --> ERR
-    ERR  -- "Yes" --> ERRT
-    ERR  -- "No"  --> RET
-
-    %% --- Styles ---
-    classDef start fill:#f0f7ff,stroke:#6aa3ff,stroke-width:1.2
-    classDef step fill:#fffaf0,stroke:#f0b429,stroke-width:1.2
-    classDef gate fill:#f6f6f6,stroke:#999,stroke-dasharray: 4 2
-    classDef term fill:#e8f7ff,stroke:#2aa4f4,stroke-width:1.4
-    classDef error fill:#ffecec,stroke:#e25b5b,stroke-width:1.2
-    classDef loop fill:#f3fff5,stroke:#34c16b,stroke-dasharray: 3 3
-    classDef store fill:#eefcf3,stroke:#34c16b,stroke-width:1.2
 
 
 ```
@@ -299,9 +281,9 @@ flowchart TD
     HITL -- "Approved" --> SAVED
     HITL -- "Needs edits" --> A
 
-
 ```
-### Sequence diagram (parallelism)
+
+### Sequence diagram (Parallelism)
 In-Line version:
 ```mermaid
 sequenceDiagram

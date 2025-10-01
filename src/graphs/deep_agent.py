@@ -82,15 +82,16 @@ The main deep agent is the architect. Oversight of report and writes the plan.
 The Architect has three direct reports: 'Graph Agent', 'Reporting Agent' and 'Research Agent.
 The 'Graph Agent' is called using queries such as:
 - "Find me the extreme values in the Graph"
-
-The assistant graph agent extracts the data and writes the psychological analysis for the pair to a file. 
-Graph Agent checks, then calls the report writer agent.
-Once Report Writer is finished, it calls back to the Architect.
-The Report Writer creates a 'Progress Notes' style document for the Architect to review and edit.
-The Architect then reviews the report and makes any changes.
-The Architect calls the research agent to gather additional information or recent studies.
-The Research sub-agent uses the Assistant Research agent and the Pubmed / Tavily search tool to find relevant information.
-The Architects final report is then printed (add terminal control later, but in the meantime the user can inference and request commands).
+The The Graph Agent then fires two 'Graph Assistant' to run seperate or parralel queries
+The graph Assistants extract the data and writes the psychological analysis for the pair to a file. 
+Graph Agent checks and loops until analysis complete, then sends the draft analysis to the Architect.
+The Architect sends the file to the 'Report Writer Agent', who drafts a 'Therapy SOAP note'.
+Once Report Writer is finished, the Architect reviews and edits.
+The Architect calls the Research Agent to gather additional information or recent studies from Pubmed API and/or Tavily Web Search.
+The Research Agent fires two 'Research Assistants' to run seperate or parralel queries
+The Research Agent writes the psychological research to the file. 
+Research Agent checks and loops until analysis complete,
+The Architects final report is then saved to a file (it has terminal access with 'Human in the loop' for approval).
 
 Return calls are made via the 'Think' tool, which allows the agent to call other tools or agents as needed.
 

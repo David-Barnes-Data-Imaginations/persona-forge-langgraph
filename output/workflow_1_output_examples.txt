@@ -1,0 +1,120 @@
+
+================================================================================
+'Workflow 1 Output Example - framework_analysis': Analysis / Tagging Format (one for each QA Pair) - ANALYSIS ENTRY - 2025-09-13 15:52:46
+================================================================================
+
+Question: Could you talk about specific scenarios or moments where you've noticed this particular emotional processing style strongly?
+
+Answer: The first example I can remember is when I was younger,when a bunch of people were panicking about a perceived threat to life, whereas I just felt oddly calm, even moving towards it slightly, and preparing to deal with it.
+I’m sure we can delve into my experience with my ‘Occupational Psychology assessment day' later, but it’s worth mentioning early a point they made offhand, “You’re like a walking contradiction”.  
+This is pretty true for various aspects of my mindset.
+
+During my career, there were times where I averaged around 6 interviews a day. Whilst actually conducting the interview, I feel strangely detached, calm, and focused rather than emotionally activated. But I’m ‘a reflector’, so if I interviewed someone who had clearly been having a rough time, I would ‘feel’ it for the whole day afterwards, which in large doses could sometimes wear me down mentally.
+
+Assessment
+
+Valence and Arousal:
+Calm Detachment: valence 0.6, arousal 0.2, confidence 0.9
+Evidence: "felt oddly calm, even moving towards it slightly"
+
+Mental Exhaustion: valence -0.5, arousal -0.3, confidence 0.8
+Evidence: "feel it for the whole day afterwards, which in large doses could sometimes wear me down mentally"
+
+Cognitive Distortions:
+Labeling, confidence 0.8
+Evidence: "You’re like a walking contradiction"
+
+Overgeneralization, confidence 0.7
+Evidence: "I feel strangely detached, calm, and focused rather than emotionally activated"
+
+Erikson Developmental Stage:
+Intimacy vs isolation, confidence 0.7
+Evidence: "I feel strangely detached, calm, and focused rather than emotionally activated"
+
+Attachment Style:
+None clearly identified, confidence 0.8
+
+Defense Mechanisms:
+Detachment (a form of dissociation), confidence 0.8
+Evidence: "I feel strangely detached, calm, and focused rather than emotionally activated"
+
+Schema Therapy:
+Schemas: none clearly identified, confidence 0.9
+
+Big Five Personality Traits:
+Openness 0.7, Conscientiousness 0.8, Extraversion 0.4, Agreeableness 0.7, Neuroticism 0.6
+Overall confidence 0.8
+
+Analysis
+
+Subjective Analysis:
+Client describes a pattern of calm detachment during acute stress and later empathic resonance. 
+Reports feeling “oddly calm” in a life-threat scenario, approaching and preparing to act. 
+Notes being “a walking contradiction.” 
+In professional settings with high interview volume, feels “strangely detached, calm, and focused” during the task, yet “feel[s] it for the whole day afterwards” when the interviewee has struggled.
+
+Objective Analysis:
+- Sentence_count ~6; 
+- Mean_sentence_length ~24–28 words; 
+- Question_rate ~0; disfluencies minimal; 
+- Emphasis_markers: quoted phrases for self-description.
+- Topic reactivity: neutral-calm language when describing crisis or task execution; 
+- increased affective language when describing post-interview empathy (“rough time,” “wear me down mentally”). 
+
+Plan:
+- Psychoeducation on empathy vs. empathic distress; 
+- Implement post-interview decompression routine (5–10 min grounding + brief cognitive offloading). 
+- Track compassion fatigue using a brief measure (e.g., ProQOL) over 2–4 weeks. 
+- Boundary setting and micro-recovery between emotionally heavy interviews; 
+- Experiment with cognitive defusion to reduce lingering rumination. 
+- If carryover distress persists or escalates, introduce targeted emotion regulation (paced breathing, brief behavioral activation) and review workload batching.
+================================================================================
+
+
+
+================================================================================
+ANALYSIS ENTRY - 2025-10-01 09:50:28
+================================================================================
+Original Question: can you describe in your own words how you typically experience emotions?
+
+Original Answer: if I experience emotions directly about myself, they are under-stated to say the least  
+Rather it feels like I feel emotions through others, reflecting their feelings, or my _perception_ of their feelings, opposed to having feelings about myself.  
+If I’m with someone who’s happy, I feel happy. If I’m with someone sad, I feel sad.  
+I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself. I do often use ‘creative visualisation’ to simulate emotions if it's going to serve a purpose. For example, in the gym when I’m lifting weights, I will typically visualise something that would make me angry, as it ‘feels’ like it gives me extra strength. 
+Friends have often said to me they saw me in the gym, but I walked right past them with a vacant look in my eyes, or one person hilariously desribed it as 'crazy eyes'! There's nothing crazy / angry figuratively however, its just a side effect of me trying to disconnect so much visual brain-space to make room for the visualization. I literally never remember even seeing them.
+
+Analysis
+
+Subjective Analysis:
+Client reports that personal emotions are “under‑stated” and that they mainly feel emotions through others: “If I’m with someone who’s happy, I feel happy. If I’m with someone sad, I feel sad.” They note a lack of self‑focused emotions: “I don’t remember ever sitting around feeling sorry for myself, likewise I don’t sit around feeling joy about myself.” The client also describes using creative visualization to simulate emotions for purpose, e.g., visualizing anger in the gym to feel stronger.
+
+Objective Analysis:
+sentence_count 10; 
+mean_sentence_length 
+19.6 words; 
+first_person_negative_self_appraisals 0; 
+question_rate 0; 
+disfluencies 0; 
+emphasis_markers 1 (exclamation in “crazy eyes!”); 
+topic_reactivity None; 
+Instrument output (Russell):
+- Happy valence 0.8 arousal 0.5 conf 0.9 (“If I’m with someone who’s happy, I feel happy.”)
+- Sad valence -0.7 arousal 0.4 conf 0.9 (“If I’m with someone sad, I feel sad.”)
+- Angry valence -0.6 arousal 0.7 conf 0.8 (“visualise something that would make me angry”).
+- Sorry valence -0.6 arousal 0.5 conf 0.8 (“I don’t remember ever sitting around feeling sorry for myself”).
+
+Assessment:
+Cognitive distortions: none clearly identified; possible minimization of self‑emotions (under‑stated) conf 0.5. 
+Attachment: dismissive‑avoidant style, detaching from own feelings, relying on others’ affect, conf 0.6. 
+Erikson: intimacy_vs_isolation stage, difficulty forming self‑based emotional intimacy, conf 0.5. 
+Schemas: emotional_inhibition schema (suppressing own emotions) conf 0.7. 
+Defense mechanisms: denial (ignoring own emotions) conf 0.6. 
+Big Five (0–1): Openness 0.8, Conscientiousness 0.6, Extraversion 0.4, Agreeableness 0.5, Neuroticism 0.5.
+Overall formulation: the client exhibits a pattern of emotional detachment and reliance on external affect, using visualization as a compensatory strategy.
+
+Plan:
+- Introduce emotion awareness exercises: daily emotion labeling diary focusing on self‑emotions.
+- Psychoeducation on emotional inhibition and attachment patterns.
+- Practice mindfulness meditation to increase present‑moment affective experience.
+- Homework: record at least three moments of self‑directed emotion each day and reflect on the experience.
+- Reassess emotional awareness and attachment concerns in next session.

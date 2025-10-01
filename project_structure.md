@@ -62,5 +62,19 @@ Articulate Models - Scribe='mistral-nemo:12b'. This is for when I put my spare P
 │  │  ├─ knowledge_corpus/
 │  │  │ │  ├─how_to_write_progress_notes.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
 │  │  │ │  ├─soap_notes_and_examples.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
+│  │  ├─ therapy_csvs/
+│  │  │ │  ├─therapy-fin.csv
+│  │  │ │  ├─therapy-fin_fixed.csv
 ---
 
+<PROJECT_DIR>
+├─ SentimentSuite.py # this is the app front end (not used for the terminal based workflow).
+├─ src/
+│  ├─ data/ 
+│  │  ├─ psychological_analysis_master.txt # This is where framework_analysis outputs 'to', where 'create_kg' outputs from'. HUGE FILE.
+│  │  ├─ knowledge_corpus/
+│  │  │ │  ├─how_to_write_progress_notes.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
+│  │  │ │  ├─soap_notes_and_examples.md # research on 'Progress Notes' since I'm not an _actual_ psychologist despite being knowledgable.
+│  │  ├─ therapy_csvs/
+│  │  │ │  ├─therapy-fin.csv
+│  │  │ │  ├─therapy-fin_fixed.csv
