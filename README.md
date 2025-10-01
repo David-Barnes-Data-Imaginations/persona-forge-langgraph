@@ -211,6 +211,52 @@ The user can query deeper, for example "show me the extrememeties of the 'Valenc
    Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
 
 ```
+Then query for the question and answer in it's entirety:
+```
+=== COMPLETE ANALYSIS FOR qa_pair_013 ===
+
+EMOTIONS:
+
+Curiosity: valence=0.80, arousal=0.60, confidence=0.80
+Enthusiasm: valence=0.90, arousal=0.50, confidence=0.90
+Reflection: valence=0.70, arousal=0.40, confidence=0.80
+Gratitude: valence=0.60, arousal=0.30, confidence=0.70
+ATTACHMENT STYLES:
+
+Secure: confidence=0.80
+ERIKSON STAGES:
+
+Generativity_vs_stagnation: confidence=0.80
+BIG FIVE PERSONALITY:
+
+Openness: 0.90
+Conscientiousness: 0.70
+Extraversion: 0.60
+Agreeableness: 0.80
+Neuroticism: 0.30
+Confidence: 0.80
+FULL TEXT:
+Chunk 1: This is such an interesting concept that... # shortened for brevity
+Chunk 2: However in this scenario ...
+Chunk 3: Then there is the element of ...
+
+```
+However, you don't need to do any of that if you are producing a SOAP note, instead a wholke team of agents writes it for you. I wanted to demonstrate the power of tools like 'Claude Code CLI', to those outside of the programming world. Partly to demonstrate how amazing AI can be, and partly to make people aware of what's coming. Europe has largely been caught asleep at the wheel, so it's 
+important to understand that AI can literally do any job today. 
+The only barrriers are:
+a) Working out how to do it.
+b) Compute power
+c) Energy.
+
+Regarding 'Compute', you may have heard experts mentioning the 'AI Scaling Laws', on TV or from 
+your tech team. Compute is one of these scaling laws, all of which are multicaplative.
+I'll be doing a blog on all the scaling laws in a 'Business Leaders - Cheatsheet' series,
+but for now you can assume that 'More Compute = More intelligence'.
+
+# Agentic Team:
+There are 10 agents in total, and currently 3 different models (all locally hosted on one GPU)
+You can view the workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/DEEP_AGENT_WORKFLOW.md)
+
 
 Example Agentic Framework / Responsibilities
 
