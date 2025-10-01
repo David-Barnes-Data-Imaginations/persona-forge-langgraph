@@ -133,7 +133,7 @@ The Agents are hosted on a single 'Consumer Grade' GPU.
 </p>
 
 ### The Agentic Worflow (sentiment app)
-
+This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
 ```mermaid
 flowchart TD
     %% --- Actors & I/O ---
@@ -181,6 +181,7 @@ flowchart TD
 
 ```
 ### The Agentic flow for the 'CLI' tool
+This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
 
 ```
 flowchart TD
@@ -266,11 +267,66 @@ flowchart TD
     class L1,L2 gate
 
 ```
-This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
+In-Line version:
+```
+sequenceDiagram
+    autonumber
+    participant Arch as Architect (Orchestrator)
+    participant G as Graph Agent
+    participant GA1 as Graph Assistant A
+    participant GA2 as Graph Assistant B
+    participant Rpt as Reporting Agent
+    participant Res as Research Agent
+    participant RA1 as Research Assistant A
+    participant RA2 as Research Assistant B
+    participant Graph as Graph DB
+    participant PubMed as PubMed API
+    participant Tavily as Tavily Web Search
+    participant FS as Filesystem
 
-The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
+    Arch->>G: Plan + graph objectives (e.g., find extremes)
+    G->>Graph: Run initial queries
+    par Graph analysis (parallel)
+        G->>GA1: Task slice A
+        GA1->>Graph: Query / extract slice A
+        GA1-->>FS: Write/append Draft Graph Analysis.md
+    and
+        G->>GA2: Task slice B
+        GA2->>Graph: Query / extract slice B
+        GA2-->>FS: Write/append Draft Graph Analysis.md
+    end
+    loop Until analysis complete
+        G->>G: Validate coverage / quality gates
+    end
+    G-->>Arch: Draft Graph Analysis.md
+
+    Arch->>Rpt: Produce Therapy SOAP note (with draft analysis)
+    Rpt-->>FS: Therapy SOAP Note.md
+    Arch->>Arch: Review & edit
+
+    Arch->>Res: Gather supporting literature / recent studies
+    par Research (parallel)
+        Res->>RA1: Topic/keyword batch A
+        RA1->>PubMed: Search / fetch
+        RA1->>Tavily: Web search
+        RA1-->>FS: Append Research Findings.md
+    and
+        Res->>RA2: Topic/keyword batch B
+        RA2->>PubMed: Search / fetch
+        RA2->>Tavily: Web search
+        RA2-->>FS: Append Research Findings.md
+    end
+    loop Until research complete
+        Res->>Res: Validate coverage / relevance
+    end
+    Res-->>Arch: Research Findings.md
+
+    Arch->>FS: Assemble Final Integrated Report.md
+    Arch->>Arch: Human-in-the-loop review & approval
+    Arch-->>FS: Save approved final report
 
 
+```
 ---
 
 ### **Why This Sparks Possibilities**
