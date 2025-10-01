@@ -11,7 +11,7 @@ The use of AI in conjunction with 'the mind' is an exciting field which goes [mu
 
 My lifelong passion for Psychology, the pace of AI, and my preference for 'altruistic projects' caused me to pivot to a more specific goal.
 
-- My work on 'the perfect' Psychology model continues. However, Training a model doesn't make a good github repo, as it would be thousands of page of collected psychology data.
+- My work on 'the perfect' Psychology model continues. However, 'Training a model' doesn't make a good github repo, as it would be thousands of page of collected psychology data or Agentic workflows scored by an LLM.
 
   <h2 align='center'>
   My Brain mapped out into Graph Form
@@ -88,160 +88,9 @@ There are (currently) four AI agents involved, alongside various UI/Interface to
   <img src="./Me_forged_4.png" alt="Me_Graph_4">
 </p>
 
-- The patient dashboard includes a 'Patient-Support' interface, with 'patient-care' central to the objectives.
-- *Note*: If you've not heard of knowledge graphs, they are vector based (as are LLM's and RAG's) graphs which are incredibly fast for data retrieval (Google uses it for its search). 
-- Most note-taking tools use them to connect your notes, but my 'go-to' LogSeq gives you a tab to view your notes and their relations. 
-- See 'Psychology Framework Section'
+# An Agentic AI driven Therapy Analysis 'Sentiment App'
 
-  <h2 align='center'>
-  The basic App front-page
-  </h2>
-  <br><br>
-<p align="center">
-  <img src="./therapy-analysis-page.png" alt="app">
-</p>
-
-### The Agentic Worflow
-
-### Legend:
-(F) = Finished, in this repo
-(B) = Built, and in the code here but with further advances on the way
-(H) = Easily Automatable, but currently requiring Human input because it would add no value to the project if i built it.
-```
-[Therapist / Client Therapy Session] (B)
-      |
-      v
-[Transcribed by Agent 1, (B)
-saved into a Regular Database] (H)
-      |
-      v
-[Agent 2 scrolls through each 'Question-Answer Pair' (F)
-then tags the Clients Therapy Script against 7 Psychological Frameworks] (F)
-      |
-      v
-[Agent 3 Initializes the Knowledge-Graph based upon the 'Client_id' and 'Session_id'] (F)
-      |
-      | 
-      v
-[Agent 4 Uses 'personality_summary' & 'search_psychological_insights' based on the users query of the client.
- The users query is converted to embeddings, and the agent searches the graph for top scoring similarities(Hybrid Graph RAG)]
-
-External:
-- The Neo4J database and dashboard can be used for Human analysis
-OR
-- Agent 5 can analyse the data via a Gradio chatbot with a Hybrid-Graph RAG architecture (to follow shortly)
-
-```
-
-This project also houses a 'Hospital Automation Workflow' which replaces the typical pen and paper forms used.
-
-The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
-
-Example: (Graph Output)
-The user can chat to the agent via text or vocally, running a variety of queries that produce output such as the below:
-```
-Top 5 Emotions:
-
-Anxiety: 14 occurrences (avg valence: -0.49, avg arousal: 0.62)
-Frustration: 8 occurrences (avg valence: -0.51, avg arousal: 0.55)
-Sadness: 7 occurrences (avg valence: -0.60, avg arousal: 0.44)
-Curiosity: 6 occurrences (avg valence: 0.62, avg arousal: 0.50)
-Enthusiasm: 5 occurrences (avg valence: 0.78, avg arousal: 0.58)
-Top 5 Cognitive Distortions:
-
-Overgeneralization: 8 occurrences
-Catastrophizing: 7 occurrences
-Labeling: 6 occurrences
-Personalization: 6 occurrences
-Minimization: 4 occurrences
-Top 5 Core Schemas:
-
-Defectiveness_shame: 7 occurrences
-Abandonment: 5 occurrences
-Emotional_deprivation: 4 occurrences
-Self‑sacrifice: 3 occurrences
-Defectiveness shame: 3 occurrences
-Attachment Styles:
-
-Anxious Preoccupied: 1 occurrences
-dismissive_avoidant: 1 occurrences
-Anxious preoccupied: 7 occurrences
-Secure: 7 occurrences
-Anxious_preoccupied: 9 occurrences
-anxious_preoccupied: 3 occurrences
-secure: 1 occurrences
-Anxious_Preoccupied: 1 occurrences
-Anxious pre‑occupied: 1 occurrences
-Top 5 Defense Mechanisms:
-
-Rationalization: 12 occurrences
-Denial: 7 occurrences
-Suppression: 5 occurrences
-Intellectualization: 5 occurrences
-Projection: 3 occurrences
-Big Five Personality Averages:
-
-Openness: 0.77 (High)
-Conscientiousness: 0.73 (High)
-Extraversion: 0.47 (Moderate)
-Agreeableness: 0.66 (Moderate)
-Neuroticism: 0.58 (Moderate)
-```
-The user can query deeper, for example "show me the extrememeties of the 'Valence' Emotions:
-```
-=== EXTREME VALUES FOR EMOTION_VALENCE ===
-
-
-1. QA Pair: qa_pair_013
-   Emotion: Enthusiasm
-   Arousal: 0.50
-   Confidence: 0.90
-   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
-
-2. QA Pair: qa_pair_026
-   Emotion: Enthusiasm
-   Arousal: 0.70
-   Confidence: 0.90
-   Sample: "Here's my answers below. I've rated specifically acording to the text in '( )' brackets, since they reasonate more with me than the more generic 'Openn..."
-
-3. QA Pair: qa_pair_013
-   Emotion: Curiosity
-   Arousal: 0.60
-   Confidence: 0.80
-   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
-
-```
-Then query for the question and answer in it's entirety:
-```
-=== COMPLETE ANALYSIS FOR qa_pair_013 ===
-
-EMOTIONS:
-
-Curiosity: valence=0.80, arousal=0.60, confidence=0.80
-Enthusiasm: valence=0.90, arousal=0.50, confidence=0.90
-Reflection: valence=0.70, arousal=0.40, confidence=0.80
-Gratitude: valence=0.60, arousal=0.30, confidence=0.70
-ATTACHMENT STYLES:
-
-Secure: confidence=0.80
-ERIKSON STAGES:
-
-Generativity_vs_stagnation: confidence=0.80
-BIG FIVE PERSONALITY:
-
-Openness: 0.90
-Conscientiousness: 0.70
-Extraversion: 0.60
-Agreeableness: 0.80
-Neuroticism: 0.30
-Confidence: 0.80
-FULL TEXT:
-Chunk 1: This is such an interesting concept that... # shortened for brevity
-Chunk 2: However in this scenario ...
-Chunk 3: Then there is the element of ...
-
-```
-However, you don't need to do any of that if you are producing a SOAP note, instead a wholke team of agents writes it for you. I wanted to demonstrate the power of tools like 'Claude Code CLI', to those outside of the programming world. Partly to demonstrate how amazing AI can be, and partly to make people aware of what's coming. Europe has largely been caught asleep at the wheel, so it's 
+I wanted to demonstrate the power of tools like 'Claude Code CLI', to those outside of the programming world. Partly to demonstrate how amazing AI can be, and partly to make people aware of what's coming. Europe has largely been caught asleep at the wheel, so it's 
 important to understand that AI can literally do any job today. 
 The only barrriers are:
 a) Working out how to do it.
@@ -253,9 +102,174 @@ your tech team. Compute is one of these scaling laws, all of which are multicapl
 I'll be doing a blog on all the scaling laws in a 'Business Leaders - Cheatsheet' series,
 but for now you can assume that 'More Compute = More intelligence'.
 
-# Agentic Team:
-There are 10 agents in total, and currently 3 different models (all locally hosted on one GPU)
-You can view the workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/DEEP_AGENT_WORKFLOW.md)
+## CLI App
+To that end the 'Command Line Interface App' uses 10 agents, using three different models
+to analyse the data from the Knowledge Graph in order to produce a 'Therapy SOAP Note'.
+This saves Therapists time, allowing them to start their draft from a well structured file
+that includes data which wouldn't have been possible before the AI revolution.
+
+AI wearables are cheap and effective, allowing for a complete transcription of sessions.
+The Agents are hosted on a single 'Consumer Grade' GPU.
+
+  <h2 align='center'>
+  The Command Line Interface App (this is what coders stare at all day)
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./Med_CLI.png" alt="cli-app">
+</p>
+
+- The 'Sentiment App' is a browser based dashboard including a 'Therapy-Support' interface, with 'patient-care' central to the objectives.
+- *Note*: If you've not heard of knowledge graphs, they are vector based (as are LLM's and RAG's) graphs which are incredibly fast for data retrieval (Google uses it for its search). 
+- Most note-taking tools use them to connect your notes via 'Nodes' and 'Edges' (relationships) 
+- See 'Psychology Framework Section'
+
+  <h2 align='center'>
+  The basic App front-page
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./therapy-analysis-page.png" alt="app">
+</p>
+
+### The Agentic Worflow (sentiment app)
+
+```mermaid
+flowchart TD
+    %% --- Actors & I/O ---
+    U[[Therapist / Client<br/>Therapy Session]]:::actor
+    UI_TTS((Voice I/O)):::io
+    UI_Text((Text UI)):::io
+
+    %% --- Data Stores ---
+    RDB[(Regular DB)]:::store
+    GDB[(Graph DB)]:::store
+    VEC[(Vector Index)]:::store
+
+    %% --- Pipeline ---
+    U --> D1{Transcribe & store?}:::gate
+
+    D1 -- "Yes" --> A1[[Agent 1<br/>Transcribe session<br/>& save]]:::agent --> RDB
+    D1 -- "No"  --> A2
+
+    A2[[Agent 2<br/>Iterate Q/A pairs<br/>Tag across 7 psych frameworks]]:::agent --> GDB
+    A2 -. tags/nodes/edges .-> GDB
+
+    A3[[Agent 3<br/>User query → embeddings<br/>Tagged script → Cypher]]:::agent
+    A3 -->|Upsert / Search keys| VEC
+    A3 -->|Generate Cypher| GDB
+
+    A4[[Agent 4<br/>Tool-using Graph/RAG executor]]:::agent
+    A4 -->|Cypher queries| GDB
+    A4 -->|kNN / rerank| VEC
+
+    A4 --> RES[[Synthesized Answer / Insight]]:::result
+    RES --> O1{Delivery mode}:::gate
+    O1 -- "TTS/STT" --> UI_TTS
+    O1 -- "Text"    --> UI_Text
+
+    %% --- Edges from A1 (when present) to tagging step ---
+    A1 --> A2
+
+    %% --- Styles ---
+    classDef actor fill:#f0f7ff,stroke:#6aa3ff,stroke-width:1.2
+    classDef agent fill:#fffaf0,stroke:#f0b429,stroke-width:1.2
+    classDef store fill:#eefcf3,stroke:#34c16b,stroke-width:1.2
+    classDef gate fill:#f6f6f6,stroke:#999,stroke-dasharray: 4 2
+    classDef io fill:#f5efff,stroke:#8a6cff,stroke-width:1.2
+    classDef result fill:#e8f7ff,stroke:#2aa4f4,stroke-width:1.4
+
+```
+### The Agentic flow for the 'CLI' tool
+
+```
+flowchart TD
+    %% === Roles / Agents ===
+    A[[Architect<br/>(Deep Agent / Orchestrator)]]:::agent
+    GA[[Graph Agent]]:::agent
+    GAs1[[Graph Assistant A]]:::assistant
+    GAs2[[Graph Assistant B]]:::assistant
+
+    RA[[Reporting Agent<br/>(Report Writer)]]:::agent
+
+    ResA[[Research Agent]]:::agent
+    ResAs1[[Research Assistant A]]:::assistant
+    ResAs2[[Research Assistant B]]:::assistant
+
+    %% === Tools & Stores ===
+    GDB[(Graph DB)]:::store
+    PUBMED[[PubMed API]]:::tool
+    TAV[[Tavily Web Search]]:::tool
+
+    DRAFT[/Draft Graph Analysis.md/]:::file
+    SOAP[/Therapy SOAP Note.md/]:::file
+    REFS[/Research Findings.md/]:::file
+    FINAL[/Final Integrated Report.md/]:::file
+    HITL{{Human-in-the-loop<br/>approval}}:::hitl
+
+    %% === Orchestration ===
+    A -->|Writes high-level plan| GA
+    A --> RA
+    A --> ResA
+
+    %% === Graph branch ===
+    GA -->|Query: "Find extreme values", etc.| GDB
+    GA -->|Dispatch parallel tasks| GAs1
+    GA -->|Dispatch parallel tasks| GAs2
+
+    GAs1 -->|Extract data + write analysis| DRAFT
+    GAs2 -->|Extract data + write analysis| DRAFT
+
+    GA -->|Loop until analysis complete| L1{All graph analyses done?}:::gate
+    L1 -- "No" --> GA
+    L1 -- "Yes" --> A
+
+    %% === Reporting branch ===
+    A -->|Send draft analysis| RA
+    RA -->|Draft SOAP note| SOAP
+    A -->|Review + edit| SOAP
+
+    %% === Research branch ===
+    A -->|Request literature / recent studies| ResA
+    ResA -->|Dispatch parallel queries| ResAs1
+    ResA -->|Dispatch parallel queries| ResAs2
+
+    ResAs1 -->|Query| PUBMED
+    ResAs1 -->|Query| TAV
+    ResAs2 -->|Query| PUBMED
+    ResAs2 -->|Query| TAV
+
+    ResAs1 -->|Synthesize + write| REFS
+    ResAs2 -->|Synthesize + write| REFS
+
+    ResA -->|Loop until research complete| L2{All research tasks done?}:::gate
+    L2 -- "No" --> ResA
+    L2 -- "Yes" --> A
+
+    %% === Final assembly ===
+    A -->|Integrate SOAP + Graph + Research| FINAL
+    FINAL --> HITL
+    HITL -- "Approved" --> SAVED[(Saved to filesystem / storage)]:::store
+    HITL -- "Needs edits" --> A
+
+    %% === Styles ===
+    classDef agent fill:#fffaf0,stroke:#f0b429,stroke-width:1.3
+    classDef assistant fill:#fdfcf6,stroke:#caa03d,stroke-dasharray:3 3
+    classDef store fill:#eefcf3,stroke:#34c16b,stroke-width:1.2
+    classDef tool fill:#f0f7ff,stroke:#6aa3ff,stroke-width:1.2
+    classDef file fill:#f6f6f6,stroke:#999
+    classDef hitl fill:#ffecec,stroke:#e25b5b,stroke-width:1.2
+    classDef gate fill:#f6f6f6,stroke:#999,stroke-dasharray:4 2
+    class A,GA,GAs1,GAs2,RA,ResA,ResAs1,ResAs2 agent
+    class PUBMED,TAV tool
+    class DRAFT,SOAP,REFS,FINAL file
+    class L1,L2 gate
+
+```
+This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
+
+The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
+
 
 ---
 
@@ -459,8 +473,6 @@ Thanks GPT. Now here's a close up on the graph of 'me'
 
 ### Once the Agents have mapped out the graph, the output looks like this (albeit the test file has 37 of these blocks generated by the LLM)
 
-Agent 2 produces the first block, whilst Agent 3 produces the Cypher code:
-
 ```
 
 // ============================================================================
@@ -552,8 +564,118 @@ FOREACH (bf IN CASE WHEN r.bigfive IS NULL THEN [] ELSE [r.bigfive] END |
 // ============================================================================
 
 ```
+Example: (Graph Output)
+The user can chat to the agent via text or vocally, running a variety of queries that produce output such as the below:
+```
+Top 5 Emotions:
 
-You can find the whole file generated in my workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/output/psychological_analysis/graph_output/psychological_graph_20250916.cypher)
+Anxiety: 14 occurrences (avg valence: -0.49, avg arousal: 0.62)
+Frustration: 8 occurrences (avg valence: -0.51, avg arousal: 0.55)
+Sadness: 7 occurrences (avg valence: -0.60, avg arousal: 0.44)
+Curiosity: 6 occurrences (avg valence: 0.62, avg arousal: 0.50)
+Enthusiasm: 5 occurrences (avg valence: 0.78, avg arousal: 0.58)
+Top 5 Cognitive Distortions:
+
+Overgeneralization: 8 occurrences
+Catastrophizing: 7 occurrences
+Labeling: 6 occurrences
+Personalization: 6 occurrences
+Minimization: 4 occurrences
+Top 5 Core Schemas:
+
+Defectiveness_shame: 7 occurrences
+Abandonment: 5 occurrences
+Emotional_deprivation: 4 occurrences
+Self‑sacrifice: 3 occurrences
+Defectiveness shame: 3 occurrences
+Attachment Styles:
+
+Anxious Preoccupied: 1 occurrences
+dismissive_avoidant: 1 occurrences
+Anxious preoccupied: 7 occurrences
+Secure: 7 occurrences
+Anxious_preoccupied: 9 occurrences
+anxious_preoccupied: 3 occurrences
+secure: 1 occurrences
+Anxious_Preoccupied: 1 occurrences
+Anxious pre‑occupied: 1 occurrences
+Top 5 Defense Mechanisms:
+
+Rationalization: 12 occurrences
+Denial: 7 occurrences
+Suppression: 5 occurrences
+Intellectualization: 5 occurrences
+Projection: 3 occurrences
+Big Five Personality Averages:
+
+Openness: 0.77 (High)
+Conscientiousness: 0.73 (High)
+Extraversion: 0.47 (Moderate)
+Agreeableness: 0.66 (Moderate)
+Neuroticism: 0.58 (Moderate)
+```
+The user can query deeper, for example "show me the extrememeties of the 'Valence' Emotions:
+```
+=== EXTREME VALUES FOR EMOTION_VALENCE ===
+
+
+1. QA Pair: qa_pair_013
+   Emotion: Enthusiasm
+   Arousal: 0.50
+   Confidence: 0.90
+   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
+
+2. QA Pair: qa_pair_026
+   Emotion: Enthusiasm
+   Arousal: 0.70
+   Confidence: 0.90
+   Sample: "Here's my answers below. I've rated specifically acording to the text in '( )' brackets, since they reasonate more with me than the more generic 'Openn..."
+
+3. QA Pair: qa_pair_013
+   Emotion: Curiosity
+   Arousal: 0.60
+   Confidence: 0.80
+   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
+
+```
+Then query for the question and answer in it's entirety:
+```
+=== COMPLETE ANALYSIS FOR qa_pair_013 ===
+
+EMOTIONS:
+
+Curiosity: valence=0.80, arousal=0.60, confidence=0.80
+Enthusiasm: valence=0.90, arousal=0.50, confidence=0.90
+Reflection: valence=0.70, arousal=0.40, confidence=0.80
+Gratitude: valence=0.60, arousal=0.30, confidence=0.70
+ATTACHMENT STYLES:
+
+Secure: confidence=0.80
+ERIKSON STAGES:
+
+Generativity_vs_stagnation: confidence=0.80
+BIG FIVE PERSONALITY:
+
+Openness: 0.90
+Conscientiousness: 0.70
+Extraversion: 0.60
+Agreeableness: 0.80
+Neuroticism: 0.30
+Confidence: 0.80
+FULL TEXT:
+Chunk 1: This is such an interesting concept that... # shortened for brevity
+Chunk 2: However in this scenario ...
+Chunk 3: Then there is the element of ...
+
+```
+However, you don't need to do any of that if you are producing a SOAP note, instead a whole team of agents writes it for you. 
+
+# Agentic Team:
+There are 10 agents in total, and currently 3 different models (all locally hosted on one GPU)
+You can view the workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/DEEP_AGENT_WORKFLOW.md)
+
+
+You can find the whole Cypher file generated in the sentiment app workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/output/psychological_analysis/graph_output/psychological_graph_20250916.cypher)
 
 ## :couple: Socials
 - Some area's of therapy use a patients Social Media as clue's for insights on the persona.
@@ -700,7 +822,7 @@ Whether you’re prototyping for home use or planning a clinical rollout, think 
   User Input
    │
    ▼
-  Graph Query ────────► GNN ──────────────► Graph Embeddings (Psych + Persona state)
+  Graph Query ────────► Graph Embeddings 
    │                     │
    │                     ▼
    └──► Style Query (e.g., CBT phrases, tone cues)
@@ -709,10 +831,10 @@ Whether you’re prototyping for home use or planning a clinical rollout, think 
             Style Embeddings + FAISS RAG ─────► Fusion Module
                                           │
                                           ▼
-                          LoRA-tuned LLM (e.g. LLaMA, GPT)
+                                    LoRA-tuned LLM
                                           │
                                           ▼
-                        Persona Response (text or voice)
+                        Response (text or voice)
   ```
 - ### Core Modules:
 - **Graph DB (Memgraph)**: Stores personas, utterances, cognitive distortions, Erikson stages, mood history.
@@ -726,28 +848,6 @@ Whether you’re prototyping for home use or planning a clinical rollout, think 
 ---
 ## ⚠️ Ethical considerations and safety ⚠️
   
-Running a code agent gives the LLM a high degree of control over your environment.  Always remember that agents are experimental and should be treated accordingly.
-
-### In particular:  
-- **Sandbox everything.**  The agent executes arbitrary code; only run it on a dedicated NVMe inside either an [E2B](https://e2b.dev) sandbox or a Docker (or your preferred equivalent containerization).  Never point it at your host operating system or personal files.
-- **Keep secrets out of scope.**  Do not grant the agent access to sensitive credentials or systems.  Tools should be whitelisted explicitly.
-- **Omit the trigger phrases for safety.**  Hugging Face intentionally does not publicise 'examples with fully functional *CodeAgents* due to the risks if the library is implemented poorly.
-- It explains [SmolAgents](https://github.com/huggingface/smolagents) in great detail on its [Agents Course](https://huggingface.co/learn/agents-course/en/unit0/introduction), but at implemention you'll find a 'maze of misdirection' and ommisions. It took me many hours of reading through the Smolagents library on Github, whilst comparing the code and documentation to the HF notes. One 'red herring' in particular required ~3-4 days of testing debug a critical feature.
-- This is not intended to be evasive or to make things difficult for learners, it's (presumably) intended to prevent inexperienced users from accidentally starting infinite‑running loops, breaking their PC (or someone elses), or compromising their entire network and data.
-
-**For similar reasons this README does not spell out:**
-- The commands to switch to 'Agent Mode', and the commands to 'start the loop' in my framework. You can find them in the code. I stick to the presumed 'Hugging Face' principle of: "if you can't work out the code, you shouldn't be using CodeAgents yet".
-- How the SmolAgents library works under the hood. It's open-source on github so you'll know you're at a point where you _could_ use the library safely, when you have learned how the library works 'back-to-front'.
-- To learn the library, here's the steps I'd suggest:
-  - > 1. ### Do the  [Agents Course](https://huggingface.co/learn/agents-course/en/unit0/introduction). Its intended to be 'roughly' 60 hours for full completion, though if you're exploring all its concepts (it suggests exploration methods), expect it to be around double that.
-    > 2. ### Read all documentation resources at the [bottom of the SmolAgents Resources](https://huggingface.co/learn/agents-course/en/unit2/smolagents/introduction#resources) page. Perhaps Roughly 30 hours.
-  - > 3. ### _Optional but advisable_ Do the [MCP Course](https://huggingface.co/learn/mcp-course/unit0/introduction). You don't need MCP for a runner like mine (i pulled MCP out early on) but it just helps to further understand agentic frameworks
-  - > 4. ### Implement all the examples in the [Cookbook: Agents-Recipes](https://huggingface.co/learn/cookbook/en/agents) and [Cookbook: MLOPS-Recipes](https://huggingface.co/learn/cookbook/en/mlflow_ray_serve). You don't need to use Rayserve but it reinforces the 'monitoring' concepts.
-  - > 5. ### Monitoring Runs: If you did the above, you'll know the importance and steps to implement tracing (via Langfuse, OpenTelemmetry, Pheonix etc) or build a 'realtime runner' test-bed-sandbox, like mine.
-  - > 6. ### *Start with 'ToolCallingAgent'* to implement an agentic solution. *ONLY* move on to 'CodeAgent' once you have done so.
-    - > ToolCallingAgent's can still run code if you write it into the tools (at one point during testing I had something like 27 tools with python code, you can see them in my early commits).
-    - > My build safety process is below (in 3 diagrams due to Github's overly restrictive 'Mermaid' rules preventing one clean version)
-      
 ### Production Environments - Example Risk Register / Considerations
   
 The following table is designed to demonstrate an awareness of common security and ethical risks when developing and deploying AI systems, particularly in internal enterprise contexts. It uses a **risk register** format to present risks, likelihoods, impacts, and recommended mitigations. This serves both as a professional reference and as a working framework for ongoing security considerations during project development.  
