@@ -183,7 +183,7 @@ flowchart TD
 ### The Agentic flow for the 'CLI' tool
 This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
 
-```
+```mermaid
 flowchart TD
     %% === Roles / Agents ===
     A[[Architect<br/>(Deep Agent / Orchestrator)]]:::agent
@@ -268,7 +268,7 @@ flowchart TD
 
 ```
 In-Line version:
-```
+```mermaid
 sequenceDiagram
     autonumber
     participant Arch as Architect (Orchestrator)
