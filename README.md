@@ -137,29 +137,79 @@ This project also houses a 'Hospital Automation Workflow' which replaces the typ
 
 The workflow uses edge hardware to host a 'Patient Voice Assistant' who can control devices in the patients room, and perform tasks such as "read me a sleep meditation".
 
-Workflow: (Under construction: mermaid designed by Claude 4.1)
-```mermaid
-graph TD
-    subgraph "Edge Devices"
-        A[Echo Dots/Flex<br/>Audio I/O]
-    end
-    
-    subgraph "Control Hub"
-        B[Raspberry Pi 5<br/>Home Assistant]
-    end
-    
-    subgraph "AI Processing Server"
-        C[Mini-ITX<br/>WhisperX + Piper<br/>RTX 4070 Super]
-    end
-    
-    subgraph "Vision Processing"
-        D[Jetson Nano<br/>VLM/Camera Analysis<br/>Patient Monitoring]
-    end
-    
-    A <-->|Audio| C
-    C <-->|Commands| B
-    D -->|Alerts| B
-    C <-->|Complex Analysis| D
+Example: (Graph Output)
+The user can chat to the agent via text or vocally, running a variety of queries that produce output such as the below:
+```
+Top 5 Emotions:
+
+Anxiety: 14 occurrences (avg valence: -0.49, avg arousal: 0.62)
+Frustration: 8 occurrences (avg valence: -0.51, avg arousal: 0.55)
+Sadness: 7 occurrences (avg valence: -0.60, avg arousal: 0.44)
+Curiosity: 6 occurrences (avg valence: 0.62, avg arousal: 0.50)
+Enthusiasm: 5 occurrences (avg valence: 0.78, avg arousal: 0.58)
+Top 5 Cognitive Distortions:
+
+Overgeneralization: 8 occurrences
+Catastrophizing: 7 occurrences
+Labeling: 6 occurrences
+Personalization: 6 occurrences
+Minimization: 4 occurrences
+Top 5 Core Schemas:
+
+Defectiveness_shame: 7 occurrences
+Abandonment: 5 occurrences
+Emotional_deprivation: 4 occurrences
+Self‑sacrifice: 3 occurrences
+Defectiveness shame: 3 occurrences
+Attachment Styles:
+
+Anxious Preoccupied: 1 occurrences
+dismissive_avoidant: 1 occurrences
+Anxious preoccupied: 7 occurrences
+Secure: 7 occurrences
+Anxious_preoccupied: 9 occurrences
+anxious_preoccupied: 3 occurrences
+secure: 1 occurrences
+Anxious_Preoccupied: 1 occurrences
+Anxious pre‑occupied: 1 occurrences
+Top 5 Defense Mechanisms:
+
+Rationalization: 12 occurrences
+Denial: 7 occurrences
+Suppression: 5 occurrences
+Intellectualization: 5 occurrences
+Projection: 3 occurrences
+Big Five Personality Averages:
+
+Openness: 0.77 (High)
+Conscientiousness: 0.73 (High)
+Extraversion: 0.47 (Moderate)
+Agreeableness: 0.66 (Moderate)
+Neuroticism: 0.58 (Moderate)
+```
+The user can query deeper, for example "show me the extrememeties of the 'Valence' Emotions:
+```
+=== EXTREME VALUES FOR EMOTION_VALENCE ===
+
+
+1. QA Pair: qa_pair_013
+   Emotion: Enthusiasm
+   Arousal: 0.50
+   Confidence: 0.90
+   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
+
+2. QA Pair: qa_pair_026
+   Emotion: Enthusiasm
+   Arousal: 0.70
+   Confidence: 0.90
+   Sample: "Here's my answers below. I've rated specifically acording to the text in '( )' brackets, since they reasonate more with me than the more generic 'Openn..."
+
+3. QA Pair: qa_pair_013
+   Emotion: Curiosity
+   Arousal: 0.60
+   Confidence: 0.80
+   Sample: "This is such an interesting concept that, as you know is literally helping me to simultaneaously develop insights on myself, and insights as to how th..."
+
 ```
 
 Example Agentic Framework / Responsibilities
