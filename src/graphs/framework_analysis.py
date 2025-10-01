@@ -118,7 +118,19 @@ graph_config = {"recursion_limit": 50, "configurable": {}}  # Increased from def
 def parse_therapy_csv(csv_content: str) -> list:
     """
     Parse the therapy CSV and extract QA pairs for processing.
-    Handles multi-line cells by grouping rows with the same message_id.
+
+    Handles CSV format where:
+    - Question/answer text can span multiple rows
+    - message_id only appears on the LAST row of each Q&A pair
+    - Forward-fills message_id to group multi-row entries
+
+    Expected CSV format:
+    Therapist,Client,message_id
+    "question text",,,
+    ,"answer text",,
+    ,"more answer",,1
+    "next question",,,
+    ,"next answer",,2
 
     Args:
         csv_content: Raw CSV content as string
@@ -129,49 +141,128 @@ def parse_therapy_csv(csv_content: str) -> list:
     try:
         from io import StringIO
 
-        df = pd.read_csv(StringIO(csv_content))
+        print("🔍 Parsing CSV...")
+
+        # Try to read CSV with more robust error handling
+        try:
+            # Use python engine which is more forgiving with quoting issues
+            df = pd.read_csv(
+                StringIO(csv_content),
+                quotechar='"',
+                escapechar='\\',
+                skipinitialspace=True,
+                encoding='utf-8',
+                engine='python',  # More forgiving parser
+                on_bad_lines='warn'  # Show warnings instead of crashing
+            )
+        except Exception as parse_error:
+            # If that fails, try to give more helpful error message
+            lines = csv_content.split('\n')
+            print(f"\n❌ CSV Parsing Error: {str(parse_error)}")
+            print(f"📄 Total lines in CSV: {len(lines)}")
+
+            # Show problematic line if we can identify it
+            error_str = str(parse_error)
+            if 'line' in error_str.lower():
+                import re
+                line_match = re.search(r'line (\d+)', error_str)
+                if line_match:
+                    line_num = int(line_match.group(1))
+                    if line_num < len(lines):
+                        print(f"\n⚠️  Problem near line {line_num}:")
+                        # Show context: 2 lines before, problem line, 2 lines after
+                        start = max(0, line_num - 3)
+                        end = min(len(lines), line_num + 2)
+                        for i in range(start, end):
+                            marker = ">>> " if i == line_num - 1 else "    "
+                            print(f"{marker}Line {i+1}: {lines[i][:100]}")
+
+            print("\n💡 Common CSV issues:")
+            print("  - Unescaped quotes within quoted text (use \"\" for literal quotes)")
+            print("  - Commas in text that aren't inside quotes")
+            print("  - Mismatched quotes (opening \" without closing \")")
+            print("  - Extra columns or missing commas")
+
+            raise ValueError(f"CSV parsing failed. See error details above.")
 
         # Clean column names
         df.columns = [col.strip() for col in df.columns]
 
+        print(f"📊 Columns found: {df.columns.tolist()}")
+        print(f"📏 Total rows: {len(df)}")
+
         # Verify required columns
         required_cols = ["Therapist", "Client", "message_id"]
         if not all(col in df.columns for col in required_cols):
-            raise ValueError(f"CSV must contain columns: {required_cols}")
+            raise ValueError(
+                f"CSV must contain columns: {required_cols}\n"
+                f"Found columns: {df.columns.tolist()}\n"
+                f"💡 Check that your header row is: Therapist,Client,message_id"
+            )
 
-        # Group by message_id to handle multi-line cells
+        # Show first few rows for debugging
+        print("\n📋 First 3 rows preview:")
+        for idx, row in df.head(3).iterrows():
+            print(f"  Row {idx+1}: Therapist={str(row['Therapist'])[:50]}... | "
+                  f"Client={str(row['Client'])[:50]}... | "
+                  f"message_id={row['message_id']}")
+
+        # Fill NaN message_ids backwards (in case message_id appears at end of blocks)
+        df['message_id'] = df['message_id'].bfill()
+
+        # Remove rows where message_id is still NaN
+        df = df[df['message_id'].notna()]
+
+        print(f"✓ After filtering: {len(df)} rows with valid message_ids")
+
+        # Group by message_id to combine multi-row entries (if any)
         qa_pairs = []
-        grouped = df.groupby("message_id", dropna=True)
+        grouped = df.groupby("message_id", sort=False)
 
         for message_id, group in grouped:
-            # Combine non-null values for each column
+            # Combine all non-null values for each column
             therapist_parts = group["Therapist"].dropna().astype(str).str.strip()
             client_parts = group["Client"].dropna().astype(str).str.strip()
 
-            # Filter out empty strings and combine
+            # Filter out empty strings, 'nan', and combine with spaces
             therapist_text = " ".join(
-                [part for part in therapist_parts if part and part != "nan"]
-            )
+                [part for part in therapist_parts if part and part.lower() != "nan"]
+            ).strip()
+
             client_text = " ".join(
-                [part for part in client_parts if part and part != "nan"]
-            )
+                [part for part in client_parts if part and part.lower() != "nan"]
+            ).strip()
 
             # Only include if we have both question and answer
             if therapist_text and client_text:
                 qa_pair = {
                     "question": therapist_text,
                     "answer": client_text,
-                    "message_id": f"qa_pair_{int(message_id):03d}",  # Format as qa_pair_001, qa_pair_002, etc.
+                    "message_id": f"qa_pair_{int(message_id):03d}",
                 }
                 qa_pairs.append(qa_pair)
+                print(f"✓ Parsed {qa_pair['message_id']}: Q={len(therapist_text)} chars, A={len(client_text)} chars")
+            else:
+                missing = 'question' if not therapist_text else 'answer'
+                print(f"⚠ Skipping message_id {message_id}: Missing {missing}")
 
-        # Sort by message_id to ensure consistent ordering
-        qa_pairs.sort(key=lambda x: x["message_id"])
+        if not qa_pairs:
+            raise ValueError(
+                "No valid QA pairs found in CSV.\n"
+                "💡 Check that:\n"
+                "  - Therapist column has question text\n"
+                "  - Client column has answer text\n"
+                "  - message_id column has numbers (1, 2, 3, ...)"
+            )
 
+        print(f"\n✅ Successfully parsed {len(qa_pairs)} QA pairs from CSV\n")
         return qa_pairs
 
+    except ValueError:
+        # Re-raise ValueError with our custom messages
+        raise
     except Exception as e:
-        raise ValueError(f"Error parsing CSV: {str(e)}")
+        raise ValueError(f"Unexpected error parsing CSV: {str(e)}")
 
 
 def enhance_analysis_with_qa(question: str, answer: str) -> None:
