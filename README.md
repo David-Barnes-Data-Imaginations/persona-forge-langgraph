@@ -257,49 +257,6 @@ but for now you can assume that 'More Compute = More intelligence'.
 There are 10 agents in total, and currently 3 different models (all locally hosted on one GPU)
 You can view the workflow [here](https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/DEEP_AGENT_WORKFLOW.md)
 
-
-Example Agentic Framework / Responsibilities
-
-### 1. _AI Clinical & Patient‑Care Assistant_
-
-  **Primary role:** Collects and organises patient‑related data from multiple sources.  
-  
-  | Function | Example Use Case |
-  |---|---|
-  | **Transcription** | Converts speech to text during therapy, labelling speakers (e.g. "Therapist 1" / "Client 345"). |
-  | **Environment & Behavioural Logging** | Identifies patterns from conversations or environmental sensors. |
-  | **Daily Care Automation** | Room ambience control, temperature adjustment, reminders for medication or routines. |
-  | **Therapeutic Assistance** | Guided meditation, light CBT / ACT, activity prompts. |
-  | **Visual AI Monitoring** | Camera‑based emergency detection, spotting subtle risks faster than humans. |
-  
-**All collected data is securely passed to Sandbox 2**.  
-  
----
-
-### 2. Sandbox / Secure Container – _The Storage Manager_
-  
-  **Primary role:** Organises, tags, and connects information for later analysis.  
-  
-  | Function | Example Use Case |
-  |---|---|
-  | **Database & Graph‑RAG Storage** | Stores structured & unstructured data with tags like "utterance", "allergy", "care request". |
-  | **Emotional Mapping** | Tracks emotional highs, medians, and lows across sessions for 23 detected emotions, stored in a graph per patient over time. |
-  | **Result Packaging** | Formats summaries and history for Sandbox 3. |
-  
----
-### 3. Sandbox / Secure Container –  _The Architect_
-  
-  **Primary role:** Performs deep analysis and provides insights to clinicians.  
-  
-  | Function | Example Use Case |
-  |---|---|
-  | **Advanced Analysis** | Applies chosen psychology/therapy frameworks to patient data. |
-  | **Clinical Knowledge Access** | Retrieves relevant research, best practices, and AI‑generated recommendations. |
-  | **Schema Verification** | Checks consistency and compliance in stored data. |
-  | **Feedback Loop** | Sends adjustment instructions back to Storage Manager if needed. |
-  | **Dashboard Management** | Maintains the primary clinician interface. |
-  | **Performance Review** | Monitors AI assistants and provides human‑readable performance feedback. |
-  
 ---
 
 ### **Why This Sparks Possibilities**
