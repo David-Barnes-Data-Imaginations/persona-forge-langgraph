@@ -79,8 +79,10 @@ overseer_model = ChatOllama(
 
 """*************************** Workflow*************************************************
 The main deep agent is the architect. Oversight of report and writes the plan.
-It queries how many 'QA Pairs' are in the graph, then sends to Graph Agent to start the workflow.
-The Graph Agent then calls the assistant graph agent for each pair sequentially.
+The Architect has three direct reports: 'Graph Agent', 'Reporting Agent' and 'Research Agent.
+The 'Graph Agent' is called using queries such as:
+- "Find me the extreme values in the Graph"
+
 The assistant graph agent extracts the data and writes the psychological analysis for the pair to a file. 
 Graph Agent checks, then calls the report writer agent.
 Once Report Writer is finished, it calls back to the Architect.
