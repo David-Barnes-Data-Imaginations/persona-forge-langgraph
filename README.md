@@ -134,6 +134,8 @@ The Agents are hosted on a single 'Consumer Grade' GPU.
 
 ### The Agentic Worflow (sentiment app)
 This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
+
+### Therapy → Agents → Graph/Hybrid Query (flowchart)
 ```mermaid
 flowchart TD
     %% --- Actors & I/O ---
@@ -180,93 +182,126 @@ flowchart TD
     classDef result fill:#e8f7ff,stroke:#2aa4f4,stroke-width:1.4
 
 ```
-### The Agentic flow for the 'CLI' tool
+### get_personality_summary Example Tool Flow (flowchart)
+```mermaid
+flowchart TD
+    START([@tool get_personality_summary(focus_area)]):::start
+
+    MAP[Map focus_area ➜ query<br/><code>overall/emotions/cognition/attachment/personality</code><br/>else: passthrough]:::step
+    RAG[get_rag_instance()]:::step
+    SRCH[rag.search_psychological_context(query, k=5)]:::step
+
+    EMPTY{Any results?}:::gate
+    NORES[Return:<br/>'No personality data for focus area']:::term
+
+    LOOP[[For each result:<br/>• collect emotions/distortions<br/>• attachment/schemas/defenses<br/>• Big Five scores]]:::loop
+
+    AGG[Aggregate & uniquify lists<br/>Compute Big Five levels<br/>Build summary text]:::step
+    RET[(Return summary string)]:::term
+
+    ERR{Exception?}:::error
+    ERRT[Return:<br/>'Error generating personality summary: …']:::term
+
+    %% --- Data Stores (conceptual) ---
+    GDB[(Graph DB:<br/>tagged therapy data)]:::store
+    VEC[(Vector Index:<br/>psych context chunks)]:::store
+
+    %% --- Flow --
+    START --> MAP --> RAG --> SRCH --> EMPTY
+    EMPTY -- "No" --> NORES
+    EMPTY -- "Yes" --> LOOP --> AGG --> RET
+
+    %% --- Under-the-hood lookups (hybrid) ---
+    SRCH -. may traverse via Cypher .-> GDB
+    SRCH -. may retrieve kNN .-> VEC
+
+    %% --- Error path ---
+    SRCH --> ERR
+    AGG  --> ERR
+    ERR  -- "Yes" --> ERRT
+    ERR  -- "No"  --> RET
+
+    %% --- Styles ---
+    classDef start fill:#f0f7ff,stroke:#6aa3ff,stroke-width:1.2
+    classDef step fill:#fffaf0,stroke:#f0b429,stroke-width:1.2
+    classDef gate fill:#f6f6f6,stroke:#999,stroke-dasharray: 4 2
+    classDef term fill:#e8f7ff,stroke:#2aa4f4,stroke-width:1.4
+    classDef error fill:#ffecec,stroke:#e25b5b,stroke-width:1.2
+    classDef loop fill:#f3fff5,stroke:#34c16b,stroke-dasharray: 3 3
+    classDef store fill:#eefcf3,stroke:#34c16b,stroke-width:1.2
+
+
+```
+## The Agentic flow for the 'CLI' tool
+### Flowchart (Architect → Graph/Report/Research with parallel assistants)
 This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
 
 ```mermaid
 flowchart TD
-    %% === Roles / Agents ===
-    A[[Architect<br/>(Deep Agent / Orchestrator)]]:::agent
-    GA[[Graph Agent]]:::agent
-    GAs1[[Graph Assistant A]]:::assistant
-    GAs2[[Graph Assistant B]]:::assistant
+    %% ==== Roles / Agents ====
+    A["Architect\n(Deep Agent / Orchestrator)"]
+    GA["Graph Agent"]
+    GAs1["Graph Assistant A"]
+    GAs2["Graph Assistant B"]
+    RA["Reporting Agent\n(Report Writer)"]
+    ResA["Research Agent"]
+    ResAs1["Research Assistant A"]
+    ResAs2["Research Assistant B"]
 
-    RA[[Reporting Agent<br/>(Report Writer)]]:::agent
+    %% ==== Tools & Stores ====
+    GDB["Graph DB"]
+    PUBMED["PubMed API"]
+    TAV["Tavily Web Search"]
+    DRAFT["Draft Graph Analysis.md"]
+    SOAP["Therapy SOAP Note.md"]
+    REFS["Research Findings.md"]
+    FINAL["Final Integrated Report.md"]
+    HITL{"Human-in-the-loop\napproval"}
+    SAVED["Saved to filesystem / storage"]
 
-    ResA[[Research Agent]]:::agent
-    ResAs1[[Research Assistant A]]:::assistant
-    ResAs2[[Research Assistant B]]:::assistant
-
-    %% === Tools & Stores ===
-    GDB[(Graph DB)]:::store
-    PUBMED[[PubMed API]]:::tool
-    TAV[[Tavily Web Search]]:::tool
-
-    DRAFT[/Draft Graph Analysis.md/]:::file
-    SOAP[/Therapy SOAP Note.md/]:::file
-    REFS[/Research Findings.md/]:::file
-    FINAL[/Final Integrated Report.md/]:::file
-    HITL{{Human-in-the-loop<br/>approval}}:::hitl
-
-    %% === Orchestration ===
-    A -->|Writes high-level plan| GA
+    %% ==== Orchestration ====
+    A -->|"Writes high-level plan"| GA
     A --> RA
     A --> ResA
 
-    %% === Graph branch ===
-    GA -->|Query: "Find extreme values", etc.| GDB
-    GA -->|Dispatch parallel tasks| GAs1
-    GA -->|Dispatch parallel tasks| GAs2
-
-    GAs1 -->|Extract data + write analysis| DRAFT
-    GAs2 -->|Extract data + write analysis| DRAFT
-
-    GA -->|Loop until analysis complete| L1{All graph analyses done?}:::gate
+    %% ==== Graph branch ====
+    GA -->|"Query: e.g., Find extreme values"| GDB
+    GA -->|"Dispatch parallel tasks"| GAs1
+    GA -->|"Dispatch parallel tasks"| GAs2
+    GAs1 -->|"Extract data + write analysis"| DRAFT
+    GAs2 -->|"Extract data + write analysis"| DRAFT
+    GA --> L1{"All graph analyses done?"}
     L1 -- "No" --> GA
     L1 -- "Yes" --> A
 
-    %% === Reporting branch ===
-    A -->|Send draft analysis| RA
-    RA -->|Draft SOAP note| SOAP
-    A -->|Review + edit| SOAP
+    %% ==== Reporting branch ====
+    A -->|"Send draft analysis"| RA
+    RA -->|"Draft SOAP note"| SOAP
+    A -->|"Review + edit"| SOAP
 
-    %% === Research branch ===
-    A -->|Request literature / recent studies| ResA
-    ResA -->|Dispatch parallel queries| ResAs1
-    ResA -->|Dispatch parallel queries| ResAs2
-
-    ResAs1 -->|Query| PUBMED
-    ResAs1 -->|Query| TAV
-    ResAs2 -->|Query| PUBMED
-    ResAs2 -->|Query| TAV
-
-    ResAs1 -->|Synthesize + write| REFS
-    ResAs2 -->|Synthesize + write| REFS
-
-    ResA -->|Loop until research complete| L2{All research tasks done?}:::gate
+    %% ==== Research branch ====
+    A -->|"Request literature / recent studies"| ResA
+    ResA -->|"Dispatch parallel queries"| ResAs1
+    ResA -->|"Dispatch parallel queries"| ResAs2
+    ResAs1 --> PUBMED
+    ResAs1 --> TAV
+    ResAs2 --> PUBMED
+    ResAs2 --> TAV
+    ResAs1 -->|"Synthesize + write"| REFS
+    ResAs2 -->|"Synthesize + write"| REFS
+    ResA --> L2{"All research tasks done?"}
     L2 -- "No" --> ResA
     L2 -- "Yes" --> A
 
-    %% === Final assembly ===
-    A -->|Integrate SOAP + Graph + Research| FINAL
+    %% ==== Final assembly ====
+    A -->|"Integrate SOAP + Graph + Research"| FINAL
     FINAL --> HITL
-    HITL -- "Approved" --> SAVED[(Saved to filesystem / storage)]:::store
+    HITL -- "Approved" --> SAVED
     HITL -- "Needs edits" --> A
 
-    %% === Styles ===
-    classDef agent fill:#fffaf0,stroke:#f0b429,stroke-width:1.3
-    classDef assistant fill:#fdfcf6,stroke:#caa03d,stroke-dasharray:3 3
-    classDef store fill:#eefcf3,stroke:#34c16b,stroke-width:1.2
-    classDef tool fill:#f0f7ff,stroke:#6aa3ff,stroke-width:1.2
-    classDef file fill:#f6f6f6,stroke:#999
-    classDef hitl fill:#ffecec,stroke:#e25b5b,stroke-width:1.2
-    classDef gate fill:#f6f6f6,stroke:#999,stroke-dasharray:4 2
-    class A,GA,GAs1,GAs2,RA,ResA,ResAs1,ResAs2 agent
-    class PUBMED,TAV tool
-    class DRAFT,SOAP,REFS,FINAL file
-    class L1,L2 gate
 
 ```
+### Sequence diagram (parallelism)
 In-Line version:
 ```mermaid
 sequenceDiagram
