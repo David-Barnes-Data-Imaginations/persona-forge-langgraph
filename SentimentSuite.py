@@ -1291,6 +1291,25 @@ async def create_knowledge_graph():
         return {"error": str(e), "status": "failed"}
 
 
+@app.post("/analyze/embeddings")
+async def create_embeddings():
+    """
+    Create embeddings for the knowledge graph (same as create-graph).
+    This endpoint exists for compatibility with the embeddings button.
+    """
+    try:
+        results = process_kg_creation()
+
+        # Store results in analysis_store for later viewing
+        analysis_store.results["knowledge_graph"] = results
+        analysis_store.timestamp = datetime.now()
+
+        return results
+
+    except Exception as e:
+        return {"error": str(e), "status": "failed"}
+
+
 @app.get("/graph-results", response_class=HTMLResponse)
 async def graph_results():
     """

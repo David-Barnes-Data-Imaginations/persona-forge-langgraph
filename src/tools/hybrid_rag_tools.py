@@ -89,7 +89,7 @@ class PersonaForgeRAGTool:
         OPTIONAL MATCH (qa)-[stage_rel:EXHIBITS_STAGE]->(qa_stage)
         OPTIONAL MATCH (qa)-[big5_rel:SHOWS_BIG_FIVE]->(big5)
 
-        RETURN 
+        RETURN
             node.id as chunk_id,
             node.text as text,
             score,
@@ -97,6 +97,12 @@ class PersonaForgeRAGTool:
             // QA and session context
             qa.id as qa_pair_id,
             session.session_id as session_id,
+
+            // Clinical analysis fields (SOAP format)
+            qa.subjective_analysis as subjective_analysis,
+            qa.objective_analysis as objective_analysis,
+            qa.assessment as assessment,
+            qa.plan as plan,
 
             // QA-level psychology with confidence scores
             collect(DISTINCT {
@@ -245,9 +251,23 @@ def search_psychological_insights(query: str, max_results: int = 3) -> str:
             if result["neuroticism"] is not None:
                 big_five.append(f"Neuroticism: {result['neuroticism']:.1f}")
 
+            # Add clinical analysis if available
+            clinical_parts = []
+            if result.get("subjective_analysis"):
+                clinical_parts.append(f"Subjective: {result['subjective_analysis']}")
+            if result.get("objective_analysis"):
+                clinical_parts.append(f"Objective: {result['objective_analysis']}")
+            if result.get("assessment"):
+                clinical_parts.append(f"Assessment: {result['assessment']}")
+            if result.get("plan"):
+                clinical_parts.append(f"Plan: {result['plan']}")
+
             context_part = f"""
 INSIGHT {i} (Relevance: {result['score']:.3f}):
 Text: "{result['text']}"
+
+Clinical Analysis:
+{chr(10).join(clinical_parts) if clinical_parts else 'Not available'}
 
 Psychology: {' | '.join(psychology_parts) if psychology_parts else 'None detected'}
 Big Five: {' | '.join(big_five) if big_five else 'Not available'}

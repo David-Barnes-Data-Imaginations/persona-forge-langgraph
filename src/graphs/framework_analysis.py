@@ -120,7 +120,7 @@ def parse_therapy_csv(csv_content: str) -> list:
     Parse the therapy CSV and extract QA pairs for processing.
 
     Handles CSV format where:
-    - Question/answer text can span multiple rows
+    - Question/answer text can span multiple rows.
     - message_id only appears on the LAST row of each Q&A pair
     - Forward-fills message_id to group multi-row entries
 
@@ -149,23 +149,24 @@ def parse_therapy_csv(csv_content: str) -> list:
             df = pd.read_csv(
                 StringIO(csv_content),
                 quotechar='"',
-                escapechar='\\',
+                escapechar="\\",
                 skipinitialspace=True,
-                encoding='utf-8',
-                engine='python',  # More forgiving parser
-                on_bad_lines='warn'  # Show warnings instead of crashing
+                encoding="utf-8",
+                engine="python",  # More forgiving parser
+                on_bad_lines="warn",  # Show warnings instead of crashing
             )
         except Exception as parse_error:
             # If that fails, try to give more helpful error message
-            lines = csv_content.split('\n')
+            lines = csv_content.split("\n")
             print(f"\n❌ CSV Parsing Error: {str(parse_error)}")
             print(f"📄 Total lines in CSV: {len(lines)}")
 
             # Show problematic line if we can identify it
             error_str = str(parse_error)
-            if 'line' in error_str.lower():
+            if "line" in error_str.lower():
                 import re
-                line_match = re.search(r'line (\d+)', error_str)
+
+                line_match = re.search(r"line (\d+)", error_str)
                 if line_match:
                     line_num = int(line_match.group(1))
                     if line_num < len(lines):
@@ -178,9 +179,9 @@ def parse_therapy_csv(csv_content: str) -> list:
                             print(f"{marker}Line {i+1}: {lines[i][:100]}")
 
             print("\n💡 Common CSV issues:")
-            print("  - Unescaped quotes within quoted text (use \"\" for literal quotes)")
+            print('  - Unescaped quotes within quoted text (use "" for literal quotes)')
             print("  - Commas in text that aren't inside quotes")
-            print("  - Mismatched quotes (opening \" without closing \")")
+            print('  - Mismatched quotes (opening " without closing ")')
             print("  - Extra columns or missing commas")
 
             raise ValueError(f"CSV parsing failed. See error details above.")
@@ -203,15 +204,17 @@ def parse_therapy_csv(csv_content: str) -> list:
         # Show first few rows for debugging
         print("\n📋 First 3 rows preview:")
         for idx, row in df.head(3).iterrows():
-            print(f"  Row {idx+1}: Therapist={str(row['Therapist'])[:50]}... | "
-                  f"Client={str(row['Client'])[:50]}... | "
-                  f"message_id={row['message_id']}")
+            print(
+                f"  Row {idx+1}: Therapist={str(row['Therapist'])[:50]}... | "
+                f"Client={str(row['Client'])[:50]}... | "
+                f"message_id={row['message_id']}"
+            )
 
         # Fill NaN message_ids backwards (in case message_id appears at end of blocks)
-        df['message_id'] = df['message_id'].bfill()
+        df["message_id"] = df["message_id"].bfill()
 
         # Remove rows where message_id is still NaN
-        df = df[df['message_id'].notna()]
+        df = df[df["message_id"].notna()]
 
         print(f"✓ After filtering: {len(df)} rows with valid message_ids")
 
@@ -241,9 +244,11 @@ def parse_therapy_csv(csv_content: str) -> list:
                     "message_id": f"qa_pair_{int(message_id):03d}",
                 }
                 qa_pairs.append(qa_pair)
-                print(f"✓ Parsed {qa_pair['message_id']}: Q={len(therapist_text)} chars, A={len(client_text)} chars")
+                print(
+                    f"✓ Parsed {qa_pair['message_id']}: Q={len(therapist_text)} chars, A={len(client_text)} chars"
+                )
             else:
-                missing = 'question' if not therapist_text else 'answer'
+                missing = "question" if not therapist_text else "answer"
                 print(f"⚠ Skipping message_id {message_id}: Missing {missing}")
 
         if not qa_pairs:
@@ -265,14 +270,15 @@ def parse_therapy_csv(csv_content: str) -> list:
         raise ValueError(f"Unexpected error parsing CSV: {str(e)}")
 
 
-def enhance_analysis_with_qa(question: str, answer: str) -> None:
+def enhance_analysis_with_qa(question: str, answer: str, message_id: str) -> None:
     """
-    Post-process the most recent analysis entry to include original question and answer.
-    This ensures the Q&A text is always included regardless of LLM memory issues.
+    Post-process the most recent analysis entry to include original question, answer, and QA ID.
+    This ensures the Q&A text and ID are always included regardless of LLM memory issues.
 
     Args:
         question: The therapist's original question
         answer: The client's original answer
+        message_id: The message/QA pair ID
     """
     try:
         import os
@@ -326,8 +332,9 @@ def enhance_analysis_with_qa(question: str, answer: str) -> None:
         # Extract the existing analysis content
         existing_analysis = "\n".join(lines[analysis_start_idx:]).strip()
 
-        # Create the enhanced analysis with Q&A prepended
-        enhanced_analysis = f"Original Question: {question}\n\nOriginal Answer: {answer}\n\n{existing_analysis}"
+        # Create the enhanced analysis with QA ID, Q&A prepended
+        qa_id = f"qa_pair_{str(message_id).zfill(3)}"
+        enhanced_analysis = f"QA ID: {qa_id}\n\nOriginal Question: {question}\n\nOriginal Answer: {answer}\n\n{existing_analysis}"
 
         # Reconstruct the last entry with enhanced content
         enhanced_entry = "\n".join(header_lines) + "\n" + enhanced_analysis
@@ -377,8 +384,8 @@ def process_qa_pair(qa_pair: dict) -> dict:
         # Run the graph with increased recursion limit
         result = framework_graph.invoke(initial_state, config=graph_config)
 
-        # Post-process: Add original question and answer to the analysis file
-        enhance_analysis_with_qa(qa_pair["question"], qa_pair["answer"])
+        # Post-process: Add original question, answer, and QA ID to the analysis file
+        enhance_analysis_with_qa(qa_pair["question"], qa_pair["answer"], qa_pair["message_id"])
 
         return {
             "qa_id": qa_pair["message_id"],

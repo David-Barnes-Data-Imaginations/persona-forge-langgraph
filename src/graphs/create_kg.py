@@ -168,8 +168,10 @@ def extract_analyses_from_master_file():
     print(f"Debug: Master file size: {len(content)} characters")
     print(f"Debug: File starts with: {repr(content[:200])}")
 
-    # Split by the entry separators - match the actual pattern: three lines of =
-    entries = re.split(r"={80}\n={80}\nANALYSIS ENTRY", content)
+    # Split by the entry separators - match the actual pattern:
+    # Pattern 1: Single line of === followed by "ANALYSIS ENTRY"
+    # Pattern 2: Double line of === with "ANALYSIS ENTRY" in between (old format)
+    entries = re.split(r"={80,}\n(?:={80,}\n)?ANALYSIS ENTRY", content)
     print(f"Debug: Found {len(entries)} entries after split")
 
     analyses = []
@@ -177,7 +179,7 @@ def extract_analyses_from_master_file():
         print(f"Debug: Processing entry {i}")
         print(f"Debug: Entry starts with: {repr(entry[:100])}")
 
-        if "Analysis:" in entry:  # This should match your file format
+        if "Analysis" in entry:  # Match both "Analysis:" and "Analysis"
             # Clean up the entry
             entry = entry.strip()
             lines = entry.split("\n")
@@ -188,17 +190,20 @@ def extract_analyses_from_master_file():
             analysis_text = ""
 
             # Find the different sections
+            qa_id_start = -1
             question_start = -1
             answer_start = -1
             analysis_start = -1
 
             for j, line in enumerate(lines):
                 line_stripped = line.strip()
-                if line_stripped.startswith("Original Question:"):
+                if line_stripped.startswith("QA ID:"):
+                    qa_id_start = j
+                elif line_stripped.startswith("Original Question:"):
                     question_start = j
                 elif line_stripped.startswith("Original Answer:"):
                     answer_start = j
-                elif line_stripped == "Analysis:":
+                elif line_stripped == "Analysis:" or line_stripped == "Analysis":
                     analysis_start = j
                     break
 
@@ -228,12 +233,75 @@ def extract_analyses_from_master_file():
                 # Take everything from "Analysis:" onwards
                 analysis_text = "\n".join(lines[analysis_start:]).strip()
 
+                # Extract clinical sections for embedding
+                subjective_analysis = ""
+                objective_analysis = ""
+                assessment = ""
+                plan = ""
+
+                # Parse the analysis text to extract sections
+                current_section = None
+                section_lines = []
+
+                for line in lines[analysis_start + 1:]:  # Skip "Analysis:" line
+                    line_stripped = line.strip()
+
+                    if line_stripped.startswith("Subjective Analysis:"):
+                        if current_section:
+                            # Save previous section
+                            section_text = " ".join(section_lines)
+                            if current_section == "subjective":
+                                subjective_analysis = section_text
+                            elif current_section == "objective":
+                                objective_analysis = section_text
+                            elif current_section == "assessment":
+                                assessment = section_text
+                            elif current_section == "plan":
+                                plan = section_text
+                        current_section = "subjective"
+                        section_lines = [line_stripped.replace("Subjective Analysis:", "").strip()]
+                    elif line_stripped.startswith("Objective Analysis:"):
+                        if current_section:
+                            section_text = " ".join(section_lines)
+                            if current_section == "subjective":
+                                subjective_analysis = section_text
+                        current_section = "objective"
+                        section_lines = [line_stripped.replace("Objective Analysis:", "").strip()]
+                    elif line_stripped.startswith("Assessment:"):
+                        if current_section:
+                            section_text = " ".join(section_lines)
+                            if current_section == "objective":
+                                objective_analysis = section_text
+                        current_section = "assessment"
+                        section_lines = [line_stripped.replace("Assessment:", "").strip()]
+                    elif line_stripped.startswith("Plan:"):
+                        if current_section:
+                            section_text = " ".join(section_lines)
+                            if current_section == "assessment":
+                                assessment = section_text
+                        current_section = "plan"
+                        section_lines = [line_stripped.replace("Plan:", "").strip()]
+                    elif line_stripped and current_section:
+                        section_lines.append(line_stripped)
+
+                # Save last section
+                if current_section and section_lines:
+                    section_text = " ".join(section_lines)
+                    if current_section == "plan":
+                        plan = section_text
+                    elif current_section == "assessment":
+                        assessment = section_text
+
                 analyses.append(
                     {
                         "entry_number": len(analyses) + 1,
                         "content": analysis_text,
                         "original_question": original_question,
                         "original_answer": original_answer,
+                        "subjective_analysis": subjective_analysis,
+                        "objective_analysis": objective_analysis,
+                        "assessment": assessment,
+                        "plan": plan,
                     }
                 )
                 print(f"Debug: Successfully extracted analysis {len(analyses)}")
@@ -291,22 +359,44 @@ def create_client_session_setup() -> dict:
 
 
 def create_text_chunks_and_embeddings(
-    qa_pair_id: str, question: str, answer: str
+    qa_pair_id: str,
+    question: str,
+    answer: str,
+    subjective_analysis: str = "",
+    objective_analysis: str = "",
+    assessment: str = "",
+    plan: str = ""
 ) -> dict:
     """
-    Create semantic text chunks from question and answer, and generate embeddings.
+    Create semantic text chunks from question, answer, and clinical analysis, then generate embeddings.
 
     Args:
         qa_pair_id: The QA pair identifier
         question: The therapist's question
         answer: The client's answer
+        subjective_analysis: Subjective analysis from SOAP note
+        objective_analysis: Objective analysis from SOAP note
+        assessment: Assessment from SOAP note
+        plan: Plan from SOAP note
 
     Returns:
         Dictionary with chunks and their embeddings
     """
     try:
         # Create semantic chunks - typically 2-3 chunks per QA pair
+        # Now includes clinical analysis sections for richer embeddings
         chunks = []
+
+        # Build comprehensive text for embedding that includes clinical context
+        clinical_context = ""
+        if subjective_analysis:
+            clinical_context += f" Clinical subjective: {subjective_analysis}."
+        if objective_analysis:
+            clinical_context += f" Clinical objective: {objective_analysis}."
+        if assessment:
+            clinical_context += f" Clinical assessment: {assessment}."
+        if plan:
+            clinical_context += f" Clinical plan: {plan}."
 
         # Split answer into sentences for semantic chunking
         import re
@@ -316,21 +406,22 @@ def create_text_chunks_and_embeddings(
 
         # Group sentences into 2-3 chunks based on length
         if len(sentences) <= 2:
-            # Short answer - one chunk
+            # Short answer - one chunk with clinical context
+            chunk_text = answer.strip() + clinical_context
             chunks.append(
                 {
                     "chunk_id": f"s001.{qa_pair_id}.c1",
                     "session_id": "session_001",
                     "qa_id": qa_pair_id,
                     "timestamp": datetime.now().isoformat() + "Z",
-                    "text": answer.strip(),
+                    "text": chunk_text,
                 }
             )
         elif len(sentences) <= 4:
-            # Medium answer - two chunks
+            # Medium answer - two chunks, add clinical context to both
             mid = len(sentences) // 2
-            chunk1_text = ". ".join(sentences[:mid]).strip()
-            chunk2_text = ". ".join(sentences[mid:]).strip()
+            chunk1_text = ". ".join(sentences[:mid]).strip() + "." + clinical_context
+            chunk2_text = ". ".join(sentences[mid:]).strip() + "." + clinical_context
 
             if chunk1_text:
                 chunks.append(
@@ -339,7 +430,7 @@ def create_text_chunks_and_embeddings(
                         "session_id": "session_001",
                         "qa_id": qa_pair_id,
                         "timestamp": datetime.now().isoformat() + "Z",
-                        "text": chunk1_text + ".",
+                        "text": chunk1_text,
                     }
                 )
 
@@ -350,11 +441,11 @@ def create_text_chunks_and_embeddings(
                         "session_id": "session_001",
                         "qa_id": qa_pair_id,
                         "timestamp": datetime.now().isoformat() + "Z",
-                        "text": chunk2_text + ".",
+                        "text": chunk2_text,
                     }
                 )
         else:
-            # Long answer - three chunks
+            # Long answer - three chunks, add clinical context to all
             chunk_size = len(sentences) // 3
 
             for i in range(3):
@@ -364,7 +455,7 @@ def create_text_chunks_and_embeddings(
                 else:
                     end_idx = (i + 1) * chunk_size
 
-                chunk_text = ". ".join(sentences[start_idx:end_idx]).strip()
+                chunk_text = ". ".join(sentences[start_idx:end_idx]).strip() + "." + clinical_context
                 if chunk_text:
                     chunks.append(
                         {
@@ -372,7 +463,7 @@ def create_text_chunks_and_embeddings(
                             "session_id": "session_001",
                             "qa_id": qa_pair_id,
                             "timestamp": datetime.now().isoformat() + "Z",
-                            "text": chunk_text + ".",
+                            "text": chunk_text,
                         }
                     )
 
@@ -493,7 +584,13 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
         if analysis.get("original_question") and analysis.get("original_answer"):
             print(f"Creating text chunks for QA pair #{analysis['entry_number']}...")
             chunks_result = create_text_chunks_and_embeddings(
-                qa_pair_id, analysis["original_question"], analysis["original_answer"]
+                qa_pair_id,
+                analysis["original_question"],
+                analysis["original_answer"],
+                analysis.get("subjective_analysis", ""),
+                analysis.get("objective_analysis", ""),
+                analysis.get("assessment", ""),
+                analysis.get("plan", "")
             )
 
             # Generate additional Cypher for text chunks if successful
