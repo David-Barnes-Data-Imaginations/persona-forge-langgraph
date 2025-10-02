@@ -139,17 +139,18 @@ Remember: Call the submit_analysis tool with your complete report as plain text 
 CYPHER_SETUP_PROMPT = """You are a Cypher query generator. Create a single Cypher query to establish the client and session nodes for a new therapy session.
 
 Rules
-- Use MERGE for nodes/relationship.
-- Client ID: 'client_001'
-- Session ID: 'session_001'
-- Return ONLY the Cypher query (no extra text/comments).
+- Use MERGE for nodes/relationship
+- Client ID: "client_001"
+- Session ID: "session_001"
+- Return ONLY valid Neo4j Cypher code (no extra text/comments)
+- CRITICAL: Use DOUBLE QUOTES for all string values, never single quotes
 
 Example Output
-MERGE (c:Client {{id: 'client_001'}})
-MERGE (s:Session {{session_id: 'session_001'}})
+MERGE (c:Client {{id: "client_001"}})
+MERGE (s:Session {{session_id: "session_001"}})
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 """
-CYPHER_QA_PAIR_PROMPT = """You are a Cypher query generator. From the provided analysis CHUNK (multiple QA pairs), output ONE Cypher query that inserts ALL pairs for Session 'session_001' using UNWIND.
+CYPHER_QA_PAIR_PROMPT = """You are a Cypher query generator. From the provided analysis CHUNK (multiple QA pairs), output ONE Cypher query that inserts ALL pairs for Session "session_001" using UNWIND.
 
 Analysis Format to Parse:
 The input contains structured analyses with these sections:
@@ -161,59 +162,71 @@ The input contains structured analyses with these sections:
   - Assessment: Psychology framework analyses (emotions, distortions, schemas, etc.)
   - Plan: Recommended interventions
 
-Rules
-- Return ONLY the Cypher query (no comments/explanations).
+Rules - CYPHER SYNTAX
+- Return ONLY valid Neo4j Cypher code (no comments, explanations, or markdown code blocks)
+- CRITICAL: ALL string values MUST use DOUBLE QUOTES, never single quotes
+- CRITICAL: This includes ALL text: qa_id, question, answer, name, type, profile, etc.
+- CRITICAL: Correct: question: "You've mentioned..." Wrong: question: 'You've mentioned...'
+- CRITICAL: Correct: name: "Calm" Wrong: name: 'Calm'
 - Extract psychology data from the Assessment section
 - Parse emotion data with valence, arousal, confidence
 - Parse cognitive distortions, Erikson stages, attachment styles, defense mechanisms, schemas
 - Parse Big Five personality traits (openness, conscientiousness, extraversion, agreeableness, neuroticism)
-- Store the full analysis text sections as properties on the QA_Pair node
+
+Rules - TEXT FORMATTING
+- For text fields (subjective_analysis, objective_analysis, assessment, plan, question, answer), replace ALL newlines with SPACES ONLY
+- Do NOT use semicolons inside text content (semicolons ONLY at end of Cypher statements)
+- Do NOT use \\n escape sequences or line breaks
+- Text field content must be on a SINGLE LINE with spaces separating sentences
+- Remove or replace problematic characters: # symbols, backticks, special quotes
+
+Rules - STRUCTURE
 - Use this pattern:
-  - MATCH the Session once.
+  - MATCH the Session once
   - UNWIND a literal list of QA rows with structure:
     {{qa_id, question, answer, subjective_analysis, objective_analysis, assessment, plan, emotions:[...], distortions:[...], stages:[...], attachments:[...], defenses:[...], schemas:[...], bigfive:{{}}}}
   - For each row:
     - MERGE (qa:QA_Pair {{id: row.qa_id}})
     - SET qa properties: question, answer, subjective_analysis, objective_analysis, assessment, plan
     - MERGE (s)-[:INCLUDES]->(qa)
-    - UNWIND sublists safely (skip if empty) and MERGE taxonomy nodes, MERGE relationships with properties.
-- Use property names: Emotion/Schema/Defense/Attachment/Erikson_Stage → `name`; Cognitive_Distortion → `type`; Big_Five → `profile`.
+    - UNWIND sublists safely (skip if empty) and MERGE taxonomy nodes, MERGE relationships with properties
+- Use property names: Emotion/Schema/Defense/Attachment/Erikson_Stage → "name"; Cognitive_Distortion → "type"; Big_Five → "profile"
 
-Example Output
-MATCH (s:Session {{session_id: 'session_001'}})
+Example Output (notice ALL strings use DOUBLE QUOTES)
+MATCH (s:Session {{session_id: "session_001"}})
 WITH s, [
   {{
-    qa_id: 'qa_pair_001',
-    question: 'Can you describe how you typically experience emotions?',
-    answer: 'If I experience emotions directly about myself, they are under-stated...',
-    subjective_analysis: 'Client reports feeling emotions through others rather than directly...',
-    objective_analysis: 'Sentence_count ~6; Mean_sentence_length ~24 words; Question_rate ~0...',
-    assessment: 'Cognitive distortions: minimization conf 0.8. Erikson: identity_vs_role_confusion...',
-    plan: 'Psychoeducation on empathy vs empathic distress; Implement post-interview decompression...',
+    qa_id: "qa_pair_001",
+    question: "Can you describe how you typically experience emotions?",
+    answer: "If I experience emotions directly about myself they are under-stated",
+    subjective_analysis: "Client reports feeling emotions through others rather than directly experiencing them",
+    objective_analysis: "Sentence count approximately 6 Mean sentence length approximately 24 words Question rate approximately 0",
+    assessment: "Cognitive distortions minimization confidence 0.8 Erikson identity versus role confusion",
+    plan: "Psychoeducation on empathy versus empathic distress Implement post-interview decompression",
     emotions: [
-      {{name:'Calm Detachment', valence:0.6, arousal:0.2, confidence:0.9}},
-      {{name:'Mental Exhaustion', valence:-0.5, arousal:-0.3, confidence:0.8}}
+      {{name: "Calm Detachment", valence: 0.6, arousal: 0.2, confidence: 0.9}},
+      {{name: "Mental Exhaustion", valence: -0.5, arousal: -0.3, confidence: 0.8}}
     ],
     distortions: [
-      {{type:'Labeling', confidence:0.8}},
-      {{type:'Overgeneralization', confidence:0.7}}
+      {{type: "Labeling", confidence: 0.8}},
+      {{type: "Overgeneralization", confidence: 0.7}}
     ],
-    stages: [{{name:'Intimacy vs isolation', confidence:0.7}}],
+    stages: [{{name: "Intimacy vs isolation", confidence: 0.7}}],
     attachments: [],
-    defenses: [{{name:'Detachment', confidence:0.8}}],
+    defenses: [{{name: "Detachment", confidence: 0.8}}],
     schemas: [],
-    bigfive: {{profile:'individual', openness:0.7, conscientiousness:0.8, extraversion:0.4, agreeableness:0.7, neuroticism:0.6, confidence:0.8}}
+    bigfive: {{profile: "individual", openness: 0.7, conscientiousness: 0.8, extraversion: 0.4, agreeableness: 0.7, neuroticism: 0.6, confidence: 0.8}}
   }},
   {{
-    qa_id: 'qa_pair_002',
-    question: 'What brings you joy?',
-    answer: 'I find joy in creative work...',
-    subjective_analysis: 'Client reports enjoying creative activities...',
-    objective_analysis: 'Sentence_count ~3; positive language markers...',
-    assessment: 'High openness; no significant distortions identified...',
-    plan: 'Continue encouraging creative expression...',
+    qa_id: "qa_pair_002",
+    question: "What brings you joy?",
+    answer: "I find joy in creative work",
+    subjective_analysis: "Client reports enjoying creative activities",
+    objective_analysis: "Sentence count approximately 3 positive language markers",
+    assessment: "High openness no significant distortions identified",
+    plan: "Continue encouraging creative expression",
     emotions: [
-      {{name:'Joy', valence:0.8, arousal:0.6, confidence:0.9}}
+      {{name: "Joy", valence: 0.8, arousal: 0.6, confidence: 0.9}}
     ],
     distortions: [],
     stages: [],

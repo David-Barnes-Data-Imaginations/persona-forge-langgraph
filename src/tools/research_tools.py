@@ -27,14 +27,15 @@ from ..agent_utils.state import DeepAgentState
 from ..io_py.edge.config import LLMConfigArchitect
 
 # Summarization model
-
+"""
 summarization_modelmodel = ChatOllama(
     model=LLMConfigArchitect.model_name,
     temperature=LLMConfigArchitect.temperature,
     reasoning=LLMConfigArchitect.reasoning,
 )
-
+"""
 # summarization_model = init_chat_model(model="LLMConfigScribe.model_name", temperature=0.0)
+summarization_model = init_chat_model(model="openai:gpt-4o-mini")
 
 tavily_client = TavilyClient()
 

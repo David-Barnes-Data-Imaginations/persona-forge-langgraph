@@ -3,6 +3,7 @@ import re
 from typing import Annotated, Optional
 from typing_extensions import TypedDict
 from langchain_ollama import ChatOllama
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate
@@ -12,6 +13,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 from datetime import datetime
+from dotenv import load_dotenv
 
 from ..prompts.text_prompts import (
     SYSTEM_PROMPT,
@@ -21,16 +23,32 @@ from ..prompts.text_prompts import (
 from ..tools.text_graph_tools import submit_cypher
 from ..utils.embeddings import embed_texts
 
+# Load environment variables
+load_dotenv()
+
 # Add LangSmith tracking
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "cypher-generation"
 
-# LLM
-llm = ChatOllama(
-    model="gpt-oss:20b",
-    temperature=0.1,
-    # other params...
-)
+# LLM configuration - supports both Ollama and Anthropic
+LLM_PROVIDER = os.getenv("CYPHER_LLM_PROVIDER", "ollama").lower()
+
+if LLM_PROVIDER == "anthropic":
+    # Use Anthropic Claude for Cypher generation
+    llm = ChatAnthropic(
+        model=os.getenv("CYPHER_ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
+        temperature=0.1,
+        max_tokens=8192,
+        api_key=os.getenv("ANTHROPIC_API_KEY")
+    )
+    print(f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}")
+else:
+    # Use Ollama (default)
+    llm = ChatOllama(
+        model=os.getenv("CYPHER_OLLAMA_MODEL", "gpt-oss:20b"),
+        temperature=0.1,
+    )
+    print(f"Using Ollama model: {os.getenv('CYPHER_OLLAMA_MODEL', 'gpt-oss:20b')}")
 
 
 class State(TypedDict):
@@ -552,11 +570,22 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
 
         # Create the prompt for the LLM with the analysis data
         qa_pair_id = f"qa_pair_{str(analysis['entry_number']).zfill(3)}"
+
+        # Include question and answer if available
+        qa_context = ""
+        if analysis.get("original_question") and analysis.get("original_answer"):
+            qa_context = f"""
+        Original Question: {analysis['original_question']}
+
+        Original Answer: {analysis['original_answer']}
+
+        """
+
         prompt_text = f"""
         Please convert the following psychological analysis to a Cypher query for a single QA_Pair:
 
         Analysis Entry #{analysis['entry_number']}:
-        {analysis['content']}
+        {qa_context}{analysis['content']}
 
         IMPORTANT: Use this exact QA_Pair ID: {qa_pair_id}
 
