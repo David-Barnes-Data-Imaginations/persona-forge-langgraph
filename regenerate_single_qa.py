@@ -14,6 +14,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, END, START
 from typing import Annotated
@@ -27,7 +28,7 @@ load_dotenv()
 from src.prompts.text_prompts import CYPHER_QA_PAIR_PROMPT
 from src.tools.text_graph_tools import submit_cypher
 
-# LLM configuration - supports both Ollama and Anthropic
+# LLM configuration - supports Ollama, Anthropic, and Gemini
 LLM_PROVIDER = os.getenv("CYPHER_LLM_PROVIDER", "ollama").lower()
 
 if LLM_PROVIDER == "anthropic":
@@ -38,6 +39,13 @@ if LLM_PROVIDER == "anthropic":
         api_key=os.getenv("ANTHROPIC_API_KEY")
     )
     print(f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}")
+elif LLM_PROVIDER == "gemini":
+    llm = ChatGoogleGenerativeAI(
+        model=os.getenv("CYPHER_GEMINI_MODEL", "gemini-2.0-flash-exp"),
+        temperature=0.1,
+        google_api_key=os.getenv("GEMINI_API_KEY")
+    )
+    print(f"Using Gemini model: {os.getenv('CYPHER_GEMINI_MODEL', 'gemini-2.0-flash-exp')}")
 else:
     llm = ChatOllama(
         model=os.getenv("CYPHER_OLLAMA_MODEL", "gpt-oss:20b"),
@@ -156,31 +164,53 @@ def regenerate_qa_cypher(qa_id: str, output_file: str = None):
     print(f"   Question: {analysis['question'][:100]}...")
     print(f"   Answer: {analysis['answer'][:100]}...")
 
+    # Check content length and warn if very long
+    answer_text = analysis['answer']
+    content_text = analysis['content']
+
+    if len(answer_text) > 5000:
+        print(f"⚠️  Answer is very long ({len(answer_text)} chars)")
+        print(f"   This may cause the LLM to fail generating Cypher.")
+        print(f"   Proceeding anyway - you may need to manually create the Cypher for this entry.")
+
+    if len(content_text) > 3000:
+        print(f"⚠️  Analysis content is very long ({len(content_text)} chars)")
+
     # Include question and answer in the prompt
     qa_context = f"""
     Original Question: {analysis['question']}
 
-    Original Answer: {analysis['answer']}
+    Original Answer: {answer_text}
 
     """
 
+    # Use the standard Cypher QA pair prompt but adapted for single QA pair
+    from src.prompts.text_prompts import CYPHER_QA_PAIR_PROMPT
+
+    # Modify it slightly for single QA pair generation
+    single_qa_system_prompt = CYPHER_QA_PAIR_PROMPT.replace(
+        "From the provided analysis CHUNK (multiple QA pairs)",
+        "From the provided SINGLE QA pair analysis"
+    ).replace(
+        "output ONE Cypher query that inserts ALL pairs",
+        "output ONE Cypher query that inserts this ONE pair"
+    )
+
     # Create the prompt
     prompt_text = f"""
-    Please convert the following psychological analysis to a Cypher query for a single QA_Pair:
+    Generate Cypher for this QA pair:
 
-    Analysis Entry for {qa_id}:
-    {qa_context}{analysis['content']}
-
-    IMPORTANT: Use this exact QA_Pair ID: {qa_id}
-
-    Remember to call the submit_cypher tool with your generated Cypher query.
+    QA ID: {qa_id}
+    {qa_context}
+    Analysis:
+    {analysis['content']}
     """
 
     # Build the graph
     from langchain_core.prompts import ChatPromptTemplate
 
     qa_pair_prompt = ChatPromptTemplate.from_messages([
-        ("system", CYPHER_QA_PAIR_PROMPT),
+        ("system", single_qa_system_prompt),
         ("placeholder", "{messages}"),
     ])
 
@@ -211,16 +241,54 @@ def regenerate_qa_cypher(qa_id: str, output_file: str = None):
         },
     }
 
+    # Track whether submit_cypher was called
+    cypher_generated = False
+
     result = qa_pair_graph.invoke(initial_state, config=config)
 
-    print(f"✅ Cypher generated successfully!")
+    # Check if the LLM actually called the submit_cypher tool
+    cypher_content = None
+
+    for message in result.get("messages", []):
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            for tool_call in message.tool_calls:
+                if tool_call.get("name") == "submit_cypher":
+                    cypher_generated = True
+                    break
+        # Check if LLM returned Cypher in content instead of calling tool (Gemini behavior)
+        if hasattr(message, "content") and message.content and isinstance(message.content, str):
+            # Extract Cypher from markdown code blocks if present
+            if "```cypher" in message.content or "MATCH" in message.content or "MERGE" in message.content:
+                # Extract from code block if present
+                import re
+                code_block_match = re.search(r'```(?:cypher)?\n(.*?)\n```', message.content, re.DOTALL)
+                if code_block_match:
+                    cypher_content = code_block_match.group(1).strip()
+                else:
+                    # Use the whole content
+                    cypher_content = message.content.strip()
+
+    if cypher_generated:
+        print(f"✅ QA pair Cypher generated successfully!")
+    elif cypher_content:
+        print(f"⚠️  LLM returned Cypher as text instead of calling tool. Submitting manually...")
+        # Manually submit the Cypher
+        try:
+            result = submit_cypher.invoke(cypher_content)
+            print(f"✅ QA pair Cypher submitted successfully!")
+            cypher_generated = True
+        except Exception as e:
+            print(f"❌ Error submitting Cypher: {e}")
+    else:
+        print(f"⚠️  WARNING: LLM did not generate QA pair Cypher!")
+        print(f"   This may be due to content length or complexity.")
+        print(f"   Only embeddings will be generated.")
 
     # Generate text chunks and embeddings
     print(f"\n📝 Generating text chunks and embeddings...")
 
     try:
         from src.graphs.create_kg import create_text_chunks_and_embeddings, generate_text_chunk_cypher
-        from src.tools.text_graph_tools import append_cypher_to_file
 
         # Parse the analysis to extract clinical sections
         analysis_content = analysis['content']
@@ -240,13 +308,17 @@ def regenerate_qa_cypher(qa_id: str, output_file: str = None):
             chunks = chunks_result["chunks"]
             chunk_cypher = generate_text_chunk_cypher(chunks)
 
-            # Append to the same file
-            append_cypher_to_file(
-                f"\n// ============================================================================\n"
+            # Append to the same file by calling the tool directly
+            combined_cypher = (
+                f"// ============================================================================\n"
                 f"// TEXT CHUNKS AND EMBEDDINGS FOR {qa_id.upper()}\n"
                 f"// ============================================================================\n\n"
-                f"{chunk_cypher}\n"
+                f"{chunk_cypher}"
             )
+
+            # Call the tool function directly (it's already imported at the top)
+            result = submit_cypher.invoke(combined_cypher)
+            print(f"   {result}")
 
             print(f"✅ Generated {len(chunks)} text chunks with embeddings")
         else:
@@ -254,6 +326,8 @@ def regenerate_qa_cypher(qa_id: str, output_file: str = None):
 
     except Exception as e:
         print(f"⚠️  Warning: Error generating embeddings: {e}")
+        import traceback
+        traceback.print_exc()
 
     # If output file specified, save there
     if output_file:
