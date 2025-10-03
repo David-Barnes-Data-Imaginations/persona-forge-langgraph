@@ -40,8 +40,8 @@ from ..prompts.deep_prompts import (
     REPORT_WRITER_INSTRUCTIONS,
     RESEARCH_ASSISTANT_INSTRUCTIONS,
     GRAPH_ASSISTANT_INSTRUCTIONS,
-    READ_AGENT_INSTRUCTIONS,
-    READ,
+    # READ_AGENT_INSTRUCTIONS,
+    # READ_ASSISTANT_INSTRUCTIONS,
 )
 
 from langgraph.prebuilt.chat_agent_executor import AgentState
@@ -58,20 +58,15 @@ from ..io_py.edge.config import (
 """Sub Agent models for the workflow
 - The reason for different models is to test parrallelism and specialisation of tasks
 - Peon (aka 'Alt') - Used as a parrallel agent to the scribe for diversity of answers
-- Scribe/SmolScribe - research, web searching, summarization
+- Scribe/SmolScribe - research, web searching, summarization (RUNS ON MINI-ITX)
 - Overseer - high level tasks, planning, analysis, report writing
 
 """
+# Local models (main PC)
 alt_model = ChatOllama(
     model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
     reasoning=LLMConfigPeon.reasoning,
-)
-
-scribe_model = ChatOllama(
-    model=LLMConfigScribe.model_name,  # aka 'Scribe'
-    temperature=LLMConfigScribe.temperature,
-    reasoning=LLMConfigScribe.reasoning,
 )
 
 overseer_model = ChatOllama(
@@ -80,12 +75,31 @@ overseer_model = ChatOllama(
     reasoning=LLMConfigOverseer.reasoning,
 )
 
+# Remote model (mini-itx) - setup SSH tunnel first
+if LLMConfigScribe.use_remote:
+    from ..io_py.edge.ssh_tunnel import ensure_mini_tunnel
+    ensure_mini_tunnel()  # Start SSH tunnel to mini-itx
+
+    scribe_model = ChatOllama(
+        model=LLMConfigScribe.model_name,  # aka 'Scribe'
+        temperature=LLMConfigScribe.temperature,
+        reasoning=LLMConfigScribe.reasoning,
+        base_url=f"http://localhost:{LLMConfigScribe.remote_port}",  # Use tunneled port
+    )
+    print(f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}")
+else:
+    scribe_model = ChatOllama(
+        model=LLMConfigScribe.model_name,
+        temperature=LLMConfigScribe.temperature,
+        reasoning=LLMConfigScribe.reasoning,
+    )
+
 # Create agent using create_react_agent directly
 anthropic_model = init_chat_model(
     model="anthropic:claude-3-5-sonnet-20241022", temperature=0.0
 )
 openai_model = init_chat_model(model="openai:gpt-4o-mini", temperature=0.0)
-gemini_model = init_chat_model("google_genai:gemini-2.5-flash", temperature=0.0)
+gemini_model = init_chat_model("gemini-2.0-flash-exp", temperature=0.0)
 
 """*************************** Workflow*************************************************
 The main deep agent is the architect. Oversight of report and writes the plan.
@@ -146,12 +160,13 @@ research_agent = {
 }
 
 # create the research sub-agent
+"""
 read_agent = {
     "name": "read-agent",
     "description": "Delegate reading, writing or summarizing to the read agent powered by a state of the art model. Only give this agent one task at a time.",
     "prompt": RESEARCH_AGENT_INSTRUCTIONS,
     "tools": [t.name for t in research_tools],
-}
+}"""
 
 # create the research sub-agent
 research_assistant = {
@@ -208,7 +223,7 @@ second_research_assistant_task = _create_task_tool(
     alt_model,
     DeepAgentState,
 )
-
+"""
 # Research-Read Tasks - Use online models to read research files, saving context on non-sensitive data
 first_read_assistant_task = _create_task_tool(
     research_tools,
@@ -230,7 +245,7 @@ third_read_assistant_task = _create_task_tool(
     gemini_model,
     DeepAgentState,
 )
-
+"""
 first_graph_assistant_task = _create_task_tool(
     graph_tools,
     [graph_assistant],

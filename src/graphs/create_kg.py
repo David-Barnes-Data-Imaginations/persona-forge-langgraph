@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Annotated, Optional
+from langchain_google_genai import ChatGoogleGenerativeAI
 from typing_extensions import TypedDict
 from langchain_ollama import ChatOllama
 from langchain_anthropic import ChatAnthropic
@@ -39,9 +40,22 @@ if LLM_PROVIDER == "anthropic":
         model=os.getenv("CYPHER_ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
         temperature=0.1,
         max_tokens=8192,
-        api_key=os.getenv("ANTHROPIC_API_KEY")
+        api_key=os.getenv("ANTHROPIC_API_KEY"),
     )
-    print(f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}")
+    print(
+        f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}"
+    )
+if LLM_PROVIDER == "gemini":
+    # Use Anthropic Claude for Cypher generation
+    llm = ChatGoogleGenerativeAI(
+        model=os.getenv("CYPHER_GEMINI_MODEL", "google_genai:gemini-2.5-flash"),
+        temperature=0.0,
+        max_tokens=8192,
+        api_key=os.getenv("GEMINI_API_KEY"),
+    )
+    print(
+        f"Using Gemini model: {os.getenv('CYPHER_GEMINI_MODEL', 'google_genai:gemini-2.5-flash')}"
+    )
 else:
     # Use Ollama (default)
     llm = ChatOllama(
@@ -261,7 +275,7 @@ def extract_analyses_from_master_file():
                 current_section = None
                 section_lines = []
 
-                for line in lines[analysis_start + 1:]:  # Skip "Analysis:" line
+                for line in lines[analysis_start + 1 :]:  # Skip "Analysis:" line
                     line_stripped = line.strip()
 
                     if line_stripped.startswith("Subjective Analysis:"):
@@ -277,21 +291,27 @@ def extract_analyses_from_master_file():
                             elif current_section == "plan":
                                 plan = section_text
                         current_section = "subjective"
-                        section_lines = [line_stripped.replace("Subjective Analysis:", "").strip()]
+                        section_lines = [
+                            line_stripped.replace("Subjective Analysis:", "").strip()
+                        ]
                     elif line_stripped.startswith("Objective Analysis:"):
                         if current_section:
                             section_text = " ".join(section_lines)
                             if current_section == "subjective":
                                 subjective_analysis = section_text
                         current_section = "objective"
-                        section_lines = [line_stripped.replace("Objective Analysis:", "").strip()]
+                        section_lines = [
+                            line_stripped.replace("Objective Analysis:", "").strip()
+                        ]
                     elif line_stripped.startswith("Assessment:"):
                         if current_section:
                             section_text = " ".join(section_lines)
                             if current_section == "objective":
                                 objective_analysis = section_text
                         current_section = "assessment"
-                        section_lines = [line_stripped.replace("Assessment:", "").strip()]
+                        section_lines = [
+                            line_stripped.replace("Assessment:", "").strip()
+                        ]
                     elif line_stripped.startswith("Plan:"):
                         if current_section:
                             section_text = " ".join(section_lines)
@@ -383,7 +403,7 @@ def create_text_chunks_and_embeddings(
     subjective_analysis: str = "",
     objective_analysis: str = "",
     assessment: str = "",
-    plan: str = ""
+    plan: str = "",
 ) -> dict:
     """
     Create semantic text chunks from question, answer, and clinical analysis, then generate embeddings.
@@ -473,7 +493,11 @@ def create_text_chunks_and_embeddings(
                 else:
                     end_idx = (i + 1) * chunk_size
 
-                chunk_text = ". ".join(sentences[start_idx:end_idx]).strip() + "." + clinical_context
+                chunk_text = (
+                    ". ".join(sentences[start_idx:end_idx]).strip()
+                    + "."
+                    + clinical_context
+                )
                 if chunk_text:
                     chunks.append(
                         {
@@ -619,7 +643,7 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
                 analysis.get("subjective_analysis", ""),
                 analysis.get("objective_analysis", ""),
                 analysis.get("assessment", ""),
-                analysis.get("plan", "")
+                analysis.get("plan", ""),
             )
 
             # Generate additional Cypher for text chunks if successful
