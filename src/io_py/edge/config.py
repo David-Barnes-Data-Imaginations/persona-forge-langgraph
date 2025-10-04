@@ -1,6 +1,7 @@
 """
 Configuration for LLM models used in voice interface
 """
+
 import os
 from dotenv import load_dotenv
 
@@ -43,7 +44,7 @@ class LLMConfigArchitect:
     model_name = "granite4:small-h"  # Default model for chat
     temperature = 0.0
     max_tokens = 4096
-    reasoning = True  # Add reasoning parameter for LangGraph compatibility
+    reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
     voice_enabled = False
@@ -61,7 +62,7 @@ class LLMConfigOverseer:
     model_name = "granite4:micro"  # Default model for chat
     temperature = 0.0
     max_tokens = 4096
-    reasoning = True  # Add reasoning parameter for LangGraph compatibility
+    reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
     voice_enabled = False

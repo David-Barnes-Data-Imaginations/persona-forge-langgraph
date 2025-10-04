@@ -4,6 +4,8 @@ This module provides tools for managing a virtual filesystem stored in agent sta
 enabling context offloading and information persistence across agent interactions.
 """
 
+import os
+from pathlib import Path
 from typing import Annotated
 
 from langchain_core.messages import ToolMessage
@@ -15,6 +17,7 @@ from ..prompts.deep_prompts import (
     LS_DESCRIPTION,
     READ_FILE_DESCRIPTION,
     WRITE_FILE_DESCRIPTION,
+    SAVE_TO_DISK_DESCRIPTION,
 )
 from ..agent_utils.state import DeepAgentState
 
@@ -94,3 +97,37 @@ def write_file(
             ],
         }
     )
+
+
+@tool(description=SAVE_TO_DISK_DESCRIPTION, parse_docstring=True)
+def save_to_disk(
+    file_path: str,
+    content: str,
+) -> str:
+    """Save content to an actual file on the Ubuntu filesystem.
+
+    Args:
+        file_path: Relative path from project root where the file should be saved
+        content: Content to write to the file
+
+    Returns:
+        Success message with absolute path, or error message
+    """
+    try:
+        # Base project directory
+        project_root = Path(
+            "/home/david-barnes/Documents/Projects/sentiment_suite/output/"
+        )
+
+        # Create full path
+        full_path = project_root / file_path
+
+        # Create parent directories if they don't exist
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write the file
+        full_path.write_text(content, encoding="utf-8")
+
+        return f"Successfully saved file to disk at: {full_path}"
+    except Exception as e:
+        return f"Error saving file to disk: {str(e)}"

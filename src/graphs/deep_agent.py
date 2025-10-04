@@ -20,7 +20,7 @@ from langchain_core.tools import InjectedToolCallId, tool
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
-from ..tools.file_tools import ls, read_file, write_file
+from ..tools.file_tools import ls, read_file, write_file, save_to_disk
 from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
 from ..tools.todo_tools import write_todos, read_todos
 from ..tools.research_tools import (
@@ -37,10 +37,10 @@ from ..prompts.deep_prompts import (
     ARCHITECT_INSTRUCTIONS,
     RESEARCH_INSTRUCTIONS,
     GRAPH_INSTRUCTIONS,
-    REPORT_WRITER_INSTRUCTIONS,
+    REPORT_INSTRUCTIONS,
     RESEARCH_ASSISTANT_INSTRUCTIONS,
     GRAPH_ASSISTANT_INSTRUCTIONS,
-    # READ_AGENT_INSTRUCTIONS,
+    READ_AGENT_INSTRUCTIONS,
     # READ_ASSISTANT_INSTRUCTIONS,
 )
 
@@ -78,6 +78,7 @@ overseer_model = ChatOllama(
 # Remote model (mini-itx) - setup SSH tunnel first
 if LLMConfigScribe.use_remote:
     from ..io_py.edge.ssh_tunnel import ensure_mini_tunnel
+
     ensure_mini_tunnel()  # Start SSH tunnel to mini-itx
 
     scribe_model = ChatOllama(
@@ -86,7 +87,9 @@ if LLMConfigScribe.use_remote:
         reasoning=LLMConfigScribe.reasoning,
         base_url=f"http://localhost:{LLMConfigScribe.remote_port}",  # Use tunneled port
     )
-    print(f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}")
+    print(
+        f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}"
+    )
 else:
     scribe_model = ChatOllama(
         model=LLMConfigScribe.model_name,
@@ -99,7 +102,11 @@ anthropic_model = init_chat_model(
     model="anthropic:claude-3-5-sonnet-20241022", temperature=0.0
 )
 openai_model = init_chat_model(model="openai:gpt-4o-mini", temperature=0.0)
-gemini_model = init_chat_model("gemini-2.0-flash-exp", temperature=0.0)
+
+# Use ChatGoogleGenerativeAI directly instead of init_chat_model
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+gemini_model = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.0)
 
 """*************************** Workflow*************************************************
 The main deep agent is the architect. Oversight of report and writes the plan.
@@ -137,14 +144,14 @@ max_concurrent_online_agents = 3
 
 # Core Admin Tools
 built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
-sub_agent_tools = [ls, read_file, write_file, think_tool]
+save_tools = save_to_disk
 # create the tools to delegate to sub-agents
 research_tools = [
     tavily_search,
     pubmed_search,
-] + sub_agent_tools  # PubMed for academic research, Tavily for general web search
+] + built_in_tools  # PubMed for academic research, Tavily for general web search
 
-graph_tools = sub_agent_tools + PERSONA_FORGE_TOOLS
+graph_tools = built_in_tools + PERSONA_FORGE_TOOLS
 report_tools = built_in_tools
 architect_tools = built_in_tools
 read_tools = built_in_tools
@@ -153,50 +160,50 @@ read_tools = built_in_tools
 
 # create the research sub-agent
 research_agent = {
-    "name": "research-agent",
+    "name": "research_agent",
     "description": "Delegate research to the sub-agent researcher. Provide this researcher with a description of your queries to delegate.",
     "prompt": RESEARCH_INSTRUCTIONS,
     "tools": [t.name for t in research_tools],
 }
 
 # create the research sub-agent
-"""
+
 read_agent = {
-    "name": "read-agent",
+    "name": "read_agent",
     "description": "Delegate reading, writing or summarizing to the read agent powered by a state of the art model. Only give this agent one task at a time.",
-    "prompt": RESEARCH_AGENT_INSTRUCTIONS,
-    "tools": [t.name for t in research_tools],
-}"""
+    "prompt": READ_AGENT_INSTRUCTIONS,
+    "tools": [t.name for t in built_in_tools],
+}
 
 # create the research sub-agent
 research_assistant = {
-    "name": "research-assistant",
-    "description": "Delegate research to the sub-agent research assistant. Only give this researcher one topic at a time.",
+    "name": "research_assistant",
+    "description": "Delegate research to the sub-agent Research Assistant, who will write the output to the specified file. Only give this researcher one topic at a time.",
     "prompt": RESEARCH_ASSISTANT_INSTRUCTIONS,
     "tools": [t.name for t in research_tools],
 }
 
 # create the web research sub-agent
 graph_agent = {
-    "name": "graph-agent",
-    "description": "Request the Graph Agent starts the Graph Analysis & Report workflow. Provide number of QA Pairs as Args.",
+    "name": "graph_agent",
+    "description": "Request the Graph Agent starts the Graph Analysis workflow. Will write the analysis to the specified file.",
     "prompt": GRAPH_INSTRUCTIONS,
     "tools": [t.name for t in graph_tools],
 }
 
 # create the web research sub-agent
 graph_assistant = {
-    "name": "graph-assistant",
-    "description": "Request the Graph Assistant to extract a specific 'QA Pair' and write the analysis to the file. Only give this researcher one topic at a time.",
+    "name": "graph_assistant",
+    "description": "Request the Graph Assistant to extract a specific query and write the output to the specified file. Only give this researcher one topic at a time.",
     "prompt": GRAPH_ASSISTANT_INSTRUCTIONS,
     "tools": [t.name for t in graph_tools],
 }
 
 # create the report writer sub-agent
 report_agent = {
-    "name": "report-agent",
-    "description": "Delegate research to the sub-agent researcher. Only give this researcher one topic at a time.",
-    "prompt": REPORT_WRITER_INSTRUCTIONS,
+    "name": "report_agent",
+    "description": "Delegate the report task to the sub-agent report-agent. Only give this researcher one report to write at a time.",
+    "prompt": REPORT_INSTRUCTIONS,
     "tools": [t.name for t in report_tools],
 }
 
@@ -206,7 +213,15 @@ report_agent = {
 read_task = _create_task_tool(
     research_tools,
     [read_agent],
-    anthropic_model,
+    gemini_model,
+    DeepAgentState,
+)
+
+# Report Tasks
+report_task = _create_task_tool(
+    research_tools,
+    [report_agent],
+    scribe_model,
     DeepAgentState,
 )
 # Research Tasks
@@ -223,29 +238,6 @@ second_research_assistant_task = _create_task_tool(
     alt_model,
     DeepAgentState,
 )
-"""
-# Research-Read Tasks - Use online models to read research files, saving context on non-sensitive data
-first_read_assistant_task = _create_task_tool(
-    research_tools,
-    [read_assistant],
-    anthropic_model,
-    DeepAgentState,
-)
-
-second_read_assistant_task = _create_task_tool(
-    research_tools,
-    [read_assistant],
-    openai_model,
-    DeepAgentState,
-)
-
-third_read_assistant_task = _create_task_tool(
-    research_tools,
-    [read_assistant],
-    gemini_model,
-    DeepAgentState,
-)
-"""
 first_graph_assistant_task = _create_task_tool(
     graph_tools,
     [graph_assistant],
@@ -260,18 +252,29 @@ second_graph_assistant_task = _create_task_tool(
     DeepAgentState,
 )
 
-# *************************** Create Research Agents tools**********************************
-research_agent_tools = research_tools + sub_agent_tools
 
 # *************************** Create Research Agents tools**********************************
-report_agent_tools = research_tools = report_tools + sub_agent_tools
+research_agent_tools = research_tools + built_in_tools
+research_supervisor_tools = [
+    *research_agent_tools,  # Unpack the list with *
+    first_research_assistant_task,
+    second_research_assistant_task,
+    read_task,
+]
+# *************************** Create Graph tools**********************************
+graph_supervisor_tools = [
+    *graph_tools,  # Unpack the list with *
+    first_graph_assistant_task,
+    second_graph_assistant_task,
+    read_task,
+]
 
 # *************************** Create Second Level Agents tools**********************************
-graph_agent_tools = graph_tools + sub_agent_tools
+
 
 # Create task tool for the Architect to delegate tasks to sub-agents
 research_task = _create_task_tool(
-    research_agent_tools,
+    research_supervisor_tools,
     [research_agent],
     overseer_model,
     DeepAgentState,
@@ -279,16 +282,9 @@ research_task = _create_task_tool(
 
 # Graph Tasks
 graph_task = _create_task_tool(
-    graph_agent_tools,
+    graph_supervisor_tools,
     [graph_agent],
     overseer_model,
-    DeepAgentState,
-)
-
-report_task = _create_task_tool(
-    report_agent_tools,
-    [report_agent],
-    scribe_model,
     DeepAgentState,
 )
 
@@ -329,7 +325,7 @@ def get_new_deep_agent(
         store=long_term_memory,
         state_schema=AgentState,
     ).with_config(
-        {"recursion_limit": 50}
+        {"recursion_limit": 150}
     )  # recursion_limit limits the number of steps the agent will run
 
     return deep_agent

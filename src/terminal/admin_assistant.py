@@ -95,6 +95,7 @@ class DeepAgentTerminalUI:
 
         help_table.add_row("/help", "Show available commands")
         help_table.add_row("/stats", "Show graph statistics")
+        help_table.add_row("/todos", "Show current task list")
         help_table.add_row("/session <id>", "Change session ID")
         help_table.add_row("/clear", "Clear conversation history")
         help_table.add_row("/exit", "Exit the application")
@@ -125,6 +126,11 @@ class DeepAgentTerminalUI:
             self.show_help()
         elif command == "/stats":
             self.show_statistics()
+        elif command == "/todos":
+            if hasattr(self, '_last_agent_state') and self._last_agent_state:
+                self.display_todos(self._last_agent_state)
+            else:
+                self.console.print("[yellow]No tasks to display yet. Start a conversation with the agent first.[/yellow]")
         elif command == "/session":
             if args:
                 self.session_id = args.strip()
@@ -152,6 +158,7 @@ class DeepAgentTerminalUI:
 ## Special Commands
 - `/help` - Show this help message
 - `/stats` - Display graph statistics for current session
+- `/todos` - Show current agent task list and progress
 - `/session <id>` - Change the active session ID
 - `/clear` - Clear conversation history
 - `/exit` - Exit the application
@@ -264,26 +271,76 @@ Type your request naturally, and the agent will guide you through the workflow.
 
                 # Invoke agent
                 response = ""
+                final_state = None
                 for chunk in self.agent.stream(
                     {"messages": messages},
                     config=self.config,
                     stream_mode="values"
                 ):
+                    final_state = chunk  # Keep track of final state
                     if "messages" in chunk:
                         latest_message = chunk["messages"][-1]
                         if hasattr(latest_message, "content") and latest_message.content:
                             response = latest_message.content
+
+                # Store final state for TODO display
+                self._last_agent_state = final_state
 
                 # If no streaming response, get final result
                 if not response:
                     result = self.agent.invoke({"messages": messages}, config=self.config)
                     if "messages" in result and result["messages"]:
                         response = result["messages"][-1].content
+                    # Update state for TODO display
+                    self._last_agent_state = result
 
             return response
 
         except Exception as e:
             return f"❌ Error processing message: {str(e)}"
+
+    def display_todos(self, state: Dict[str, Any]):
+        """Display TODO list from agent state"""
+        if not state or "todos" not in state or not state["todos"]:
+            return
+
+        todos = state["todos"]
+
+        # Create TODO table
+        todo_table = Table(show_header=True, box=box.ROUNDED, border_style="blue")
+        todo_table.add_column("Status", style="bold", width=12)
+        todo_table.add_column("Task", style="white")
+
+        # Status emoji mapping
+        status_icons = {
+            "pending": "⏳ Pending",
+            "in_progress": "🔄 In Progress",
+            "completed": "✅ Done"
+        }
+
+        # Color mapping
+        status_colors = {
+            "pending": "yellow",
+            "in_progress": "cyan",
+            "completed": "green"
+        }
+
+        for todo in todos:
+            status = todo.get("status", "pending")
+            content = todo.get("content", "")
+
+            status_text = Text(status_icons.get(status, status))
+            status_text.stylize(status_colors.get(status, "white"))
+
+            todo_table.add_row(status_text, content)
+
+        self.console.print()
+        self.console.print(Panel(
+            todo_table,
+            title="[bold blue]📋 Task Progress[/bold blue]",
+            border_style="blue",
+            box=box.ROUNDED
+        ))
 
     def display_agent_response(self, response: str):
         """Display agent response with rich formatting"""
@@ -333,6 +390,10 @@ Type your request naturally, and the agent will guide you through the workflow.
 
                 # Process through agent
                 response = self.process_agent_message(user_input)
+
+                # Display TODOs if available
+                if hasattr(self, '_last_agent_state') and self._last_agent_state:
+                    self.display_todos(self._last_agent_state)
 
                 # Display response
                 self.display_agent_response(response)

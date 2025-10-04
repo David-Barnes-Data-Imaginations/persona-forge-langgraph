@@ -900,6 +900,232 @@ def get_personality_summary(focus_area: str = "overall") -> str:
         return f"Error generating personality summary: {str(e)}"
 
 
+@tool
+def retrieve_diagnosis(client_id: str = "client_001") -> str:
+    """
+    Retrieve the complete diagnosis and medical history for a client.
+
+    Returns the client's medical history, diagnoses, previous treatments,
+    family history, and risk factors from the knowledge graph.
+
+    Args:
+        client_id: The client ID to retrieve diagnosis for (default: 'client_001')
+
+    Returns:
+        Complete medical history and diagnostic information
+    """
+    rag = get_rag_instance()
+
+    cypher = """
+    MATCH (c:Client {id: $client_id})-[:HAS_HISTORY]->(h:History)
+    RETURN
+        h.medical_history as medical_history,
+        h.diagnoses as diagnoses,
+        h.previous_treatments as previous_treatments,
+        h.family_history as family_history,
+        h.risk_factors as risk_factors,
+        h.last_updated as last_updated
+    """
+
+    with rag.driver.session() as session:
+        try:
+            result = session.run(cypher, client_id=client_id)
+            record = result.single()
+
+            if not record:
+                return f"No diagnosis/history found for client: {client_id}"
+
+            # Format output
+            output_parts = [f"=== DIAGNOSIS AND MEDICAL HISTORY FOR {client_id.upper()} ===\n"]
+
+            if record.get("medical_history"):
+                output_parts.append("MEDICAL HISTORY:")
+                output_parts.append(f"{record['medical_history']}\n")
+
+            if record.get("diagnoses"):
+                output_parts.append("CURRENT DIAGNOSES:")
+                for diagnosis in record["diagnoses"]:
+                    output_parts.append(f"  - {diagnosis}")
+                output_parts.append("")
+
+            if record.get("previous_treatments"):
+                output_parts.append("PREVIOUS TREATMENTS:")
+                for treatment in record["previous_treatments"]:
+                    output_parts.append(f"  - {treatment}")
+                output_parts.append("")
+
+            if record.get("family_history"):
+                output_parts.append("FAMILY HISTORY:")
+                for item in record["family_history"]:
+                    output_parts.append(f"  - {item}")
+                output_parts.append("")
+
+            if record.get("risk_factors"):
+                output_parts.append("RISK ASSESSMENT:")
+                for risk in record["risk_factors"]:
+                    output_parts.append(f"  - {risk}")
+                output_parts.append("")
+
+            if record.get("last_updated"):
+                output_parts.append(f"Last Updated: {record['last_updated']}")
+
+            return "\n".join(output_parts)
+
+        except Exception as e:
+            return f"Error retrieving diagnosis: {str(e)}"
+
+
+@tool
+def get_subjective_analysis(session_id: str = "session_001") -> str:
+    """
+    Retrieve all subjective analysis sections from QA pairs in a session.
+
+    The subjective analysis contains what the client reports about their feelings,
+    perceptions, symptoms, and context (using brief quotes from their responses).
+
+    Args:
+        session_id: The session to retrieve subjective analyses from (default: 'session_001')
+
+    Returns:
+        All subjective analysis sections organized by QA pair
+    """
+    rag = get_rag_instance()
+
+    cypher = """
+    MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+    WHERE qa.subjective_analysis IS NOT NULL
+    RETURN qa.id as qa_id,
+           qa.question as question,
+           qa.subjective_analysis as subjective_analysis
+    ORDER BY qa.id
+    """
+
+    with rag.driver.session() as session:
+        try:
+            results = session.run(cypher, session_id=session_id)
+            records = [dict(record) for record in results]
+
+            if not records:
+                return f"No subjective analyses found for session: {session_id}"
+
+            # Format output
+            output_parts = [f"=== SUBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
+            output_parts.append(f"Total QA Pairs: {len(records)}\n")
+
+            for record in records:
+                output_parts.append(f"QA PAIR: {record['qa_id']}")
+                output_parts.append(f"Question: {record['question']}\n")
+                output_parts.append(f"Subjective Analysis:")
+                output_parts.append(f"{record['subjective_analysis']}\n")
+                output_parts.append("-" * 60 + "\n")
+
+            return "\n".join(output_parts)
+
+        except Exception as e:
+            return f"Error retrieving subjective analyses: {str(e)}"
+
+
+@tool
+def get_objective_analysis(session_id: str = "session_001") -> str:
+    """
+    Retrieve all objective analysis sections from QA pairs in a session.
+
+    The objective analysis contains directly observable/measurable features in the text
+    such as sentence count, word patterns, disfluencies, emphasis markers, and
+    AI-derived affect metrics with confidence scores.
+
+    Args:
+        session_id: The session to retrieve objective analyses from (default: 'session_001')
+
+    Returns:
+        All objective analysis sections organized by QA pair
+    """
+    rag = get_rag_instance()
+
+    cypher = """
+    MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+    WHERE qa.objective_analysis IS NOT NULL
+    RETURN qa.id as qa_id,
+           qa.question as question,
+           qa.objective_analysis as objective_analysis
+    ORDER BY qa.id
+    """
+
+    with rag.driver.session() as session:
+        try:
+            results = session.run(cypher, session_id=session_id)
+            records = [dict(record) for record in results]
+
+            if not records:
+                return f"No objective analyses found for session: {session_id}"
+
+            # Format output
+            output_parts = [f"=== OBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
+            output_parts.append(f"Total QA Pairs: {len(records)}\n")
+
+            for record in records:
+                output_parts.append(f"QA PAIR: {record['qa_id']}")
+                output_parts.append(f"Question: {record['question']}\n")
+                output_parts.append(f"Objective Analysis:")
+                output_parts.append(f"{record['objective_analysis']}\n")
+                output_parts.append("-" * 60 + "\n")
+
+            return "\n".join(output_parts)
+
+        except Exception as e:
+            return f"Error retrieving objective analyses: {str(e)}"
+
+
+@tool
+def get_plan(session_id: str = "session_001") -> str:
+    """
+    Retrieve all treatment plan sections from QA pairs in a session.
+
+    The plan contains recommended next steps, interventions, monitoring strategies,
+    homework assignments, and follow-up actions for the client.
+
+    Args:
+        session_id: The session to retrieve plans from (default: 'session_001')
+
+    Returns:
+        All treatment plan sections organized by QA pair
+    """
+    rag = get_rag_instance()
+
+    cypher = """
+    MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+    WHERE qa.plan IS NOT NULL
+    RETURN qa.id as qa_id,
+           qa.question as question,
+           qa.plan as plan
+    ORDER BY qa.id
+    """
+
+    with rag.driver.session() as session:
+        try:
+            results = session.run(cypher, session_id=session_id)
+            records = [dict(record) for record in results]
+
+            if not records:
+                return f"No treatment plans found for session: {session_id}"
+
+            # Format output
+            output_parts = [f"=== TREATMENT PLANS FOR {session_id.upper()} ===\n"]
+            output_parts.append(f"Total QA Pairs: {len(records)}\n")
+
+            for record in records:
+                output_parts.append(f"QA PAIR: {record['qa_id']}")
+                output_parts.append(f"Question: {record['question']}\n")
+                output_parts.append(f"Treatment Plan:")
+                output_parts.append(f"{record['plan']}\n")
+                output_parts.append("-" * 60 + "\n")
+
+            return "\n".join(output_parts)
+
+        except Exception as e:
+            return f"Error retrieving treatment plans: {str(e)}"
+
+
 # Tool list for import to chat_agents tools
 PERSONA_FORGE_TOOLS = [
     search_psychological_insights,
@@ -907,6 +1133,10 @@ PERSONA_FORGE_TOOLS = [
     get_graph_statistics,
     get_extreme_values,
     get_qa_pair_details,
+    retrieve_diagnosis,
+    get_subjective_analysis,
+    get_objective_analysis,
+    get_plan,
 ]
 
 
