@@ -21,7 +21,9 @@ from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
 from ..tools.file_tools import ls, read_file, write_file, save_to_disk
-from ..tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
+from ..tools.deep_rag_tools import (
+    DEEP_PERSONA_FORGE_TOOLS,
+)  # Use wrappers that save to files
 from ..tools.todo_tools import write_todos, read_todos
 from ..tools.research_tools import (
     tavily_search,
@@ -32,15 +34,9 @@ from ..tools.research_tools import (
 from ..tools.task_tool import _create_task_tool
 
 from ..agent_utils.state import DeepAgentState, Todo
-from ..agent_utils.deep_utils import show_prompt, stream_agent
 from ..prompts.deep_prompts import (
     ARCHITECT_INSTRUCTIONS,
-    RESEARCH_INSTRUCTIONS,
-    GRAPH_INSTRUCTIONS,
-    REPORT_INSTRUCTIONS,
-    RESEARCH_ASSISTANT_INSTRUCTIONS,
-    GRAPH_ASSISTANT_INSTRUCTIONS,
-    READ_AGENT_INSTRUCTIONS,
+    SUBAGENT_INSTRUCTIONS,
     # READ_ASSISTANT_INSTRUCTIONS,
 )
 
@@ -50,7 +46,6 @@ from ..io_py.edge.config import (
     LLMConfigArchitect,
     LLMConfigPeon,
     LLMConfigOverseer,
-    LLMConfigScribe,
     LLMConfigScribe,
 )
 
@@ -67,12 +62,14 @@ alt_model = ChatOllama(
     model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
     reasoning=LLMConfigPeon.reasoning,
+    num_predict=LLMConfigPeon.max_tokens,
 )
 
 overseer_model = ChatOllama(
     model=LLMConfigOverseer.model_name,
     temperature=LLMConfigOverseer.temperature,
     reasoning=LLMConfigOverseer.reasoning,
+    num_predict=LLMConfigOverseer.max_tokens,
 )
 
 # Remote model (mini-itx) - setup SSH tunnel first
@@ -85,6 +82,7 @@ if LLMConfigScribe.use_remote:
         model=LLMConfigScribe.model_name,  # aka 'Scribe'
         temperature=LLMConfigScribe.temperature,
         reasoning=LLMConfigScribe.reasoning,
+        num_predict=LLMConfigScribe.max_tokens,
         base_url=f"http://localhost:{LLMConfigScribe.remote_port}",  # Use tunneled port
     )
     print(
@@ -95,18 +93,19 @@ else:
         model=LLMConfigScribe.model_name,
         temperature=LLMConfigScribe.temperature,
         reasoning=LLMConfigScribe.reasoning,
+        num_predict=LLMConfigScribe.max_tokens,
     )
 
-# Create agent using create_react_agent directly
-anthropic_model = init_chat_model(
-    model="anthropic:claude-3-5-sonnet-20241022", temperature=0.0
-)
-openai_model = init_chat_model(model="openai:gpt-4o-mini", temperature=0.0)
-
-# Use ChatGoogleGenerativeAI directly instead of init_chat_model
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-gemini_model = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.0)
+# Online models for testing (commented out - not currently used)
+# anthropic_model = init_chat_model(
+#     model="anthropic:claude-3-5-sonnet-20241022", temperature=0.0
+# )
+# openai_model = init_chat_model(model="openai:gpt-4o-mini", temperature=0.0)
+#
+# # Use ChatGoogleGenerativeAI directly instead of init_chat_model
+# from langchain_google_genai import ChatGoogleGenerativeAI
+#
+# gemini_model = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0.0)
 
 """*************************** Workflow*************************************************
 The main deep agent is the architect. Oversight of report and writes the plan.
@@ -138,165 +137,76 @@ Return calls are made via the 'Think' tool, which allows the agent to call other
 # *************************** Tools and Sub-agents**************************************
 # Set limits
 max_concurrent_agent_units = 5
-max_agent_iterations = 6
-max_concurrent_local_agents = 2
+max_researcher_iterations = 6
+max_concurrent_local_agents = 3
 max_concurrent_online_agents = 3
 
 # Core Admin Tools
-built_in_tools = [ls, read_file, write_file, write_todos, read_todos, think_tool]
-save_tools = save_to_disk
+built_in_tools = [
+    ls,
+    read_file,
+    write_file,
+    write_todos,
+    read_todos,
+    think_tool,
+    save_to_disk,
+]
 # create the tools to delegate to sub-agents
-research_tools = [
+sub_agent_tools = [
     tavily_search,
     pubmed_search,
 ] + built_in_tools  # PubMed for academic research, Tavily for general web search
 
-graph_tools = built_in_tools + PERSONA_FORGE_TOOLS
-report_tools = built_in_tools
-architect_tools = built_in_tools
-read_tools = built_in_tools
+assistant_tools = DEEP_PERSONA_FORGE_TOOLS + sub_agent_tools
+
 # *************************** Create Sub-Agents & Assign Tools****************************
 
 
 # create the research sub-agent
-research_agent = {
-    "name": "research_agent",
-    "description": "Delegate research to the sub-agent researcher. Provide this researcher with a description of your queries to delegate.",
-    "prompt": RESEARCH_INSTRUCTIONS,
-    "tools": [t.name for t in research_tools],
-}
-
-# create the research sub-agent
-
-read_agent = {
-    "name": "read_agent",
-    "description": "Delegate reading, writing or summarizing to the read agent powered by a state of the art model. Only give this agent one task at a time.",
-    "prompt": READ_AGENT_INSTRUCTIONS,
-    "tools": [t.name for t in built_in_tools],
-}
-
-# create the research sub-agent
-research_assistant = {
-    "name": "research_assistant",
-    "description": "Delegate research to the sub-agent Research Assistant, who will write the output to the specified file. Only give this researcher one topic at a time.",
-    "prompt": RESEARCH_ASSISTANT_INSTRUCTIONS,
-    "tools": [t.name for t in research_tools],
-}
-
-# create the web research sub-agent
-graph_agent = {
-    "name": "graph_agent",
-    "description": "Request the Graph Agent starts the Graph Analysis workflow. Will write the analysis to the specified file.",
-    "prompt": GRAPH_INSTRUCTIONS,
-    "tools": [t.name for t in graph_tools],
-}
-
-# create the web research sub-agent
-graph_assistant = {
-    "name": "graph_assistant",
-    "description": "Request the Graph Assistant to extract a specific query and write the output to the specified file. Only give this researcher one topic at a time.",
-    "prompt": GRAPH_ASSISTANT_INSTRUCTIONS,
-    "tools": [t.name for t in graph_tools],
-}
-
-# create the report writer sub-agent
-report_agent = {
-    "name": "report_agent",
-    "description": "Delegate the report task to the sub-agent report-agent. Only give this researcher one report to write at a time.",
-    "prompt": REPORT_INSTRUCTIONS,
-    "tools": [t.name for t in report_tools],
+assistant = {
+    "name": "assistant",
+    "description": "Delegate a task to the assistant. Provide this sub-agent with a description of your queries to delegate.",
+    "prompt": SUBAGENT_INSTRUCTIONS,
+    "tools": [t.name for t in assistant_tools],
 }
 
 # Create task tool for the Architect to delegate tasks to sub-agents
 
-# The architects personal Read/Write Assistant
-read_task = _create_task_tool(
-    research_tools,
-    [read_agent],
-    gemini_model,
-    DeepAgentState,
-)
-
-# Report Tasks
-report_task = _create_task_tool(
-    research_tools,
-    [report_agent],
+# Research Tasks - Each with unique name
+first_assistant_task_tool = _create_task_tool(
+    assistant_tools,
+    [assistant],
     scribe_model,
     DeepAgentState,
-)
-# Research Tasks
-first_research_assistant_task = _create_task_tool(
-    research_tools,
-    [research_assistant],
-    scribe_model,
-    DeepAgentState,
+    tool_name="delegate_to_write_assistant",
 )
 
-second_research_assistant_task = _create_task_tool(
-    research_tools,
-    [research_assistant],
-    alt_model,
-    DeepAgentState,
-)
-first_graph_assistant_task = _create_task_tool(
-    graph_tools,
-    [graph_assistant],
-    scribe_model,
-    DeepAgentState,
-)
-
-second_graph_assistant_task = _create_task_tool(
-    graph_tools,
-    [graph_assistant],
-    alt_model,
-    DeepAgentState,
-)
-
-
-# *************************** Create Research Agents tools**********************************
-research_agent_tools = research_tools + built_in_tools
-research_supervisor_tools = [
-    *research_agent_tools,  # Unpack the list with *
-    first_research_assistant_task,
-    second_research_assistant_task,
-    read_task,
-]
-# *************************** Create Graph tools**********************************
-graph_supervisor_tools = [
-    *graph_tools,  # Unpack the list with *
-    first_graph_assistant_task,
-    second_graph_assistant_task,
-    read_task,
-]
-
-# *************************** Create Second Level Agents tools**********************************
-
-
-# Create task tool for the Architect to delegate tasks to sub-agents
-research_task = _create_task_tool(
-    research_supervisor_tools,
-    [research_agent],
+second_assistant_task_tool = _create_task_tool(
+    assistant_tools,
+    [assistant],
     overseer_model,
     DeepAgentState,
+    tool_name="delegate_to_graph_assistant",
 )
 
-# Graph Tasks
-graph_task = _create_task_tool(
-    graph_supervisor_tools,
-    [graph_agent],
-    overseer_model,
+third_assistant_task_tool = _create_task_tool(
+    assistant_tools,
+    [assistant],
+    alt_model,
     DeepAgentState,
+    tool_name="delegate_to_flex_assistant",
 )
 
-
-# *************************** Create Architects delegation tools **********************************
+# *************************** Create Sub-Agents tools**********************************
 delegation_tools = [
-    research_task,
-    read_task,
-    graph_task,
-    report_task,
+    first_assistant_task_tool,
+    second_assistant_task_tool,
+    third_assistant_task_tool,
 ]
-all_architect_tools = architect_tools + delegation_tools
+
+# Give architect visibility into all tools (following langchain academy pattern)
+# This allows the architect to understand what assistants can do when delegating
+all_architect_tools = DEEP_PERSONA_FORGE_TOOLS + sub_agent_tools + delegation_tools
 
 
 # *************************** Create The Architect  ************************************
@@ -313,6 +223,7 @@ def get_new_deep_agent(
         model=LLMConfigArchitect.model_name,
         temperature=LLMConfigArchitect.temperature,
         reasoning=LLMConfigArchitect.reasoning,
+        num_predict=LLMConfigArchitect.max_tokens,  # Ollama parameter for max output tokens
     )
 
     tools = all_architect_tools
@@ -323,9 +234,11 @@ def get_new_deep_agent(
         prompt=ARCHITECT_INSTRUCTIONS,
         checkpointer=short_term_memory,
         store=long_term_memory,
-        state_schema=AgentState,
+        state_schema=DeepAgentState,
     ).with_config(
-        {"recursion_limit": 150}
+        {
+            "recursion_limit": 50
+        }  # 150 because the 'thinking' is counting as steps and taking them all up
     )  # recursion_limit limits the number of steps the agent will run
 
     return deep_agent

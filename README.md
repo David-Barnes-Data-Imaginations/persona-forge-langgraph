@@ -119,6 +119,14 @@ The Agents are hosted on a single 'Consumer Grade' GPU.
   <img src="./Med_CLI.png" alt="cli-app">
 </p>
 
+  <h2 align='center'>
+  Various Agents chatting while they complete a task in the e2b sandbox
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./MediCode_CLI.png" alt="cli-2">
+</p>
+
 - The 'Sentiment App' is a browser based dashboard including a 'Therapy-Support' interface, with 'patient-care' central to the objectives.
 - *Note*: If you've not heard of knowledge graphs, they are vector based (as are LLM's and RAG's) graphs which are incredibly fast for data retrieval (Google uses it for its search). 
 - Most note-taking tools use them to connect your notes via 'Nodes' and 'Edges' (relationships) 
@@ -217,7 +225,21 @@ flowchart TD
 ## The Agentic flow for the 'CLI' tool
 ### Flowchart (Architect → Graph/Report/Research with parallel assistants)
 This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
+The workflow uses 8 different models, 2 on my main pc, 3 on my mini-pc, and 3 online models for non-sensitive tasks.
+It uses the latest granite4 models from IBM, with up to 1 million context and a hybrid architecture.
 
+```
+    Main PC                    SSH Tunnel              Mini-ITX PC
+┌──────────────┐               ┌─────────┐            ┌──────────────┐
+│              │               │         │            │              │
+│ deep_agent   │──requests──>│ :11436  │───ssh───>│ Ollama :11434│
+│              │               │         │            │              │
+│ scribe_model │<──response──│         │<───────────│ granite4     │
+│              │               │         │            │ tiny-h       │
+└──────────────┘               └─────────┘            └──────────────┘
+```
+
+---
 ```mermaid
 flowchart TD
     %% ==== Roles / Agents ====

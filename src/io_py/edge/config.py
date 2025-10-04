@@ -12,9 +12,10 @@ class LLMConfigVoice:
     """Configuration for voice-enabled chat interface"""
 
     # gpt-oss:20b is 14GB VRAM
+    # model_name = "granite4:small-h"
     model_name = "gpt-oss:20b"
-    temperature = 0.7
-    max_tokens = 2000
+    temperature = 0.1
+    max_tokens = 4096
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
@@ -41,10 +42,12 @@ class LLMConfigArchitect:
     """Configuration for head honcho deep agent"""
 
     # gpt-oss:20b is 14GB VRAM
-    model_name = "granite4:small-h"  # Default model for chat
+    # model_name = "granite4:small-h"  # Default model for chat
+    model_name = "gpt-oss:20b"
+    # model_name = "gemma3:12b"
     temperature = 0.0
-    max_tokens = 4096
-    reasoning = False  # Add reasoning parameter for LangGraph compatibility
+    max_tokens = 8192  # Increased for long tool calls
+    reasoning = True  # Reasoning mode can interfere with tool calling
 
     # Voice-specific settings
     voice_enabled = False
