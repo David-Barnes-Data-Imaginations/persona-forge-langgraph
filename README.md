@@ -45,6 +45,15 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <img src="./personality_summary.png" alt="chat-page">
 </p>
 
+  <h2 align='center'>
+  A fully fledged CLI tool built in the style of 'Claude Code', with a more advanced 'code tool' style workflow structure
+  </h2>
+  <br><br>
+<p align="center">
+  <video src="./agents_no_thoughts.mp4 alt=" autoplay loop muted></video>
+</p>
+
+
 You can see a Beta version of the voice chat [here](https://drive.google.com/file/d/1RHgKL3jps7CymCbSs76krzC1u2mVVN8-/view?usp=sharing)
 
 **For Clinicians / Non-Techies**:
