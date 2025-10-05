@@ -50,7 +50,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   </h2>
   <br><br>
 <p align="center">
-  <video src="./agents_no_thoughts.mp4 alt=" autoplay loop muted></video>
+  <video src="./https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/agents_no_thoughts.mp4 alt=" autoplay loop muted></video>
 </p>
 
 
