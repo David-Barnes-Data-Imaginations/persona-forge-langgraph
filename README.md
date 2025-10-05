@@ -38,7 +38,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 </p>
 
 <h2 align='center'>
-  A fully fledged CLI 'Post-Therapy Report' building tool, built in the style of 'Claude Code', with a 'code tool' style workflow structure
+  A fully fledged CLI 'Post-Therapy Report' writing tool, built in the style of 'Claude Code', with a 'code tool' style workflow structure
   </h2>
 
 <p align="center">
@@ -81,20 +81,32 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 **For 'Techies' or those learning to build 'Advanced Agentic Systems'**: 
 - The Technical README is [here]
 ---
-The Persona-Forge is designed to help therapists and mental health hospitals modernize and care for patients. 
-I'm in the concept stage for various other use cases, including an adaptation for criminal profiling and pattern matching, both 'online' and in the 'real-world'.
+The Persona-Forge is designed as an 'art of the possible' demo to help therapists and mental health hospitals modernize and care for patients. 
+The workflows are all built in Langgraph, a production grade agentic process flow library. the workflow is modular and can be extended with additional agents or custom components as needed.
+I've tested the same functionality for various admin related automations, and the same functionality has been replicated across multiple domains, including healthcare, finance, and education, demonstrating its versatility and scalability.
 
 # Use Cases:
 
 ## 1. Hospital and/or Therapist/Clinician Support - 'Vision of the Future'
-There are (currently) four AI agents involved, alongside various UI/Interface tools and many hours of research:
+The analysis phase workflows ('framework_analysis', 'create_kg' and 'chat_agent') use three agents between them, whilst the therapy note uses an orchestra of 7 agents. 
+The orchestra is run on two NVIDEA GPU's (Ada), totalling ~32GB VRAM.
+Summarization tasks for non-sensitive data are run via online models (any work, I used Gemini to save my Claude Credits).
+
 
 ## Elements:
 - To modernize Psychology, by providing the superhuman pattern matching and profiling abilities of AI, for Therapists and Hospitals. 
 - This enhances insights for better work, _benefits_ the care for patients, and help therapists learn from their own techniques. 
-- It cannot be stressed enough that this does not aim to 'replace' human therapists, clinicians or their current methods. 
-- 'It's 'AI - Human augmentation via fusion'. _How_ this actually functions on a 'practical' / 'daily' level is still under intense scrutiny. The reason is the same reason that I love to build AI, I do _extensive_ testing (makes up about 70% of the work), and I'm being so blown away with idea's and possibilities I hadn't percieved, simultaneaously pivoting away from others that I thought _might_ work. 
-- Modernizing patient interactions to streamlined automation processes that remove pen & paper based tools, again freeing up staff resources to care for patients more effectively.
+- The therapy note workflow is aimed at those who might use a modern wearable with AI transcription, allowing therapy sessions to be analyzed and a 'SOAP-Note' generated for review.
+- To increase the challenge, stress test, and demonstrate large context management, I used a typed form simulated therapy session, with the whole file being ~24k tokens. 
+- This empowers the Therapist to save time (allowing for more patient time), whilst enhancing the SOAP-Note from a document hastily scrawled between sessions, to a structured SOAP‑Note with additional 'objective' measurements added by the AI's sentiment assessment. This extra data supports the clinical decision‑making process, providing a comprehensive framework for understanding and addressing the patient’s mental health challenges.
+- If the same models are used for assessment over time, they consistent clinical data across time.
+- Modernizing patient interactions to streamlined automation processes that remove pen & paper based tools, again freeing up staff resources to care for patients more effectively. The exact same framework can be used to automate many administrative and process heavy tasks (I am unable to cover all of these but the code adjustment is minimal).
+
+TODO:
+
+- Whilst the primary targets for this project are complete, in time I will add a vision model for patient safety cameras (currently being tested in my living room) and the integration of a real‑time facial‑expression‑analysis module to detect early signs of patient distress.
+
+- A lifelike AI generated face (UNREAL engine) that can be rendered in real‑time, enabling dynamic facial‑animation and expressioncapabilities, alongside an appealing, immersive user interface.
 
 ## AI Models:
 
