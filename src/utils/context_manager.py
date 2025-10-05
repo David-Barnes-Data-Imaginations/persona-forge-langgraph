@@ -8,7 +8,13 @@ Prevents context overflow by intelligently trimming old messages while preservin
 """
 
 from typing import List, Dict, Any
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import (
+    BaseMessage,
+    SystemMessage,
+    HumanMessage,
+    AIMessage,
+    ToolMessage,
+)
 
 
 class SmartContextManager:
@@ -34,16 +40,13 @@ class SmartContextManager:
         For better accuracy, use tiktoken, but this is fast enough.
         """
         total_chars = sum(
-            len(str(msg.content)) if hasattr(msg, 'content') else 0
-            for msg in messages
+            len(str(msg.content)) if hasattr(msg, "content") else 0 for msg in messages
         )
         # Rough approximation: 4 chars ≈ 1 token
         return int(total_chars / 4)
 
     def trim_messages(
-        self,
-        messages: List[BaseMessage],
-        system_message: SystemMessage = None
+        self, messages: List[BaseMessage], system_message: SystemMessage = None
     ) -> List[BaseMessage]:
         """
         Trim messages to fit within token limit while preserving important context.
@@ -70,7 +73,9 @@ class SmartContextManager:
         if current_tokens <= self.max_tokens:
             return messages
 
-        print(f"⚠️  Context trimming: {current_tokens} tokens → target {self.max_tokens}")
+        print(
+            f"⚠️  Context trimming: {current_tokens} tokens → target {self.max_tokens}"
+        )
 
         # Separate system message if present
         has_system = isinstance(messages[0], SystemMessage)
@@ -78,8 +83,8 @@ class SmartContextManager:
         content_messages = messages[1:] if has_system else messages
 
         # Always preserve last N messages (recent context)
-        preserved_messages = content_messages[-self.preserve_last_n:]
-        older_messages = content_messages[:-self.preserve_last_n]
+        preserved_messages = content_messages[-self.preserve_last_n :]
+        older_messages = content_messages[: -self.preserve_last_n]
 
         # Remove oldest messages until we're under the limit
         trimmed_older = []
@@ -103,7 +108,9 @@ class SmartContextManager:
 
         final_tokens = self._estimate_tokens(final_messages)
         removed_count = len(messages) - len(final_messages)
-        print(f"✅ Trimmed {removed_count} messages: {current_tokens} → {final_tokens} tokens")
+        print(
+            f"✅ Trimmed {removed_count} messages: {current_tokens} → {final_tokens} tokens"
+        )
 
         return final_messages
 
@@ -139,7 +146,7 @@ class ConversationBuffer:
     but with automatic context window management.
     """
 
-    def __init__(self, max_tokens: int = 80000, preserve_last_n: int = 10):
+    def __init__(self, max_tokens: int = 40000, preserve_last_n: int = 10):
         self.manager = SmartContextManager(max_tokens, preserve_last_n)
         self.messages: List[BaseMessage] = []
 

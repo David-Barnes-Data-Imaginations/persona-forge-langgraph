@@ -284,9 +284,9 @@ Source: {result['session_id']} → {result['qa_pair_id']} → {result['chunk_id'
 
 
 @tool
-def get_graph_statistics(session_id: str = "session_001") -> str:
+def get_objective_statistics(session_id: str = "session_001") -> str:
     """
-    Get statistical analysis of psychological patterns across all QA pairs in a session.
+    Get 'objective' statistical analysis of psychological patterns across all QA pairs in a session.
 
     Returns counts, distributions, and aggregated metrics for emotions, distortions,
     schemas, attachment styles, defense mechanisms, and Big Five traits.
@@ -936,7 +936,9 @@ def retrieve_diagnosis(client_id: str = "client_001") -> str:
                 return f"No diagnosis/history found for client: {client_id}"
 
             # Format output
-            output_parts = [f"=== DIAGNOSIS AND MEDICAL HISTORY FOR {client_id.upper()} ===\n"]
+            output_parts = [
+                f"=== DIAGNOSIS AND MEDICAL HISTORY FOR {client_id.upper()} ===\n"
+            ]
 
             if record.get("medical_history"):
                 output_parts.append("MEDICAL HISTORY:")
@@ -976,98 +978,31 @@ def retrieve_diagnosis(client_id: str = "client_001") -> str:
 
 
 @tool
-def get_subjective_analysis(
-    session_id: str = "session_001",
-    query: str = "client feelings, emotions, and reported symptoms",
-    top_k: int = 5
-) -> str:
+def get_subjective_analysis(session_id: str = "session_001") -> str:
     """
-    Retrieve relevant subjective analysis sections using similarity search.
+    Retrieve ALL subjective analysis sections from QA pairs in a session,
+    then summarize them using Gemini to extract common themes.
 
-    Uses semantic search to find the most relevant subjective analyses based on
-    a query, preventing overwhelming output that crashes the workflow.
+    The subjective analysis contains client-reported experiences, feelings,
+    and symptoms. This function retrieves all analyses and uses Gemini to
+    create a condensed summary of common themes, making it easier for local
+    models to process.
 
     Args:
         session_id: The session to retrieve subjective analyses from (default: 'session_001')
-        query: What aspects of subjective analysis to focus on (default: general feelings/emotions)
-        top_k: Number of most relevant QA pairs to return (default: 5)
 
     Returns:
-        Top K most relevant subjective analysis sections based on semantic similarity
+        Gemini-generated summary of common themes from all subjective analyses
     """
     rag = get_rag_instance()
 
-    # Generate query embedding using global embed_texts function
-    query_embedding = embed_texts([query])[0]
-
-    # Find relevant QA pairs via TextChunk similarity, filtered by session
-    cypher = """
-    CALL db.index.vector.queryNodes('textchunk_embedding_index', $top_k, $query_embedding)
-    YIELD node as chunk, score
-    MATCH (chunk)-[:FROM_QA]->(qa:QA_Pair)<-[:INCLUDES]-(s:Session {session_id: $session_id})
-    WHERE qa.subjective_analysis IS NOT NULL
-    RETURN DISTINCT qa.id as qa_id,
-           qa.question as question,
-           qa.subjective_analysis as subjective_analysis,
-           score
-    ORDER BY score DESC
-    LIMIT $top_k
-    """
-
-    with rag.driver.session() as session:
-        try:
-            results = session.run(
-                cypher,
-                session_id=session_id,
-                query_embedding=query_embedding,
-                top_k=top_k * 3  # Query more chunks to get top_k unique QAs
-            )
-            records = [dict(record) for record in results]
-
-            if not records:
-                return f"No relevant subjective analyses found for session: {session_id}"
-
-            # Format output
-            output_parts = [f"=== MOST RELEVANT SUBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
-            output_parts.append(f"Query: {query}")
-            output_parts.append(f"Showing top {len(records)} most relevant QA pairs\n")
-
-            for i, record in enumerate(records, 1):
-                output_parts.append(f"\n[{i}] QA PAIR: {record['qa_id']} (relevance: {record['score']:.3f})")
-                output_parts.append(f"Question: {record['question']}\n")
-                output_parts.append(f"Subjective Analysis:")
-                output_parts.append(f"{record['subjective_analysis']}\n")
-                output_parts.append("-" * 60)
-
-            return "\n".join(output_parts)
-
-        except Exception as e:
-            return f"Error retrieving subjective analyses: {str(e)}"
-
-
-@tool
-def get_objective_analysis(session_id: str = "session_001") -> str:
-    """
-    Retrieve all objective analysis sections from QA pairs in a session.
-
-    The objective analysis contains directly observable/measurable features in the text
-    such as sentence count, word patterns, disfluencies, emphasis markers, and
-    AI-derived affect metrics with confidence scores.
-
-    Args:
-        session_id: The session to retrieve objective analyses from (default: 'session_001')
-
-    Returns:
-        All objective analysis sections organized by QA pair
-    """
-    rag = get_rag_instance()
-
+    # Retrieve ALL QA pairs with subjective analysis
     cypher = """
     MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
-    WHERE qa.objective_analysis IS NOT NULL
+    WHERE qa.subjective_analysis IS NOT NULL
     RETURN qa.id as qa_id,
            qa.question as question,
-           qa.objective_analysis as objective_analysis
+           qa.subjective_analysis as subjective_analysis
     ORDER BY qa.id
     """
 
@@ -1077,23 +1012,67 @@ def get_objective_analysis(session_id: str = "session_001") -> str:
             records = [dict(record) for record in results]
 
             if not records:
-                return f"No objective analyses found for session: {session_id}"
+                return f"No subjective analyses found for session: {session_id}"
 
-            # Format output
-            output_parts = [f"=== OBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
-            output_parts.append(f"Total QA Pairs: {len(records)}\n")
-
+            # Collect all subjective analyses
+            all_analyses = []
             for record in records:
-                output_parts.append(f"QA PAIR: {record['qa_id']}")
-                output_parts.append(f"Question: {record['question']}\n")
-                output_parts.append(f"Objective Analysis:")
-                output_parts.append(f"{record['objective_analysis']}\n")
-                output_parts.append("-" * 60 + "\n")
+                all_analyses.append(
+                    f"QA Pair {record['qa_id']}:\n{record['subjective_analysis']}"
+                )
 
-            return "\n".join(output_parts)
+            # Combine all analyses into one text block
+            combined_text = "\n\n".join(all_analyses)
+
+            from langchain_google_genai import ChatGoogleGenerativeAI
+
+            # Import Gemini for summarization
+            gemini_model = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash-exp",
+                temperature=0.3,
+                api_key=os.environ.get("GEMINI_API_KEY"),
+            )
+
+            # Create summarization prompt
+            summarization_prompt = f"""Review the subjective analysis from these QA pairs in a therapy script.
+Extract the common themes to provide a summary of analysis. Leave out any quoted comments from the client.
+
+Focus on:
+1. Common emotional patterns
+2. Recurring symptoms or experiences
+3. Major psychological themes
+4. Key concerns or issues raised
+
+Subjective Analyses:
+{combined_text}
+
+Provide a concise thematic summary (300-500 words max):"""
+
+            # Get summary from Gemini
+            from langchain_core.messages import HumanMessage
+
+            summary_response = gemini_model.invoke(
+                [HumanMessage(content=summarization_prompt)]
+            )
+            summary = summary_response.content
+
+            # Format final output
+            output = f"""=== SUBJECTIVE ANALYSIS SUMMARY FOR {session_id.upper()} ===
+
+Total QA Pairs Analyzed: {len(records)}
+
+THEMATIC SUMMARY:
+{summary}
+
+---
+Note: This is a Gemini-generated summary of {len(records)} subjective analyses.
+Use get_qa_pair_details() to view individual analyses if needed.
+"""
+
+            return output
 
         except Exception as e:
-            return f"Error retrieving objective analyses: {str(e)}"
+            return f"Error retrieving and summarizing subjective analyses: {str(e)}"
 
 
 @tool
@@ -1150,12 +1129,11 @@ def get_plan(session_id: str = "session_001") -> str:
 PERSONA_FORGE_TOOLS = [
     search_psychological_insights,
     get_personality_summary,
-    get_graph_statistics,
     get_extreme_values,
     get_qa_pair_details,
     retrieve_diagnosis,
     get_subjective_analysis,
-    get_objective_analysis,
+    get_objective_statistics,
     get_plan,
 ]
 

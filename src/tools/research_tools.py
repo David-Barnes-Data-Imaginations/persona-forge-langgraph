@@ -24,13 +24,23 @@ from langchain_ollama import ChatOllama
 from ..prompts.deep_prompts import SUMMARIZE_WEB_SEARCH
 from ..agent_utils.state import DeepAgentState
 
+# Import Gemini for summarization
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 from ..io_py.edge.config import LLMConfigArchitect
 
+"""
 # Summarization model - using local Ollama instead of OpenAI
 summarization_model = ChatOllama(
     model=LLMConfigArchitect.model_name,
     temperature=LLMConfigArchitect.temperature,
     reasoning=LLMConfigArchitect.reasoning,
+)"""
+
+gemini_model = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-exp",
+    temperature=0.3,
+    api_key=os.environ.get("GEMINI_API_KEY"),
 )
 
 tavily_client = TavilyClient()
@@ -113,6 +123,48 @@ def summarize_webpage_content(webpage_content: str) -> Summary:
         )
 
 
+def summarize_pubmed_abstract(abstract: str, title: str) -> str:
+    """Summarize a PubMed abstract using Gemini to save local model context.
+
+    Args:
+        abstract: The full abstract text
+        title: The article title for context
+
+    Returns:
+        Concise summary of key findings and relevance
+    """
+    try:
+        # Use Gemini for summarization (save Claude credits for complex tasks)
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        gemini_model = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp", temperature=0.3
+        )
+
+        summarization_prompt = f"""Summarize this PubMed abstract concisely for a research agent.
+
+Article Title: {title}
+
+Abstract: {abstract}
+
+Provide a brief summary (2-3 sentences) covering:
+1. Main findings or conclusions
+2. Key methods or approach
+3. Clinical relevance (if applicable)
+
+Summary:"""
+
+        summary_response = gemini_model.invoke(
+            [HumanMessage(content=summarization_prompt)]
+        )
+        return summary_response.content
+
+    except Exception as e:
+        # Fallback to truncated abstract
+        print(f"Gemini summarization failed: {e}, using truncated abstract")
+        return abstract[:300] + "..." if len(abstract) > 300 else abstract
+
+
 def process_search_results(results: dict) -> list[dict]:
     """Process search results by summarizing content where available.
 
@@ -133,12 +185,16 @@ def process_search_results(results: dict) -> list[dict]:
         url = result["url"]
 
         # Skip PDFs and other binary files
-        if url.lower().endswith(('.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx')):
+        if url.lower().endswith(
+            (".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx")
+        ):
             # Use Tavily's generated summary for binary files
             raw_content = result.get("content", "")  # Use Tavily's summary as content
             summary_obj = Summary(
                 filename="binary_file_summary.md",
-                summary=result.get("content", "Binary file detected. Using Tavily's summary."),
+                summary=result.get(
+                    "content", "Binary file detected. Using Tavily's summary."
+                ),
             )
         else:
             # Read url
@@ -146,13 +202,15 @@ def process_search_results(results: dict) -> list[dict]:
 
             if response.status_code == 200:
                 # Check content-type to avoid binary data
-                content_type = response.headers.get('content-type', '').lower()
-                if 'pdf' in content_type or 'octet-stream' in content_type:
+                content_type = response.headers.get("content-type", "").lower()
+                if "pdf" in content_type or "octet-stream" in content_type:
                     # Binary file - use Tavily's summary
                     raw_content = result.get("content", "")
                     summary_obj = Summary(
                         filename="binary_file_summary.md",
-                        summary=result.get("content", "Binary file detected. Using Tavily's summary."),
+                        summary=result.get(
+                            "content", "Binary file detected. Using Tavily's summary."
+                        ),
                     )
                 else:
                     # Convert HTML to markdown
@@ -163,7 +221,9 @@ def process_search_results(results: dict) -> list[dict]:
                 raw_content = result.get("raw_content", "")
                 summary_obj = Summary(
                     filename="URL_error.md",
-                    summary=result.get("content", "Error reading URL; try another search."),
+                    summary=result.get(
+                        "content", "Error reading URL; try another search."
+                    ),
                 )
 
         # uniquify file names
@@ -541,6 +601,9 @@ def pubmed_search(
         )
         filename = f"pubmed_{safe_title}_{uid}.md"
 
+        # Generate Gemini summary of the abstract
+        gemini_summary = summarize_pubmed_abstract(article.abstract, article.title)
+
         # Create file content
         authors_str = ", ".join(article.authors)
         if len(article.authors) > 5:
@@ -558,7 +621,13 @@ def pubmed_search(
 
 ---
 
-## Abstract
+## AI Summary (Gemini)
+
+{gemini_summary}
+
+---
+
+## Full Abstract
 
 {article.abstract}
 
@@ -571,14 +640,9 @@ def pubmed_search(
         files[filename] = file_content
         saved_files.append(filename)
 
-        # Create short summary for tool response
-        abstract_preview = (
-            article.abstract[:200] + "..."
-            if len(article.abstract) > 200
-            else article.abstract
-        )
+        # Use Gemini summary for tool response instead of truncated abstract
         summaries.append(
-            f"**{i}. {article.title[:80]}{'...' if len(article.title) > 80 else ''}**\n   ({article.pub_date}) - {filename}"
+            f"**{i}. {article.title[:80]}{'...' if len(article.title) > 80 else ''}**\n   ({article.pub_date}) - {gemini_summary[:150]}{'...' if len(gemini_summary) > 150 else ''}"
         )
 
     # Build summary response

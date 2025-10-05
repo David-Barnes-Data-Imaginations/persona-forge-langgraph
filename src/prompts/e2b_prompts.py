@@ -54,7 +54,7 @@ KEEP IT BRIEF! Long content strings cause JSON truncation.
 Good example (SHORT):
 write_todos(todos=[
     {"content": "Get diagnosis, save to data/", "status": "pending", "activeForm": "Getting diagnosis"},
-    {"content": "Get subjective for 'depression', save to data/", "status": "pending", "activeForm": "Getting subjective"}
+    {"content": "Get subjective analysis', save to data/", "status": "pending", "activeForm": "Getting subjective"}
 ])
 
 Bad example (TOO LONG - will be truncated):
@@ -88,7 +88,7 @@ Execute delegated tasks by:
 </Your Role>
 
 <Available Tools>
-- Neo4j RAG tools: retrieve_diagnosis, get_subjective_analysis, get_objective_analysis, etc.
+- Neo4j RAG tools: retrieve_diagnosis, get_subjective_analysis, get_objective_statistics, etc.
 - Bash execution: execute_bash (use this to save files!)
 - Python execution: execute_python
 - File operations: write_sandbox_file (alternative to execute_bash)

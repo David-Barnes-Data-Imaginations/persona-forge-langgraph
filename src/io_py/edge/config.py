@@ -15,7 +15,7 @@ class LLMConfigVoice:
     # model_name = "granite4:small-h"
     model_name = "gpt-oss:20b"
     temperature = 0.1
-    max_tokens = 4096
+    max_tokens = 8192
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
@@ -39,7 +39,7 @@ class LLMConfigPeon:
 
 
 class LLMConfigArchitect:
-    """Configuration for head honcho deep agent"""
+    """Configuration for lead deep agent"""
 
     # gpt-oss:20b is 14GB VRAM
     # model_name = "granite4:small-h"  # Default model for chat
@@ -65,7 +65,7 @@ class LLMConfigOverseer:
     model_name = "Randomblock1/nemotron-nano:8b"
     temperature = 0.0
     max_tokens = 16384
-    reasoning = False  # Add reasoning parameter for LangGraph compatibility
+    reasoning = True  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
     voice_enabled = False

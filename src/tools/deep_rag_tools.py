@@ -16,22 +16,17 @@ from langgraph.prebuilt import InjectedState
 from .hybrid_rag_tools import (
     search_psychological_insights,
     get_personality_summary,
-    get_graph_statistics,
+    get_objective_statistics,
     get_extreme_values,
     get_qa_pair_details,
     retrieve_diagnosis,
     get_subjective_analysis,
-    get_objective_analysis,
     get_plan,
 )
 from ..agent_utils.state import DeepAgentState
 
 
-def _save_to_virtual_fs(
-    state: dict,
-    filename: str,
-    content: str
-) -> str:
+def _save_to_virtual_fs(state: dict, filename: str, content: str) -> str:
     """Helper to save content to deep agent's virtual file system"""
     if "files" not in state:
         state["files"] = {}
@@ -42,9 +37,7 @@ def _save_to_virtual_fs(
 
 @tool
 def deep_search_psychological_insights(
-    query: str,
-    k: int = 5,
-    state: Annotated[dict, InjectedState] = None
+    query: str, k: int = 5, state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Search the psychological knowledge graph and save results to a file.
 
@@ -75,8 +68,7 @@ def deep_search_psychological_insights(
 
 @tool
 def deep_get_personality_summary(
-    client_id: str = "client_001",
-    state: Annotated[dict, InjectedState] = None
+    client_id: str = "client_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get comprehensive personality profile and save to a file.
 
@@ -106,8 +98,7 @@ def deep_get_personality_summary(
 
 @tool
 def deep_get_graph_statistics(
-    session_id: str = "session_001",
-    state: Annotated[dict, InjectedState] = None
+    session_id: str = "session_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get detailed graph statistics and save to a file.
 
@@ -137,8 +128,7 @@ def deep_get_graph_statistics(
 
 @tool
 def deep_get_extreme_values(
-    session_id: str = "session_001",
-    state: Annotated[dict, InjectedState] = None
+    session_id: str = "session_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Find extreme psychological values and save to a file.
 
@@ -168,8 +158,7 @@ def deep_get_extreme_values(
 
 @tool
 def deep_get_qa_pair_details(
-    qa_id: str,
-    state: Annotated[dict, InjectedState] = None
+    qa_id: str, state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get complete details for a QA pair and save to a file.
 
@@ -199,8 +188,7 @@ def deep_get_qa_pair_details(
 
 @tool
 def deep_retrieve_diagnosis(
-    client_id: str = "client_001",
-    state: Annotated[dict, InjectedState] = None
+    client_id: str = "client_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Retrieve client diagnosis and medical history, save to a file.
 
@@ -230,8 +218,7 @@ def deep_retrieve_diagnosis(
 
 @tool
 def deep_get_subjective_analysis(
-    session_id: str = "session_001",
-    state: Annotated[dict, InjectedState] = None
+    session_id: str = "session_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get all subjective analysis sections and save to a file.
 
@@ -261,8 +248,7 @@ def deep_get_subjective_analysis(
 
 @tool
 def deep_get_objective_analysis(
-    session_id: str = "session_001",
-    state: Annotated[dict, InjectedState] = None
+    session_id: str = "session_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get all objective analysis sections and save to a file.
 
@@ -277,7 +263,7 @@ def deep_get_objective_analysis(
         Confirmation message with filename
     """
     # Call original tool
-    results = get_objective_analysis.invoke({"session_id": session_id})
+    results = get_objective_statistics.invoke({"session_id": session_id})
 
     # Save to virtual file system
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -292,8 +278,7 @@ def deep_get_objective_analysis(
 
 @tool
 def deep_get_plan(
-    session_id: str = "session_001",
-    state: Annotated[dict, InjectedState] = None
+    session_id: str = "session_001", state: Annotated[dict, InjectedState] = None
 ) -> str:
     """Get all treatment plan sections and save to a file.
 
