@@ -56,12 +56,13 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   </h2>
 
 <p align="center">
-  <video src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo.mp4" 
-         autoplay 
-         loop 
-         muted
+  <a href="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo.mp4">
+    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo_thumbnail.png" 
+         alt="VOICE MODE Demo - Click to watch"
          width="100%">
-  </video>
+  </a>
+  <br>
+  <em>▶️ Click to watch demo video</em>
 </p>
 
 **For Clinicians / Non-Techies**:

@@ -44,6 +44,7 @@ def setup_sandbox():
         "NEO4J_USER": os.getenv("NEO4J_USER", "neo4j"),
         "NEO4JP": os.getenv("NEO4JP"),
         "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY"),
+        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY"),
     }
 
     for key, value in env_vars.items():
@@ -70,7 +71,9 @@ def create_e2b_agent(sandbox):
         DeepAgentState,
     )
     from src.tools.e2b_tools import E2B_TOOLS, set_global_sandbox
-    from src.tools.deep_rag_tools import DEEP_PERSONA_FORGE_TOOLS
+    from src.tools.hybrid_rag_tools import (
+        PERSONA_FORGE_TOOLS,
+    )  # Use original tools, not deep_* wrappers
     from src.tools.research_tools import tavily_search, pubmed_search, think_tool
     from src.tools.todo_tools import write_todos, read_todos
     from src.tools.task_tool import _create_task_tool
@@ -94,7 +97,9 @@ def create_e2b_agent(sandbox):
     research_tools = [tavily_search, pubmed_search]
 
     # Assistant tools (what sub-agents can use)
-    assistant_tools = DEEP_PERSONA_FORGE_TOOLS + research_tools + core_tools
+    # Use PERSONA_FORGE_TOOLS (original RAG tools that return data directly)
+    # The agent will manually save results using execute_bash
+    assistant_tools = PERSONA_FORGE_TOOLS + research_tools + core_tools
 
     # Create sub-agent definition
     assistant = {
@@ -132,7 +137,7 @@ def create_e2b_agent(sandbox):
 
     # Architect has all tools for visibility
     architect_tools = (
-        DEEP_PERSONA_FORGE_TOOLS + research_tools + core_tools + delegation_tools
+        PERSONA_FORGE_TOOLS + research_tools + core_tools + delegation_tools
     )
 
     # Create architect model
@@ -141,12 +146,10 @@ def create_e2b_agent(sandbox):
         model=LLMConfigArchitect.model_name,
         temperature=LLMConfigArchitect.temperature,
         reasoning=LLMConfigArchitect.reasoning,
-        num_predict=16384,  # Increased for long tool calls
+        num_predict=32768,  # Doubled for gpt-oss:20b - it needs more tokens for tool calls
         num_ctx=100000,  # Context window size
     ).with_config(
-        {
-            "recursion_limit": 75
-        }  # 150 because the 'thinking' is counting as steps and taking them all up
+        {"recursion_limit": 75}  # Allow more steps since thinking counts as steps
     )
     # Create agent
     console.print("[bold cyan]🤖 Building deep agent...[/bold cyan]")
@@ -355,7 +358,14 @@ def main():
         agent = create_e2b_agent(sandbox)
 
         # Run workflow
-        task = "Please start the workflow for client_001, session_001. Retrieve diagnosis, subjective analysis, and objective analysis. Save results to ~/workspace/data/ and create a therapy note in ~/workspace/reports/."
+        task = """Please start the workflow for client_001, session_001.
+
+1. Retrieve diagnosis using retrieve_diagnosis and save to /home/user/workspace/data/diagnosis.txt
+2. Retrieve subjective analysis using get_subjective_analysis and save to /home/user/workspace/data/subjective.txt
+3. Retrieve objective statistics for analysis using get_objective_analysis and save to /home/user/workspace/data/objective.txt
+4. Create a therapy note combining all three and save to /home/user/workspace/reports/therapy_note.txt
+
+IMPORTANT: The RAG tools return data but don't save files. You must use execute_bash to save each result."""
 
         run_workflow(agent, sandbox, task)
 
