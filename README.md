@@ -99,14 +99,33 @@ Summarization tasks for non-sensitive data are run via online models (any work, 
 - The therapy note workflow is aimed at those who might use a modern wearable with AI transcription, allowing therapy sessions to be analyzed and a 'SOAP-Note' generated for review.
 - To increase the challenge, stress test, and demonstrate large context management, I used a typed form simulated therapy session, with the whole file being ~24k tokens. 
 - This empowers the Therapist to save time (allowing for more patient time), whilst enhancing the SOAP-Note from a document hastily scrawled between sessions, to a structured SOAP‑Note with additional 'objective' measurements added by the AI's sentiment assessment. This extra data supports the clinical decision‑making process, providing a comprehensive framework for understanding and addressing the patient’s mental health challenges.
-- If the same models are used for assessment over time, they consistent clinical data across time.
+
 - Modernizing patient interactions to streamlined automation processes that remove pen & paper based tools, again freeing up staff resources to care for patients more effectively. The exact same framework can be used to automate many administrative and process heavy tasks (I am unable to cover all of these but the code adjustment is minimal).
 
 TODO:
 
 - Whilst the primary targets for this project are complete, in time I will add a vision model for patient safety cameras (currently being tested in my living room) and the integration of a real‑time facial‑expression‑analysis module to detect early signs of patient distress.
 
-- A lifelike AI generated face (UNREAL engine) that can be rendered in real‑time, enabling dynamic facial‑animation and expressioncapabilities, alongside an appealing, immersive user interface.
+- A lifelike AI generated face (UNREAL engine) that can be rendered in real‑time, enabling dynamic facial‑animation and expression capabilities, alongside an appealing, immersive user interface.
+
+## Local Models vs cloud-based (Claude, GPT, Gemini)
+Local models are typically deployed on a private server or local machine, providing faster response times and reduced latency compared to cloud‑based services. They are often used in industries where security is paramount, in industries that hold personal content or just generally England.
+
+ At this point, if an enterprise hasn't booked out their GPU's 2 years ahead, they will likely find their aspirations delayed due to resource constraints unless they have creative network engineers capable of building high‑performance computing clusters from consumer grade architecture.
+
+
+My blogs on this and other topics are to be released shortly.
+
+That said, the nuances of locally hosted models are key considerations for deployment:
+
+- Performance on open sourced models can vary widlly dependant on the task. One model may have the best performance for a given task, but have difficulty with another. Whilst these strengths and performance characteristics vary, the performance of each model can be compared by evaluating metrics such as latency, throughput, resource usage, precision, recall, accuracy, and F1‑score.
+
+- EVALS: Evaluation metrics that assess model performance across diverse datasets and usage scenarios are increasingly important with local models. The model card on your local model may say 1 million tokens (Gradnite4-h i'm looking at you), in practice you will find the figure in the low thousands on consumer architecture.
+
+- Whilst I use Ollama for most of my deployments due to ease of use, I always have a NVIDIA - NIM, VLLM, or LLamaCPP GPU‑accelerated inference server handy on a local machine.
+
+- I'm continually baffled to see so few organisations fine-tuning, the performance benefits for a given task are significant and can lead to improved efficiency and accuracy. This can be as simple as having a 'judge' model score 1000 runs on an agentic task.
+
 
 ## AI Models:
 
