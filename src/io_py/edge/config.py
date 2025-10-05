@@ -46,7 +46,7 @@ class LLMConfigArchitect:
     model_name = "gpt-oss:20b"
     # model_name = "gemma3:12b"
     temperature = 0.0
-    max_tokens = 8192  # Increased for long tool calls
+    max_tokens = 16384  # Increased for long tool calls
     reasoning = True  # Reasoning mode can interfere with tool calling
 
     # Voice-specific settings
@@ -61,10 +61,10 @@ class LLMConfigOverseer:
     """Configuration for manager level agent"""
 
     # THIS GOES ON THE MAIN PC
-    # granite4:micro is 2.1GB VRAM
-    model_name = "granite4:micro"  # Default model for chat
+    # Randomblock1/nemotron-nano is 4.9GB VRAM
+    model_name = "Randomblock1/nemotron-nano:8b"
     temperature = 0.0
-    max_tokens = 4096
+    max_tokens = 16384
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
@@ -75,11 +75,14 @@ class LLMConfigScribe:
     """Configuration for summarization model."""
 
     # THIS GOES ON THE MINI-ITX
-    # granite4:tiny-h is 4.2GB VRAM
-    model_name = "granite4:tiny-h"  # Default model for summarization with only 1 GPU
+    # Randomblock1/nemotron-nano is 4.9GB VRAM
+    # model_name = "Randomblock1/nemotron-nano:8b"
+    model_name = (
+        "gpt-oss:20b"  # GPT running on the mini also as its best by a long shot
+    )
     temperature = 0.0
-    max_tokens = 4096
-    reasoning = False  # Add reasoning parameter for LangGraph compatibility
+    max_tokens = 16384
+    reasoning = True  # Add reasoning parameter for LangGraph compatibility
 
     # Remote execution settings
     use_remote = True  # Run on mini-itx

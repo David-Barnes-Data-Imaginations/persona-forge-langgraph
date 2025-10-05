@@ -26,16 +26,12 @@ from ..agent_utils.state import DeepAgentState
 
 from ..io_py.edge.config import LLMConfigArchitect
 
-# Summarization model
-"""
-summarization_modelmodel = ChatOllama(
+# Summarization model - using local Ollama instead of OpenAI
+summarization_model = ChatOllama(
     model=LLMConfigArchitect.model_name,
     temperature=LLMConfigArchitect.temperature,
     reasoning=LLMConfigArchitect.reasoning,
 )
-"""
-# summarization_model = init_chat_model(model="LLMConfigScribe.model_name", temperature=0.0)
-summarization_model = init_chat_model(model="openai:gpt-4o-mini")
 
 tavily_client = TavilyClient()
 
@@ -136,20 +132,39 @@ def process_search_results(results: dict) -> list[dict]:
         # Get url
         url = result["url"]
 
-        # Read url
-        response = HTTPX_CLIENT.get(url)
-
-        if response.status_code == 200:
-            # Convert HTML to markdown
-            raw_content = markdownify(response.text)
-            summary_obj = summarize_webpage_content(raw_content)
-        else:
-            # Use Tavily's generated summary
-            raw_content = result.get("raw_content", "")
+        # Skip PDFs and other binary files
+        if url.lower().endswith(('.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx')):
+            # Use Tavily's generated summary for binary files
+            raw_content = result.get("content", "")  # Use Tavily's summary as content
             summary_obj = Summary(
-                filename="URL_error.md",
-                summary=result.get("content", "Error reading URL; try another search."),
+                filename="binary_file_summary.md",
+                summary=result.get("content", "Binary file detected. Using Tavily's summary."),
             )
+        else:
+            # Read url
+            response = HTTPX_CLIENT.get(url)
+
+            if response.status_code == 200:
+                # Check content-type to avoid binary data
+                content_type = response.headers.get('content-type', '').lower()
+                if 'pdf' in content_type or 'octet-stream' in content_type:
+                    # Binary file - use Tavily's summary
+                    raw_content = result.get("content", "")
+                    summary_obj = Summary(
+                        filename="binary_file_summary.md",
+                        summary=result.get("content", "Binary file detected. Using Tavily's summary."),
+                    )
+                else:
+                    # Convert HTML to markdown
+                    raw_content = markdownify(response.text)
+                    summary_obj = summarize_webpage_content(raw_content)
+            else:
+                # Use Tavily's generated summary
+                raw_content = result.get("raw_content", "")
+                summary_obj = Summary(
+                    filename="URL_error.md",
+                    summary=result.get("content", "Error reading URL; try another search."),
+                )
 
         # uniquify file names
         uid = (

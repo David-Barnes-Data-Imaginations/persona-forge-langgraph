@@ -26,7 +26,7 @@ class SubAgent(TypedDict):
     tools: NotRequired[list[str]]
 
 
-def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema):
+def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema, tool_name: str = "task"):
     """Create a task delegation tool that enables context isolation through sub-agents.
 
     This function implements the core pattern for spawning specialized sub-agents with
@@ -37,9 +37,10 @@ def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema):
         subagents: List of specialized sub-agent configurations
         model: The language model to use for all agents
         state_schema: The state schema (typically DeepAgentState)
+        tool_name: Name for this specific task tool (default: "task")
 
     Returns:
-        A 'task' tool that can delegate work to specialized sub-agents
+        A task delegation tool with the specified name
     """
     # Create agent registry
     agents = {}
@@ -107,4 +108,6 @@ def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema):
             }
         )
 
+    # Rename the tool to the specified name
+    task.name = tool_name
     return task

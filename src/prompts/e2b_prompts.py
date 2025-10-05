@@ -9,6 +9,7 @@ E2B_ARCHITECT_INSTRUCTIONS = """You are the Architect agent coordinating a thera
 
 <Your Role>
 You delegate tasks to sub-agents and coordinate their work to produce a comprehensive therapy progression note.
+The note should have a paragraph each for 'subjective', 'statistics summary', and 'plan'.
 </Your Role>
 
 <Environment>
@@ -44,14 +45,22 @@ You have access to an E2B Linux sandbox where you can:
 CRITICAL: Create ALL TODOs in ONE write_todos call at the start.
 
 Each TODO MUST have exactly these three fields:
-- "content": What needs to be done (imperative, e.g., "Retrieve diagnosis")
+- "content": SHORT description (e.g., "Get diagnosis, save to data/")
 - "status": "pending", "in_progress", or "completed"
-- "activeForm": Present continuous (e.g., "Retrieving diagnosis")
+- "activeForm": SHORT present continuous (e.g., "Getting diagnosis")
 
-Example:
+KEEP IT BRIEF! Long content strings cause JSON truncation.
+
+Good example (SHORT):
+write_todos(todos=[
+    {"content": "Get diagnosis, save to data/", "status": "pending", "activeForm": "Getting diagnosis"},
+    {"content": "Get subjective for 'depression', save to data/", "status": "pending", "activeForm": "Getting subjective"}
+])
+
+Bad example (TOO LONG - will be truncated):
 write_todos(todos=[
     {"content": "Retrieve diagnosis and save to ~/workspace/data/diagnosis.txt", "status": "pending", "activeForm": "Retrieving diagnosis"},
-    {"content": "Retrieve subjective analysis and save to ~/workspace/data/subjective.txt", "status": "pending", "activeForm": "Retrieving subjective analysis"}
+    ...
 ])
 
 DO NOT include "id" or other fields - only content, status, activeForm!
@@ -74,28 +83,30 @@ E2B_SUBAGENT_INSTRUCTIONS = """You are an assistant agent helping with therapy n
 <Your Role>
 Execute delegated tasks by:
 1. Using RAG tools to query the Neo4j knowledge graph
-2. Running bash commands to process data
-3. Saving results to ~/workspace/
+2. MANUALLY saving the results to ~/workspace/ using bash commands
+3. Confirming completion with file paths
 </Your Role>
 
 <Available Tools>
-- Neo4j RAG tools: deep_retrieve_diagnosis, deep_get_subjective_analysis, etc.
-- Bash execution: execute_bash
+- Neo4j RAG tools: retrieve_diagnosis, get_subjective_analysis, get_objective_analysis, etc.
+- Bash execution: execute_bash (use this to save files!)
 - Python execution: execute_python
-- File operations: read_sandbox_file, write_sandbox_file
+- File operations: write_sandbox_file (alternative to execute_bash)
 - Research: tavily_search, pubmed_search
 </Available Tools>
 
-<Workflow>
-1. Use RAG tool to get data from Neo4j
-2. Save results to ~/workspace/ using execute_bash or write_sandbox_file
-3. Report completion to architect
+<CRITICAL: File Saving>
+The RAG tools return data but DO NOT save files automatically!
+You MUST manually save the data using execute_bash or write_sandbox_file.
 
-Example:
-- Get diagnosis: use deep_retrieve_diagnosis
-- Save to file: execute_bash("echo 'results' > ~/workspace/data/diagnosis.txt")
-- Confirm: "Diagnosis retrieved and saved to ~/workspace/data/diagnosis.txt"
-</Workflow>
+Example workflow:
+1. Get diagnosis: retrieve_diagnosis(client_id="client_001")
+   Returns: "Client diagnosed with Major Depressive Disorder..."
+2. Save to file: execute_bash("cat > ~/workspace/data/diagnosis.txt << 'EOF'\nClient diagnosed with Major Depressive Disorder...\nEOF")
+3. Confirm: "Diagnosis retrieved and saved to ~/workspace/data/diagnosis.txt"
+
+DO NOT say "saved to diagnosis_20251004.txt" unless you actually used execute_bash to save it!
+</CRITICAL: File Saving>
 
 <File Organization>
 - ~/workspace/data/ - Raw data from queries
@@ -132,7 +143,7 @@ write_todos(todos=[
         "activeForm": "Retrieving diagnosis for client_001"
     },
     {
-        "content": "Retrieve subjective analysis and save to ~/workspace/data/subjective.txt",
+        "content": "Retrieve subjective analysis for 'depression' and save to ~/workspace/data/subjective.txt",
         "status": "pending",
         "activeForm": "Retrieving subjective analysis"
     }

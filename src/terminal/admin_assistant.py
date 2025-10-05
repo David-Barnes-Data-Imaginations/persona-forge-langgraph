@@ -260,43 +260,62 @@ Type your request naturally, and the agent will guide you through the workflow.
             # Add current message
             messages.append(HumanMessage(content=message))
 
-            # Create a progress display
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                transient=True,
-                console=self.console
-            ) as progress:
-                task = progress.add_task("[cyan]Agent is thinking...", total=None)
+            # Invoke agent with streaming
+            response = ""
+            final_state = None
+            displayed_tool_call_ids = set()  # Track displayed tool calls
 
-                # Invoke agent
-                response = ""
-                final_state = None
-                for chunk in self.agent.stream(
-                    {"messages": messages},
-                    config=self.config,
-                    stream_mode="values"
-                ):
-                    final_state = chunk  # Keep track of final state
-                    if "messages" in chunk:
-                        latest_message = chunk["messages"][-1]
-                        if hasattr(latest_message, "content") and latest_message.content:
-                            response = latest_message.content
+            for chunk in self.agent.stream(
+                {"messages": messages},
+                config=self.config,
+                stream_mode="values"
+            ):
+                final_state = chunk  # Keep track of final state
+                if "messages" in chunk:
+                    # Check all messages for tool calls, not just the latest
+                    for message in chunk["messages"]:
+                        # Display tool calls (especially think_tool)
+                        if hasattr(message, "tool_calls") and message.tool_calls:
+                            for tool_call in message.tool_calls:
+                                # Create unique ID for this tool call
+                                tool_call_id = tool_call.get("id", str(tool_call))
 
-                # Store final state for TODO display
-                self._last_agent_state = final_state
+                                # Only display if we haven't shown this one yet
+                                if tool_call_id not in displayed_tool_call_ids:
+                                    if tool_call.get("name") == "think_tool":
+                                        reflection = tool_call.get("args", {}).get("reflection", "")
+                                        if reflection:
+                                            self.console.print()
+                                            self.console.print(Panel(
+                                                f"[dim]{reflection}[/dim]",
+                                                title="[bold magenta]💭 Agent Thinking[/bold magenta]",
+                                                border_style="magenta",
+                                                box=box.ROUNDED
+                                            ))
+                                    displayed_tool_call_ids.add(tool_call_id)
 
-                # If no streaming response, get final result
-                if not response:
-                    result = self.agent.invoke({"messages": messages}, config=self.config)
-                    if "messages" in result and result["messages"]:
-                        response = result["messages"][-1].content
-                    # Update state for TODO display
-                    self._last_agent_state = result
+                    # Capture final response from latest message
+                    latest_message = chunk["messages"][-1]
+                    if hasattr(latest_message, "content") and latest_message.content:
+                        response = latest_message.content
+
+            # Store final state for TODO display
+            self._last_agent_state = final_state
+
+            # If no streaming response, get final result
+            if not response:
+                result = self.agent.invoke({"messages": messages}, config=self.config)
+                if "messages" in result and result["messages"]:
+                    response = result["messages"][-1].content
+                # Update state for TODO display
+                self._last_agent_state = result
 
             return response
 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            self.console.print(f"\n[red]Full error traceback:[/red]\n{error_details}")
             return f"❌ Error processing message: {str(e)}"
 
     def display_todos(self, state: Dict[str, Any]):

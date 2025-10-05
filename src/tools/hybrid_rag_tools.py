@@ -976,48 +976,68 @@ def retrieve_diagnosis(client_id: str = "client_001") -> str:
 
 
 @tool
-def get_subjective_analysis(session_id: str = "session_001") -> str:
+def get_subjective_analysis(
+    session_id: str = "session_001",
+    query: str = "client feelings, emotions, and reported symptoms",
+    top_k: int = 5
+) -> str:
     """
-    Retrieve all subjective analysis sections from QA pairs in a session.
+    Retrieve relevant subjective analysis sections using similarity search.
 
-    The subjective analysis contains what the client reports about their feelings,
-    perceptions, symptoms, and context (using brief quotes from their responses).
+    Uses semantic search to find the most relevant subjective analyses based on
+    a query, preventing overwhelming output that crashes the workflow.
 
     Args:
         session_id: The session to retrieve subjective analyses from (default: 'session_001')
+        query: What aspects of subjective analysis to focus on (default: general feelings/emotions)
+        top_k: Number of most relevant QA pairs to return (default: 5)
 
     Returns:
-        All subjective analysis sections organized by QA pair
+        Top K most relevant subjective analysis sections based on semantic similarity
     """
     rag = get_rag_instance()
 
+    # Generate query embedding using global embed_texts function
+    query_embedding = embed_texts([query])[0]
+
+    # Find relevant QA pairs via TextChunk similarity, filtered by session
     cypher = """
-    MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+    CALL db.index.vector.queryNodes('textchunk_embedding_index', $top_k, $query_embedding)
+    YIELD node as chunk, score
+    MATCH (chunk)-[:FROM_QA]->(qa:QA_Pair)<-[:INCLUDES]-(s:Session {session_id: $session_id})
     WHERE qa.subjective_analysis IS NOT NULL
-    RETURN qa.id as qa_id,
+    RETURN DISTINCT qa.id as qa_id,
            qa.question as question,
-           qa.subjective_analysis as subjective_analysis
-    ORDER BY qa.id
+           qa.subjective_analysis as subjective_analysis,
+           score
+    ORDER BY score DESC
+    LIMIT $top_k
     """
 
     with rag.driver.session() as session:
         try:
-            results = session.run(cypher, session_id=session_id)
+            results = session.run(
+                cypher,
+                session_id=session_id,
+                query_embedding=query_embedding,
+                top_k=top_k * 3  # Query more chunks to get top_k unique QAs
+            )
             records = [dict(record) for record in results]
 
             if not records:
-                return f"No subjective analyses found for session: {session_id}"
+                return f"No relevant subjective analyses found for session: {session_id}"
 
             # Format output
-            output_parts = [f"=== SUBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
-            output_parts.append(f"Total QA Pairs: {len(records)}\n")
+            output_parts = [f"=== MOST RELEVANT SUBJECTIVE ANALYSES FOR {session_id.upper()} ===\n"]
+            output_parts.append(f"Query: {query}")
+            output_parts.append(f"Showing top {len(records)} most relevant QA pairs\n")
 
-            for record in records:
-                output_parts.append(f"QA PAIR: {record['qa_id']}")
+            for i, record in enumerate(records, 1):
+                output_parts.append(f"\n[{i}] QA PAIR: {record['qa_id']} (relevance: {record['score']:.3f})")
                 output_parts.append(f"Question: {record['question']}\n")
                 output_parts.append(f"Subjective Analysis:")
                 output_parts.append(f"{record['subjective_analysis']}\n")
-                output_parts.append("-" * 60 + "\n")
+                output_parts.append("-" * 60)
 
             return "\n".join(output_parts)
 
