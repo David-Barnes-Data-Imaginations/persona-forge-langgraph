@@ -42,12 +42,13 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   </h2>
 
 <p align="center">
-  <video src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/agents_no_thoughts.mp4" 
-         autoplay 
-         loop 
-         muted
+  <a href="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/agents_no_thoughts.mp4">
+    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/thumbnail.png" 
+         alt="CLI Demo - Click to watch"
          width="100%">
-  </video>
+  </a>
+  <br>
+  <em>▶️ Click to watch demo video</em>
 </p>
 
 <h2 align='center'>
