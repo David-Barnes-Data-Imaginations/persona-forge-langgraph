@@ -14,7 +14,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 - My work on 'the perfect' Psychology model continues. However, 'Training a model' doesn't make a good github repo, as it would be thousands of page of collected psychology data or Agentic workflows scored by an LLM.
 
   <h2 align='center'>
-  My Brain mapped out into Graph Form
+  The Human Brain's Sentiment mapped out into Graph Form
   </h2>
   <br><br>
 <p align="center">
