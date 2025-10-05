@@ -38,7 +38,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 </p>
 
 <h2 align='center'>
-  A fully fledged CLI 'Therapy Report' building tool built in the style of 'Claude Code', with an advanced 'code tool' style workflow structure
+  A fully fledged CLI 'Therapy Report' building tool built in the style of 'Claude Code', with a 'code tool' style workflow structure
   </h2>
 
 <p align="center">
