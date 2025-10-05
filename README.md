@@ -30,7 +30,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 </p>
 
   <h2 align='center'>
-  Querying of the analysis via a Chatbot & Hybrid-Graph-RAG (Voice to follow)
+  Querying of the analysis via a Chatbot & Hybrid-Graph-RAG 
   </h2>
   <br><br>
 <p align="center">
@@ -50,6 +50,15 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <br>
   <em>▶️ Click to watch demo video</em>
 </p>
+
+  <h2 align='center'>
+  The Agents collaborate to write a 'Therapy SOAP-Note' for the patient
+  </h2>
+  <br><br>
+<p align="center">
+  <img src="./agent_workflow_output.png" alt="SOAP-note">
+</p>
+
 
 <h2 align='center'>
   Voice mode! (Sound on) Leveraging TTS/STT models (tested with 'Piper', 'Faster_whisper', 'NVIDEA RIVA')
