@@ -37,24 +37,22 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <img src="./search_psychological_insights.png" alt="chat-page">
 </p>
 
-  <h2 align='center'>
-  Recieving an overall summary of the clients personality (needs tuning)
+<h2 align='center'>
+  A fully fledged CLI 'Therapy Report' building tool built in the style of 'Claude Code', with an advanced 'code tool' style workflow structure
   </h2>
   <br><br>
 <p align="center">
-  <img src="./personality_summary.png" alt="chat-page">
+  <video src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/agents_no_thoughts.mp4" autoplay loop muted></video>
 </p>
 
-  <h2 align='center'>
-  A fully fledged CLI tool built in the style of 'Claude Code', with a more advanced 'code tool' style workflow structure
+<h2 align='center'>
+  Voice mode! (Sound on) Leveraging TTS/STT models (tested with 'Piper', 'Faster_whisper', 'NVIDEA RIVA')
   </h2>
   <br><br>
 <p align="center">
-  <video src="./https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/agents_no_thoughts.mp4 alt=" autoplay loop muted></video>
+  <video src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo.mp4" autoplay loop muted></video>
 </p>
 
-
-You can see a Beta version of the voice chat [here](https://drive.google.com/file/d/1RHgKL3jps7CymCbSs76krzC1u2mVVN8-/view?usp=sharing)
 
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
