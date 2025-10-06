@@ -373,7 +373,7 @@ flowchart LR
 ```
 
 2) End-to-End Workflow (steps 1–5)
-```
+```mermaid
 flowchart TD
     Start["Start"]
     Plan["Deep Agent: create plan, assign assistants"]
