@@ -379,7 +379,7 @@ flowchart TD
     Plan["Deep Agent: create plan, assign assistants"]
     Step1["Ask assistant: fetch patient diagnosis from knowledge graph"]
     KGQ["Tool: query Neo4j via sandbox"]
-    KGSum["Online summarizer condenses KG output"]
+    KGSum["Optional: summarizer condenses KG output"]
     Step2["Ask assistant: fetch Subjective Analysis for all QA pairs"]
     SubjQ["Tool: retrieve QA subjective summaries"]
     SubjSum["Online summarizer selects core themes"]
