@@ -118,7 +118,11 @@ My blogs on this and other topics are to be released shortly.
 
 That said, the nuances of locally hosted models are key considerations for deployment:
 
-- Performance on open sourced models can vary widlly dependant on the task. One model may have the best performance for a given task, but have difficulty with another. Whilst these strengths and performance characteristics vary, the performance of each model can be compared by evaluating metrics such as latency, throughput, resource usage, precision, recall, accuracy, and F1‑score.
+- Performance on open sourced models can vary widlly dependant on the task. One model may have the best performance for a given task, but have difficulty with another. 
+
+- Performance of each model can be compared by evaluating metrics such as latency, throughput, resource usage, precision, recall, accuracy, and F1‑score.
+
+- I typically use GPT and any NVIDIA 'Nemo' fine tune, so using different models with this project will yield varying results. For this project specifically, avoid Granite4 models as those have been thoroughly tested.
 
 - EVALS: Evaluation metrics that assess model performance across diverse datasets and usage scenarios are increasingly important with local models. The model card on your local model may say 1 million tokens (Gradnite4-h i'm looking at you), in practice you will find the figure in the low thousands on consumer architecture.
 
@@ -284,145 +288,167 @@ flowchart TD
 ### Flowchart (Architect → Graph/Report/Research with parallel assistants)
 This project also houses a 'Therapist Automation Workflow' which replaces the typical 'typing / pen and paper forms' used after a session.
 The workflow uses 8 different models, 2 on my main pc, 3 on my mini-pc, and 3 online models for non-sensitive tasks.
-It uses the latest granite4 models from IBM, with up to 1 million context and a hybrid architecture.
+
 
 ```
     Main PC                    SSH Tunnel              Mini-ITX PC
 ┌──────────────┐               ┌─────────┐            ┌──────────────┐
 │              │               │         │            │              │
-│ deep_agent   │──requests──>│ :11436  │───ssh───>│ Ollama :11434│
+│ deep_agents   │──requests──>│ :11436  │───ssh───>│ Ollama :11434│
+   gpt-oss, 
+nemotron-nano:8b
 │              │               │         │            │              │
-│ scribe_model │<──response──│         │<───────────│ granite4     │
-│              │               │         │            │ tiny-h       │
+│ scribe_model │<──response──│         │<───────────│ gpt-oss:20b    │
+│              │               │         │            │       │
 └──────────────┘               └─────────┘            └──────────────┘
 ```
+1) CLI System Architecture (with e2b sandbox + local assistants)
+Assistants share the same toolset and prompts; model choice differs by role (articulate vs. parallel/nano).
 
+“Online summarizer agents” are used only to condense large KG/PubMed outputs and never touch sensitive data directly.
+
+The todo writer tool persists tasks to todos.txt, which the CLI reads alongside the agent’s thoughts and the final note.
 ---
 ```mermaid
-flowchart TD
-    %% ==== Roles / Agents ====
-    A["Architect\n(Deep Agent / Orchestrator)"]
-    GA["Graph Agent"]
-    GAs1["Graph Assistant A"]
-    GAs2["Graph Assistant B"]
-    RA["Reporting Agent\n(Report Writer)"]
-    ResA["Research Agent"]
-    ResAs1["Research Assistant A"]
-    ResAs2["Research Assistant B"]
+flowchart LR
+    %% Top-level orchestrator
+    DA["Deep Agent (Orchestrator)"]
 
-    %% ==== Tools & Stores ====
-    GDB["Graph DB"]
+    %% e2b sandbox
+    subgraph E2B["e2b Sandbox"]
+        FS["Sandbox Filesystem"]
+        TODO["todos.txt"]
+        NOTE["Therapy_Progress_Note.md"]
+        Tools["Tools on sandbox:\n- KG/Neo4j tool\n- PubMed tool\n- File I/O tool\n- Vector/RAG tool"]
+        CLI["CLI App (displays todos and agent thoughts)"]
+        Tools --> FS
+        FS --> TODO
+        FS --> NOTE
+        CLI --> TODO
+    end
+
+    %% Local assistants and models
+    subgraph LOCAL_MAIN["Main PC"]
+        A1["Assistant A\n(model: GPT-oss articulate)"]
+    end
+
+    subgraph LOCAL_MINI["Mini-ITX"]
+        A2["Assistant B\n(model: nemotron-nano)"]
+        A3["Assistant C\n(model: nemotron-nano or task-specific)"]
+    end
+
+    %% Online summarizers (inside certain tools)
+    subgraph ONLINE["Online Summarizer Agents (safe)\n- GPT summarizer for Neo4j results\n- GPT summarizer for PubMed results"]
+        SUM1["Summarize Graph Output"]
+        SUM2["Summarize PubMed Output"]
+    end
+
+    %% External systems
+    NEO4J["Neo4j / Knowledge Graph"]
     PUBMED["PubMed API"]
-    TAV["Tavily Web Search"]
-    DRAFT["Draft Graph Analysis.md"]
-    SOAP["Therapy SOAP Note.md"]
-    REFS["Research Findings.md"]
-    FINAL["Final Integrated Report.md"]
-    HITL{"Human-in-the-loop\napproval"}
-    SAVED["Saved to filesystem / storage"]
 
-    %% ==== Orchestration ====
-    A -->|"Writes high-level plan"| GA
-    A --> RA
-    A --> ResA
+    %% Orchestration edges
+    DA -->|plans + tasks| A1
+    DA -->|plans + tasks| A2
+    DA -->|plans + tasks| A3
 
-    %% ==== Graph branch ====
-    GA -->|"Query: e.g., Find extreme values"| GDB
-    GA -->|"Dispatch parallel tasks"| GAs1
-    GA -->|"Dispatch parallel tasks"| GAs2
-    GAs1 -->|"Extract data + write analysis"| DRAFT
-    GAs2 -->|"Extract data + write analysis"| DRAFT
-    GA --> L1{"All graph analyses done?"}
-    L1 -- "No" --> GA
-    L1 -- "Yes" --> A
+    %% Assistants interact with tools via sandbox
+    A1 -->|use tools| Tools
+    A2 -->|use tools| Tools
+    A3 -->|use tools| Tools
 
-    %% ==== Reporting branch ====
-    A -->|"Send draft analysis"| RA
-    RA -->|"Draft SOAP note"| SOAP
-    A -->|"Review + edit"| SOAP
+    %% Tool data flows
+    Tools -->|graph queries| NEO4J
+    NEO4J -->|large results| Tools --> SUM1 --> Tools
+    Tools -->|literature search| PUBMED
+    PUBMED -->|large results| Tools --> SUM2 --> Tools
 
-    %% ==== Research branch ====
-    A -->|"Request literature / recent studies"| ResA
-    ResA -->|"Dispatch parallel queries"| ResAs1
-    ResA -->|"Dispatch parallel queries"| ResAs2
-    ResAs1 --> PUBMED
-    ResAs1 --> TAV
-    ResAs2 --> PUBMED
-    ResAs2 --> TAV
-    ResAs1 -->|"Synthesize + write"| REFS
-    ResAs2 -->|"Synthesize + write"| REFS
-    ResA --> L2{"All research tasks done?"}
-    L2 -- "No" --> ResA
-    L2 -- "Yes" --> A
-
-    %% ==== Final assembly ====
-    A -->|"Integrate SOAP + Graph + Research"| FINAL
-    FINAL --> HITL
-    HITL -- "Approved" --> SAVED
-    HITL -- "Needs edits" --> A
-
+    %% Files and CLI
+    DA -->|write plan + decisions| FS
+    A1 -->|append todos| TODO
+    A2 -->|append todos| TODO
+    A3 -->|append todos| TODO
+    DA -->|finalize note| NOTE
+    CLI -->|display| NOTE
 ```
+
+2) End-to-End Workflow (steps 1–5)
+```
+flowchart TD
+    Start["Start"]
+    Plan["Deep Agent: create plan, assign assistants"]
+    Step1["Ask assistant: fetch patient diagnosis from knowledge graph"]
+    KGQ["Tool: query Neo4j via sandbox"]
+    KGSum["Online summarizer condenses KG output"]
+    Step2["Ask assistant: fetch Subjective Analysis for all QA pairs"]
+    SubjQ["Tool: retrieve QA subjective summaries"]
+    SubjSum["Online summarizer selects core themes"]
+    Step3["Ask assistant: compute statistical summary of all QA pairs\n(replaces Objective)"]
+    Stats["Tool: sentiment and counts, aggregate stats"]
+    Step4["Ask assistant: check PubMed for new studies"]
+    PubQ["Tool: PubMed search via sandbox"]
+    PubSum["Online summarizer condenses PubMed output"]
+    Step5["Deep Agent writes Therapy Progress Note"]
+    Files["Write todos.txt and Therapy_Progress_Note.md in sandbox"]
+    CLI["CLI displays todos and agent thoughts"]
+    End["End"]
+
+    Start --> Plan --> Step1 --> KGQ --> KGSum --> Step2 --> SubjQ --> SubjSum --> Step3 --> Stats --> Step4 --> PubQ --> PubSum --> Step5 --> Files --> CLI --> End
+```
+
+
 
 ### Sequence diagram (Parallelism)
 In-Line version:
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Arch as Architect (Orchestrator)
-    participant G as Graph Agent
-    participant GA1 as Graph Assistant A
-    participant GA2 as Graph Assistant B
-    participant Rpt as Reporting Agent
-    participant Res as Research Agent
-    participant RA1 as Research Assistant A
-    participant RA2 as Research Assistant B
-    participant Graph as Graph DB
-    participant PubMed as PubMed API
-    participant Tavily as Tavily Web Search
-    participant FS as Filesystem
+    participant DA as Deep Agent
+    participant A1 as Assistant A (articulate)
+    participant A2 as Assistant B (nano)
+    participant A3 as Assistant C (nano/task)
+    participant KG as Neo4j Tool (sandbox)
+    participant PM as PubMed Tool (sandbox)
+    participant SUMKG as Online Summarizer (KG)
+    participant SUMPB as Online Summarizer (PubMed)
+    participant FS as Sandbox Filesystem
+    participant CLI as CLI App
 
-    Arch->>G: Plan + graph objectives (e.g., find extremes)
-    G->>Graph: Run initial queries
-    par Graph analysis (parallel)
-        G->>GA1: Task slice A
-        GA1->>Graph: Query / extract slice A
-        GA1-->>FS: Write/append Draft Graph Analysis.md
-    and
-        G->>GA2: Task slice B
-        GA2->>Graph: Query / extract slice B
-        GA2-->>FS: Write/append Draft Graph Analysis.md
+    DA->>A1: Fetch diagnosis from knowledge graph
+    A1->>KG: Cypher query
+    KG-->>A1: Large KG result
+    A1->>SUMKG: Summarize KG result
+    SUMKG-->>A1: Condensed KG summary
+    A1-->>DA: Diagnosis summary
+
+    DA->>A2: Fetch Subjective Analysis for all QA pairs
+    A2->>FS: Read QA pairs
+    A2-->>DA: Subjective extracts (raw)
+    DA->>A2: Condense to core themes
+    A2->>SUMKG: Summarize subjectives (token reduction)
+    SUMKG-->>A2: Core themes
+    A2-->>DA: Core themes (subjective)
+
+    par Objective replacement (stats)
+        DA->>A3: Compute statistical summary of all QA pairs
+        A3->>FS: Read QA pairs
+        A3-->>DA: Sentiment / counts / aggregates
+    and PubMed check
+        DA->>A1: Check PubMed for new studies
+        A1->>PM: Search query
+        PM-->>A1: Large PubMed result
+        A1->>SUMPB: Summarize PubMed result
+        SUMPB-->>A1: Condensed literature summary
+        A1-->>DA: PubMed highlights
     end
-    loop Until analysis complete
-        G->>G: Validate coverage / quality gates
-    end
-    G-->>Arch: Draft Graph Analysis.md
 
-    Arch->>Rpt: Produce Therapy SOAP note (with draft analysis)
-    Rpt-->>FS: Therapy SOAP Note.md
-    Arch->>Arch: Review & edit
-
-    Arch->>Res: Gather supporting literature / recent studies
-    par Research (parallel)
-        Res->>RA1: Topic/keyword batch A
-        RA1->>PubMed: Search / fetch
-        RA1->>Tavily: Web search
-        RA1-->>FS: Append Research Findings.md
-    and
-        Res->>RA2: Topic/keyword batch B
-        RA2->>PubMed: Search / fetch
-        RA2->>Tavily: Web search
-        RA2-->>FS: Append Research Findings.md
-    end
-    loop Until research complete
-        Res->>Res: Validate coverage / relevance
-    end
-    Res-->>Arch: Research Findings.md
-
-    Arch->>FS: Assemble Final Integrated Report.md
-    Arch->>Arch: Human-in-the-loop review & approval
-    Arch-->>FS: Save approved final report
-
-
+    DA->>FS: Write Therapy_Progress_Note.md
+    DA->>FS: Append plan and thoughts
+    A1->>FS: Append todos.txt
+    A2->>FS: Append todos.txt
+    A3->>FS: Append todos.txt
+    CLI->>FS: Read todos.txt and note
+    CLI-->>CLI: Display to user
 ```
 ---
 
