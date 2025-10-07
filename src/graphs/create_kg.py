@@ -6,9 +6,8 @@ from typing_extensions import TypedDict
 from langchain_ollama import ChatOllama
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
-from langchain_core.runnables import RunnableConfig, RunnableLambda
+from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import Runnable
 from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START
@@ -155,15 +154,9 @@ setup_builder.add_conditional_edges("assistant", tools_condition)
 setup_builder.add_edge("tools", "assistant")
 setup_graph = setup_builder.compile()
 
-# QA Pair graph for individual analysis chunks
-qa_pair_runnable = qa_pair_prompt | llm.bind_tools(tools)
-qa_pair_builder = StateGraph(State)
-qa_pair_builder.add_node("assistant", Assistant(qa_pair_runnable))
-qa_pair_builder.add_node("tools", create_tool_node_with_fallback(tools))
-qa_pair_builder.add_edge(START, "assistant")
-qa_pair_builder.add_conditional_edges("assistant", tools_condition)
-qa_pair_builder.add_edge("tools", "assistant")
-qa_pair_graph = qa_pair_builder.compile()
+# QA Pair generation - simplified without tool calling for reliability
+# We'll generate the Cypher directly and save it manually
+qa_pair_runnable = qa_pair_prompt | llm
 
 # Set configuration for recursion limit
 graph_config = {
@@ -605,32 +598,66 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
 
         """
 
-        prompt_text = f"""
-        Please convert the following psychological analysis to a Cypher query for a single QA_Pair:
+        prompt_text = f"""Generate Cypher for QA_Pair ID: {qa_pair_id}
 
-        Analysis Entry #{analysis['entry_number']}:
-        {qa_context}{analysis['content']}
+{qa_context}
+{analysis['content']}
 
-        IMPORTANT: Use this exact QA_Pair ID: {qa_pair_id}
+Extract from above:
+- question, answer (from "Original Question/Answer")
+- subjective_analysis, objective_analysis, assessment, plan (from "Analysis" section)
+- emotions with valence/arousal/confidence (from "Instrument output" in Objective)
+- distortions, stages, attachments, defenses, schemas, bigfive (from Assessment)
 
-        Remember to call the submit_cypher tool with your generated Cypher query.
-        """
+Output ONE UNWIND Cypher query with all data. Use double quotes for strings. Replace newlines with spaces.
+"""
 
-        # Initial state with the prompt - create fresh state for each analysis
-        initial_state = {"messages": [HumanMessage(content=prompt_text)]}
-
-        # Update config with unique thread_id for LangSmith tracking
-        analysis_config = {
-            "recursion_limit": 50,
-            "configurable": {
-                "thread_id": thread_id,
-                "analysis_id": analysis["entry_number"],
-            },
-        }
-
-        # Run the QA pair graph to generate psychology framework Cypher
+        # Generate Cypher directly from LLM (without tool calling)
         print(f"Processing analysis #{analysis['entry_number']}...")
-        result = qa_pair_graph.invoke(initial_state, config=analysis_config)
+
+        # Create a properly formatted message input for the prompt template
+        result = qa_pair_runnable.invoke({"messages": [HumanMessage(content=prompt_text)]})
+
+        # Extract Cypher from LLM response
+        cypher_query = result.content if hasattr(result, 'content') else str(result)
+
+        # Clean up the Cypher query (remove markdown code blocks if present)
+        if "```" in cypher_query:
+            # Extract content between ```cypher or ``` blocks
+            import re
+            match = re.search(r'```(?:cypher)?\s*\n(.*?)\n```', cypher_query, re.DOTALL)
+            if match:
+                cypher_query = match.group(1)
+
+        # Save the Cypher query directly
+        if cypher_query and cypher_query.strip() and "MATCH" in cypher_query:
+            output_dir = os.path.join(
+                os.getcwd(), "output", "psychological_analysis", "graph_output"
+            )
+            os.makedirs(output_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"psychological_graph_{timestamp[:8]}.cypher"
+            filepath = os.path.join(output_dir, filename)
+
+            entry_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Append to the master Cypher file
+            with open(filepath, "a", encoding="utf-8") as f:
+                f.write(
+                    f"\n// ============================================================================\n"
+                )
+                f.write(f"// CYPHER ENTRY - {entry_timestamp}\n")
+                f.write(f"// QA Pair: {qa_pair_id}\n")
+                f.write(
+                    f"// ============================================================================\n\n"
+                )
+                f.write(cypher_query.strip())
+                f.write(
+                    f"\n\n// ============================================================================\n"
+                )
+
+            print(f"Saved psychology framework Cypher for {qa_pair_id}")
 
         # Create text chunks and embeddings if we have original text
         chunks_result = None
@@ -678,7 +705,7 @@ def process_analysis_to_cypher(analysis: dict) -> dict:
             "analysis_id": analysis["entry_number"],
             "thread_id": thread_id,
             "content": analysis["content"][:200] + "...",  # Truncated for brevity
-            "messages_count": len(result.get("messages", [])),
+            "cypher_generated": bool(cypher_query and "MATCH" in cypher_query),
             "chunks_created": (
                 len(chunks_result.get("chunks", [])) if chunks_result else 0
             ),

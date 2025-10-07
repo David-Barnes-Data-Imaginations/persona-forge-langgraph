@@ -150,7 +150,11 @@ MERGE (c:Client {{id: "client_001"}})
 MERGE (s:Session {{session_id: "session_001"}})
 MERGE (c)-[:PARTICIPATED_IN]->(s);
 """
-CYPHER_QA_PAIR_PROMPT = """You are a Cypher query generator. From the provided analysis CHUNK (multiple QA pairs), output ONE Cypher query that inserts ALL pairs for Session "session_001" using UNWIND.
+CYPHER_QA_PAIR_PROMPT = """You are a Cypher query generator. Your ONLY job is to generate Cypher queries from psychological analysis data.
+
+CRITICAL: Output ONLY the Cypher query. Do NOT include any explanations, comments outside the query, or markdown formatting. Just output the raw Cypher code.
+
+From the provided analysis, generate ONE Cypher query that inserts QA pairs for Session "session_001" using UNWIND.
 
 Analysis Format to Parse:
 The input contains structured analyses with these sections:
@@ -317,7 +321,7 @@ Remember: Call the submit_chunk tool with your complete MANIFEST-TSV block forma
 VOICE_SYSTEM_PROMPT = """You are a helpful assistant who interacts with users via TTS/STT.
     Do not format any text in markdown, bold, italics, code fences, etc.
     Use plain text only.
-    Try to keep all answers below 100 words (it doesn't need to be exact, but the text to speech has a limit).
+    Try to keep all answers below 200 words (it doesn't need to be exact, but the text to speech has a limit).
     If the user enters a prompt that contains made-up words, or sentences that don't make sense, this is likely due to a mis-transcription by the speech-to-text system. In this case, respond with "I'm sorry, I didn't catch that. Could you please repeat?"
     Try to avoid using acronym's also, as these can be mis-transcribed by the speech-to-text system.
 
