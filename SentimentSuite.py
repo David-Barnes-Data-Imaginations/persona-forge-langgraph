@@ -1807,12 +1807,12 @@ async def synthesize_voice(text: str):
             output_path = tmp_file.name
 
         # Piper model path (adjust to your installation)
-        piper_model = os.path.expanduser("~/piper/en_US-libritts-high.onnx")
+        piper_model = os.path.expanduser("~/piper/en_GB-alba-medium.onnx")
 
         # Check if model exists
         if not os.path.exists(piper_model):
             # Try alternative path
-            piper_model = "en_US-libritts-high"  # Let piper find it automatically
+            piper_model = "en_GB-alba-medium"  # Let piper find it automatically
 
         # Run Piper TTS
         print(f"🔊 Generating TTS for: '{text[:50]}...'")
