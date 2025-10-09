@@ -80,7 +80,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 
 <p align="center">
   <a href="https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/portfolio.mp4">
-    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/portfolio_thumg.png" 
+    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/portfolio-thumg.png"> 
          alt="Workflow Demo - Click to watch"
          width="100%">
   </a>
@@ -89,10 +89,6 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 </p>
 
 ## The Sentiment Dashboard (Transcribed Text Workflow)
-
-<h2 align='center'>
-  The Sentiment Dashboard
-</h2>
 
 <br><br>
 <p align="center">
