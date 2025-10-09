@@ -3,7 +3,21 @@
 # The Persona-Forge
 - The Persona-Forge is a multi-agent Psychological Analysis tool, with a built in transcription workflow to transcribe 'Clinician/Client' therapy sessions.
 - Optionally, a text-based therapy script can be used, as it was for my testing purposes.
-- A wider project is being built to house automation workflows to expand upon this, and for now the details of that are included here.
+- The project is built housing a suite of data-driven automation workflows, using a framework that can be built upon for other use cases.It also serves as a platform for collaborative research, allowing teams to experiment with diverse AI models and integrate them seamlessly into therapeutic workflows.
+- It also offers a robust, modular architecture that supports seamless integration of third‑party APIs, enabling developers to extend the platform with custom modules and plugins.
+
+## Workflows & Tools
+
+• A Speech to Text (STT) model to transcribe therapy sessions.
+• A Text to Speech (TTS) model to enable voice chat with the therapy assistant.
+• A robust data-tagging workflow to analyze therapy sessions using 7 psychological frameworks. This is used to supply an LLM with a script of 24k tokens, the data is then processed and analyzed by the LLM to generate comprehensive insights and actionable recommendations.
+• A knowledge graph (KG) workflow to store and query the therapy session data, including the psychological analysis results.
+• A voice enabled chat interface (Python, FastApi, Gradio) providinga user‑friendly interface for interactive sessions, enabling users to query the therapy session data and insights. 
+• It provides a conversational interface that allows users to interact with the data and gain insights through natural language queries, enabling a seamless and intuitive user experience. The chatbot uses 'Hybrid Graph-RAG' to query the KG, using the psychological analysis results and insights gained from the tagging workflow.
+• A React Native based UI for a text-based chatbot, built using 'copilotkit' and 'AG_UI',providing a more immersive and interactive experience for users. This workflow allows the Agent to build visualizations on demand.
+• The system provides a comprehensive dashboard for monitoring the progress of the therapy sessions, including visualizations of the psychological analysis results.
+• A CLI tool built in the style of 'Claude Code', featuring a team of 8 Agents to write therapy notes for patients ready for a human to review, using the psychological analysis results and insights gained from the tagging workflow.
+
 The Persona-Forge has been a project of mine for close to two years, 'evolving' as I have 'pivoted' towards new tech and ideas.
 
 It began as a simple idea to map personalities of anything from video games, to my own persona, using 'Knowledge Graphs' to map out 'Personality Constructs', or 'Persona'. Mapping include 'speaking tone' & 'vocabulary', profiling frameworks (e.g. 'Myers Briggs', history (e.g. key events in a persons life, and the emotions they trigger) and even metaphor or common phrase types that the character uses.
@@ -65,13 +79,43 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   </h2>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo.mp4">
-    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/app-demo_thumbnail.png" 
-         alt="VOICE MODE Demo - Click to watch"
+  <a href="https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/portfolio.mp4">
+    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/portfolio_thumb.png" 
+         alt="Workflow Demo - Click to watch"
          width="100%">
   </a>
   <br>
   <em>▶️ Click to watch demo video</em>
+</p>
+
+## The Sentiment Dashboard
+
+<h2 align='center'>
+  This shows the sentiment dashboardupload screen and output when analyzed
+</h2>
+<br><br>
+<p align="center">
+  <img src="./BART_git.png" alt="Upload diagram">
+</p>
+5. View the dashboard. After analysis completes, click “View Dashboard” to open an HTML page containing interactive Plotly charts.  These allow you to zoom, pan and hover to inspect each utterance as well as distributions of valence and arousal.  A dropdown above each chart lets you filter by **Client** or **Therapist** utterances.
+
+<h2 align='center'>
+  The Sentiment Dashboard
+</h2>
+
+<br><br>
+<p align="center">
+  <img src="./Hermes_Bart_git.png" alt="Hermes diagram 2">
+</p>
+
+<br><br>
+<p align="center">
+  <img src="./Modernbert_git.png" alt="Bert diagram 1">
+</p>
+
+<br><br>
+<p align="center">
+  <img src="./Modernbert_git2.png" alt="Bert diagram 2">
 </p>
 
 **For Clinicians / Non-Techies**:
@@ -82,7 +126,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 - The Technical README is [here]
 ---
 The Persona-Forge is designed as an 'art of the possible' demo to help therapists and mental health hospitals modernize and care for patients. 
-The workflows are all built in Langgraph, a production grade agentic process flow library. the workflow is modular and can be extended with additional agents or custom components as needed.
+The workflows are all built in Langgraph, a production grade agentic process flow library. The workflow is modular and can be extended with additional agents or custom components as needed.
 I've tested the same functionality for various admin related automations, and the same functionality has been replicated across multiple domains, including healthcare, finance, and education, demonstrating its versatility and scalability.
 
 # Use Cases:
