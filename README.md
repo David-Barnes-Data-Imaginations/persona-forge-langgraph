@@ -75,12 +75,12 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 
 
 <h2 align='center'>
-  Voice mode! (Sound on) Leveraging TTS/STT models (tested with 'Piper', 'Faster_whisper', 'NVIDEA RIVA')
+  Voice mode (Sound on) Leveraging TTS/STT models (tested with 'Piper', 'Faster_whisper', 'NVIDEA RIVA')
   </h2>
 
 <p align="center">
   <a href="https://github.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/blob/master/portfolio.mp4">
-    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/portfolio_thumb.png" 
+    <img src="https://raw.githubusercontent.com/David-Barnes-Data-Imaginations/persona-forge-langgraph/master/portfolio_thumg.png" 
          alt="Workflow Demo - Click to watch"
          width="100%">
   </a>
@@ -88,17 +88,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
   <em>▶️ Click to watch demo video</em>
 </p>
 
-## The Sentiment Dashboard
-
-<h2 align='center'>
-  This shows the sentiment dashboardupload screen and output when analyzed
-</h2>
-
-<br><br>
-<p align="center">
-  <img src="./BART_git.png" alt="Upload diagram">
-</p>
-
+## The Sentiment Dashboard (Transcribed Text Workflow)
 
 <h2 align='center'>
   The Sentiment Dashboard
