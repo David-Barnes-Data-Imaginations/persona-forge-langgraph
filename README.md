@@ -93,6 +93,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 <h2 align='center'>
   This shows the sentiment dashboardupload screen and output when analyzed
 </h2>
+
 <br><br>
 <p align="center">
   <img src="./BART_git.png" alt="Upload diagram">
