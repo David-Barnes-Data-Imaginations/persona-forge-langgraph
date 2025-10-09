@@ -97,7 +97,7 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 <p align="center">
   <img src="./BART_git.png" alt="Upload diagram">
 </p>
-5. View the dashboard. After analysis completes, click “View Dashboard” to open an HTML page containing interactive Plotly charts.  These allow you to zoom, pan and hover to inspect each utterance as well as distributions of valence and arousal.  A dropdown above each chart lets you filter by **Client** or **Therapist** utterances.
+
 
 <h2 align='center'>
   The Sentiment Dashboard
