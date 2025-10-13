@@ -62,11 +62,16 @@
 ```
 
 ## Usage Instructions
+
+> I have set this up to run with Ollama for ease of use. These can be adapted to use online or other local model providers by editing 'config.py' and adapting the langchain ollama blocks in the 'src/graphs/' files. A gemini api key is also required unless the model provider is changed in 'deep_agent.py', 'hybrid_rag_tools.py' and 'research_tools.py'.
+
+> The workflows are much quicker using online models, Ollama models take around 1-3 hours to complete 'create_kg' and 'framework_analysis'. I've set these to gemini for ease of use for the user.
+
 1. Download all project files
 2. Create a venv `uv venv` and activate it. `source .venv/bin/activate`  
 3. Install from requirements.txt (if you have one): `uv pip install -r requirements.txt`
 4. Run the uvicorn/fastapi app: `uv run uvicorn SentimentSuite:app --reload --port 8000 --host 127.0.0.1 &`
-5. Upload a file with this format:
+5. The first langgraph workflow uses 'framework_analysis.py' to tag the script. Upload a file with this format:
 
 ```
 Therapist,Client,message_id
@@ -75,6 +80,47 @@ Therapist,Client,message_id
 ```
 
 > Tip: You can ask an LLM to generate these files with your chosen topics and context. The app will analyse any amount of text, The langgraph workflow are specifically designed for long context answers from a text-based therapy script, whilst the sentiment analysis dashboard is designed for video transcript scripts (use the 'Carl and Gloria' cleaned CSV in the data file)
+
+6. The second langgraph workflow uses 'create_kg' to create the knowledge graph. Click on 'create graph' to begin the Cypher workflow.
+7. Click onto chat for the voice activated chat mode. Check the 'transcribe' and 'voice mode' buttons then chat away.
+8. To run the React App use `cd sentiment-ag-ui && npm run dev`
+
+
+## Required Environment variables
+
+OPENAI_API_KEY="sk-proj-"
+LANGSMITH_API_KEY="lsv2_"
+LANGSMITH_TRACING_V2=true
+ANTHROPIC_API_KEY=""
+LANGSMITH_PROJECT="langchain-academy"
+TAVILY_API_KEY="tvly-dev-"
+USE_HOST_OLLAMA=true
+OLLAMA_HOST="http://localhost:11434"
+OLLAMA_EMBED_MODEL="nomic-embed-text:latest"
+
+# Neo4j Configuration
+NEO4J_URI="bolt://localhost:7687"
+NEO4J_USER="neo4j"
+NEO4JP="your_password"
+
+HUGGINGFACE_TOKEN="hf_p"
+
+# Cypher Generation LLM Configuration
+# Set to "anthropic" to use Claude API, or "ollama" for local generation
+CYPHER_LLM_PROVIDER="gemini"
+CYPHER_OLLAMA_MODEL="gpt-oss:20b"
+CYPHER_ANTHROPIC_MODEL="claude-3-5-sonnet-20241022"
+CYPHER_GEMINI_MODEL="gemini-2.0-flash-exp"
+# Add your Anthropic API key here when using Claude
+ANTHROPIC_API_KEY="sk-ant-api03-ile"
+GEMINI_API_KEY="AIza"
+
+E2B_API_KEY="e2b_"
+E2B_ACCESS_TOKEN="e2b"
+E2B_TEAM_ID="70e8"
+USE_E2B=true
+copilotKit_publicApiKey="ck_pub_"
+CopilotKit_publicLicenseKey="ck_pub_
 
 **Context Manager Functions**
 

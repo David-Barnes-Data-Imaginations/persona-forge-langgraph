@@ -1,4 +1,5 @@
 /data/
+/output/
 /DO_NOT_COMMIT/
 /src/io_py/edge/.env
 /src/.env
