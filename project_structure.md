@@ -36,7 +36,6 @@ Alternative Models - Alt='Randomblock1/nemotron-nano' (on main pc): 4.9GB VRAM
 │  │  ├─ **state.py** # **'Deep Agents' for state handling with todo's etc** .
 │  ├─ tools/
 │  │  ├─ text_graph_tools.py # This has the tool used in 'create_kg' and 'framework_analysis' workflows.
-│  │  ├─ **hybrid_rag_tools.py** # The hybrid rag tools for both the Chat Agent and Deep Agent('Admin Assist'). Need to add the graph queries for 'deep_agent'.
 │  │  ├─ **e2b_tools.py** # Replaces'Deep Agents' virtual filesystem instead using e2b kernel.
 │  │  ├─ **task_tool.py** # basic 'Deep Agents' code for creating a sub-agent.
 │  │  ├─ **todo_tools.py** # basic 'Deep Agents' code for todo lists. 
