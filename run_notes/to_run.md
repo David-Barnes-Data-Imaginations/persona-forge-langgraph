@@ -1,4 +1,7 @@
 # For dashboard
+
+source .venv/bin/activate
+
 `uv run uvicorn SentimentSuite:app --reload --port 8000 --host 127.0.0.1 &`
 http://127.0.0.1:8000/
 upload-therapy-csv
