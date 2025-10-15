@@ -1,11 +1,15 @@
 /data/
 /output/
 /DO_NOT_COMMIT/
+/scratches/
+/test_pics/
+/run_notes/
 /src/io_py/edge/.env
 /src/.env
 /.env
 *.env
 !.env.example
+
 
 # Output files
 /output/workflow_1_and_2_examples.txt
