@@ -27,8 +27,6 @@ or
 
 Then `kill -9 484855`
 
-
-
 'get_personality_summary' using session 001. Paste the output into chat. Thanks!
 search_psychological_insights
 get_personality_summary
@@ -59,3 +57,11 @@ LM Studio - Just launch the LM Studio app and make sure your model is loaded on 
 Neo4j - Make sure it's running (you mentioned it's already up)
 
 (Will run on http://localhost:3000 or whichever port is available like 3003) Plus: Make sure LM Studio is running with your model loaded on port 1234
+
+### Anonomizing tool:
+Test with a single QA pair first:
+uv run python fixes/anonymize_therapy_csv.py --message-id 1
+Process a range of QA pairs:
+uv run python fixes/anonymize_therapy_csv.py --start 1 --end 10
+Process ALL QA pairs:
+uv run python fixes/anonymize_therapy_csv.py --all

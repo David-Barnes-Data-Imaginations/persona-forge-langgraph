@@ -2,21 +2,33 @@
 ### Note: I have recently started using VSCode for the first time after 10 years of Jetbrains suite, so carnage has ensued in my git repo's. I'm working on fixing all the errors and reformatting it's dumped in my files.
 
 # The Persona-Forge
+
 - The Persona-Forge is a multi-agent Psychological Analysis tool, with a built in transcription workflow to transcribe 'Clinician/Client' therapy sessions.
+
 - Optionally, a text-based therapy script can be used, as it was for my testing purposes.
+
 - The project is built housing a suite of data-driven automation workflows, using a framework that can be built upon for other use cases.It also serves as a platform for collaborative research, allowing teams to experiment with diverse AI models and integrate them seamlessly into therapeutic workflows.
+
 - It also offers a robust, modular architecture that supports seamless integration of third‑party APIs, enabling developers to extend the platform with custom modules and plugins.
 
 ## Workflows & Tools
 
 - A Speech to Text (STT) model to transcribe therapy sessions.
+
 - A Text to Speech (TTS) model to enable voice chat with the therapy assistant.
+
 - A robust data-tagging workflow to analyze therapy sessions using 7 psychological frameworks. This is used to supply an LLM with a script of 24k tokens, the data is then processed and analyzed by the LLM to generate comprehensive insights and actionable recommendations.
+
 - A knowledge graph (KG) workflow to store and query the therapy session data, including the psychological analysis results.
+
 - A voice enabled chat interface (Python, FastApi, Gradio) providinga user‑friendly interface for interactive sessions, enabling users to query the therapy session data and insights. 
+
 - It provides a conversational interface that allows users to interact with the data and gain insights through natural language queries, enabling a seamless and intuitive user experience. The chatbot uses 'Hybrid Graph-RAG' to query the KG, using the psychological analysis results and insights gained from the tagging workflow.
+
 - A React Native based UI for a text-based chatbot, built using 'copilotkit' and 'AG_UI',providing a more immersive and interactive experience for users. This workflow allows the Agent to build visualizations on demand.
+
 - The system provides a comprehensive dashboard for monitoring the progress of the therapy sessions, including visualizations of the psychological analysis results.
+
 - A CLI tool built in the style of 'Claude Code', featuring a team of 8 Agents to write therapy notes for patients ready for a human to review, using the psychological analysis results and insights gained from the tagging workflow.
 
 The Persona-Forge has been a project of mine for close to two years, 'evolving' as I have 'pivoted' towards new tech and ideas.
@@ -107,29 +119,41 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 
 **For Clinicians / Non-Techies**:
 - I present the core 'Psychology principles' involved in this README, sparing the technical jargon for its respective README.
+
 - The dashboard concept was developed from a [project](https://github.com/David-Barnes-Data-Imaginations/SentimentSuite) that was intended to be a 'light demo' for a friend, using 'Russells Cicumplex' and 'utterances' to evaluate therapy session transcripts (Carl & Gloria etc.)
 ---
-**For 'Techies' or those learning to build 'Advanced Agentic Systems'**: 
+### **For info on how to run the various workflows'**: 
+
 - The Technical README is [here]
 ---
 The Persona-Forge is designed as an 'art of the possible' demo to help therapists and mental health hospitals modernize and care for patients. 
+
 The workflows are all built in Langgraph, a production grade agentic process flow library. The workflow is modular and can be extended with additional agents or custom components as needed.
+
 I've tested the same functionality for various admin related automations, and the same functionality has been replicated across multiple domains, including healthcare, finance, and education, demonstrating its versatility and scalability.
 
 # Use Cases:
 
 ## 1. Hospital and/or Therapist/Clinician Support - 'Vision of the Future'
+
 The analysis phase workflows ('framework_analysis', 'create_kg' and 'chat_agent') use three agents between them, whilst the therapy note uses an orchestra of 7 agents. 
+
 The orchestra is run on two NVIDEA GPU's (Ada), totalling ~32GB VRAM.
+
 Summarization tasks for non-sensitive data are run via online models (any work, I used Gemini to save my Claude Credits).
 
 
 ## Elements:
 - To modernize Psychology, by providing the superhuman pattern matching and profiling abilities of AI, for Therapists and Hospitals. 
+
 - This enhances insights for better work, _benefits_ the care for patients, and help therapists learn from their own techniques. 
+
 - The therapy note workflow is aimed at those who might use a modern wearable with AI transcription, allowing therapy sessions to be analyzed and a 'SOAP-Note' generated for review.
+
 - To increase the challenge, stress test, and demonstrate large context management, I used a typed form simulated therapy session, with the whole file being ~24k tokens. 
-- This empowers the Therapist to save time (allowing for more patient time), whilst enhancing the SOAP-Note from a document hastily scrawled between sessions, to a structured SOAP‑Note with additional 'objective' measurements added by the AI's sentiment assessment. This extra data supports the clinical decision‑making process, providing a comprehensive framework for understanding and addressing the patient’s mental health challenges.
+
+- This empowers the Therapist to save time (allowing for more patient time), whilst enhancing the SOAP-Note from a document hastily scrawled between sessions, to a structured SOAP‑Note with additional 'objective' measurements added by the AI's sentiment assessment. 
+This extra data supports the clinical decision‑making process, providing a comprehensive framework for understanding and addressing the patient’s mental health challenges.
 
 - Modernizing patient interactions to streamlined automation processes that remove pen & paper based tools, again freeing up staff resources to care for patients more effectively. The exact same framework can be used to automate many administrative and process heavy tasks (I am unable to cover all of these but the code adjustment is minimal).
 

@@ -8,6 +8,7 @@
 /.env
 *.env
 !.env.example
+/scratches/
 
 # Output files
 /output/workflow_1_and_2_examples.txt

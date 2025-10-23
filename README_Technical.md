@@ -67,24 +67,44 @@
 
 > The workflows are much quicker using online models, Ollama models take around 1-3 hours to complete 'create_kg' and 'framework_analysis'. I've set these to gemini for ease of use for the user.
 
-1. Download all project files
+1. Download all project files. Rename the data_pub directory to just 'data', and rename the 'therapy_fictional.csv' to 'therapy_working.csv' (see also 'creating your own therapy script'). 
+
+Also download all files in this repo (into project_dir: https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/tree/main). 
+
+Also download 'https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/alba/medium'. I use ubuntu and have that in my home dir, but you can change to your favoured TTS (in SentimentSuite.py).
+
+Install piper on your system if not already.
+
 2. Create a venv `uv venv` and activate it. `source .venv/bin/activate`  
-3. Install from requirements.txt (if you have one): `uv pip install -r requirements.txt`
-4. Run the uvicorn/fastapi app: `uv run uvicorn SentimentSuite:app --reload --port 8000 --host 127.0.0.1 &`
-5. The first langgraph workflow uses 'framework_analysis.py' to tag the script. Upload a file with this format:
+3. Install from requirements.txt: `uv pip install -r requirements.txt`
+4. Here are the services you need to start each time:
+Backend API (required for tools/graphs):
+`uv run uvicorn ag_ui_backend:app --reload --port 8001 --host 127.0.0.1`
+React Frontend:
+`cd sentiment-ag-ui && npm run dev`
+LM Studio - Just launch the LM Studio app and make sure your model is loaded on port (default) 1234. Make sure your LM Studio has 'openai/gpt-oss-20b' loaded.
+5. The first langgraph workflow uses 'framework_analysis.py' to tag the script. Upload a file with this format (therapy_fictional.csv is made for you if you want to test):
 
 ```
 Therapist,Client,message_id
 "Question","Answer",001
 "Question","Answer",002
 ```
+6. The second langgraph workflow uses 'create_kg' to create the knowledge graph. 
 
-> Tip: You can ask an LLM to generate these files with your chosen topics and context. The app will analyse any amount of text, The langgraph workflow are specifically designed for long context answers from a text-based therapy script, whilst the sentiment analysis dashboard is designed for video transcript scripts (use the 'Carl and Gloria' cleaned CSV in the data file)
+Click on 'create graph' to begin the Cypher workflow. Paste the output file into neo4j in one go (i'll add an automation for this shortly).
 
-6. The second langgraph workflow uses 'create_kg' to create the knowledge graph. Click on 'create graph' to begin the Cypher workflow.
-7. Click onto chat for the voice activated chat mode. Check the 'transcribe' and 'voice mode' buttons then chat away.
-8. To run the React App use `cd sentiment-ag-ui && npm run dev`
+All the embeddings for hybrid-graph-rag are created for you.
 
+7. In the port 8000 app, click onto chat for the voice activated chat mode. Check the 'transcribe' and 'voice mode' buttons then chat away.
+
+### Creating your own therapy script
+
+LLM's have clearly been trained on lots of therapy scripts, since they are great at it. 
+
+You can either generate your own session with an LLM (put it in the data file in the afforementioned format), and you can then use 'fixes/anonomize_therapy_csv.py' to change the story and modify the themes that occur.
+
+You can also just ask an LLM to generate these files with your chosen topics and context. The app will analyse any amount of text, The langgraph workflow are specifically designed for long context answers from a text-based therapy script, whilst the sentiment analysis dashboard is designed for video transcript scripts (use the 'Carl and Gloria' cleaned CSV in the data file)
 
 ## Required Environment variables
 
@@ -121,6 +141,58 @@ E2B_TEAM_ID="70e8"
 USE_E2B=true
 copilotKit_publicApiKey="ck_pub_"
 CopilotKit_publicLicenseKey="ck_pub_
+
+OPENAI_API_KEY=lm-studio
+OPENAI_BASE_URL=http://127.0.0.1:1234/v1
+
+**Running the Deep Agent workflow:**
+
+This is a little more complex, since I use multiple PC's hosting local agents. The easiest way to change this is to ask your VS Code AI (Claude or whatever, but it needs terminal control) to change all the lm-studio model instances to your chosen online model.
+
+You can also editrun_deep_agent_e2b.py and 'src/graphs/deep_agent.py'. For example you would want to switch instances of:
+
+`from langchain_openai import ChatOpenAI`
+
+and
+
+```
+# Local models (main PC) - LM Studio configuration
+alt_model = ChatOpenAI(
+    model=LLMConfigPeon.model_name,  # aka 'alt'
+    temperature=LLMConfigPeon.temperature,
+    max_tokens=LLMConfigPeon.max_tokens,
+    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+    api_key="lm-studio",  # LM Studio doesn't require a real key
+)
+```
+
+to the notation for langgraph gemini:
+
+```
+import google.generativeai as genai
+
+
+def get_gemini_model():
+    """Initialize Gemini model using direct Google API."""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY not found in environment variables")
+
+    genai.configure(api_key=api_key)
+
+    return genai.GenerativeModel(
+        model_name="gemini-2.0-flash-exp",
+        generation_config={
+            "temperature": 0.7,
+            "max_output_tokens": 2048,
+        }
+    )
+
+```
+
+then run 'run_deep_agent_e2b.py'. Whilst it has a full front-end to look like Claude code, I have this set up so it pastes the prompt in to save you needing to do that each time.
+
+**Important!**: You need to match my e2b versions or use earlier, since the later versions borked the API method.
 
 **Context Manager Functions**
 

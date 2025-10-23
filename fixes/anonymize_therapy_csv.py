@@ -71,18 +71,16 @@ ORIGINAL CLIENT ANSWER:
 {client_answer}
 
 TASK:
-Rewrite the client's answer to tell a DIFFERENT story while preserving the EXACT SAME psychological patterns, emotions, cognitive distortions, and attachment styles present in the original.
-
+Rewrite the client's answer to tell a DIFFERENT story, as this is being used to test a psychology app. Its fine if this alters the psychological patterns, emotions, cognitive distortions, and attachment styles present in the original.
+The original script was partially factual in order to test the analysis, but now this can be changed.
 REQUIREMENTS:
 1. Change all specific people, places, events, and personal details
 2. Create a fictional but realistic scenario that demonstrates the same psychological issues
-3. Keep the same emotional tone and intensity
-4. Maintain the same defense mechanisms, cognitive distortions, and coping strategies
+3. It's fine to keep the same emotional tone and intensity etc but not important to.
+4. Try to ensure it still has some sort of defense mechanisms, cognitive distortions, and coping strategies
 5. If the original is overly long (>300 words), condense it to 150-250 words while keeping key psychological content
-6. Make it sound natural and conversational, like a real therapy session
+6. Make it sound natural and conversational, like a real therapy session (though this is text-based)
 7. Remove any references to specific occupations, assessments, or identifiable details
-
-IMPORTANT: The psychological profile should remain identical - only the surface story changes.
 
 REWRITTEN CLIENT ANSWER (respond with ONLY the rewritten answer, no preamble):"""
 
