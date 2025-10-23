@@ -23,10 +23,15 @@ app = FastAPI(
     description="LangGraph agent backend for CopilotKit integration",
 )
 
-# Enable CORS for Next.js frontend
+# Enable CORS for Next.js frontend (allow multiple ports in case port 3000 is busy)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js dev server
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

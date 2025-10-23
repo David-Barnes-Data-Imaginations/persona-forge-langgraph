@@ -38,3 +38,24 @@ retrieve_diagnosis
 get_subjective_analysis
 get_objective_statistics
 get_plan
+
+`uv run uvicorn ag_ui_backend:app --reload --port 8001 --host 127.0.0.1`
+
+`cd sentiment-ag-ui && npm run dev` - http://localhost:3000
+
+Hello! I'm just testing the agentic environment i'm trying to build for you. I've made some buttons so that the user can press them and it will add a prompt into chat for you to try the tool. I'll give them a try now, if the tool is broken from your side (it might well be since i'm debugging) just let me know. Thanks! :)
+
+React Frontend: http://localhost:3003 (with .env.local pointing to LM Studio)
+FastAPI Backend: http://localhost:8001 (with CORS allowing ports 3000-3003)
+LM Studio: Port 1234 (AI model)
+Neo4j: Running (graph database)
+
+Here are the services you need to start each time:
+Backend API (required for tools/graphs):
+uv run uvicorn ag_ui_backend:app --reload --port 8001 --host 127.0.0.1
+React Frontend:
+cd sentiment-ag-ui && npm run dev
+LM Studio - Just launch the LM Studio app and make sure your model is loaded on port 1234
+Neo4j - Make sure it's running (you mentioned it's already up)
+
+(Will run on http://localhost:3000 or whichever port is available like 3003) Plus: Make sure LM Studio is running with your model loaded on port 1234
