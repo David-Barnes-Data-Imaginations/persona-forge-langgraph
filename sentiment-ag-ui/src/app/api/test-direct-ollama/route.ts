@@ -4,15 +4,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Make direct fetch call to Ollama using exact same config as your AI Toolkit
-    const response = await fetch('http://127.0.0.1:11434/v1/chat/completions', {
+    // Make direct fetch call to LM Studio using OpenAI-compatible API
+    const response = await fetch('http://127.0.0.1:1234/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer unused'
+        'Authorization': 'Bearer lm-studio'
       },
       body: JSON.stringify({
-        model: 'gpt-oss:20b',
+        model: 'openai/gpt-oss-20b',
         messages: body.messages || [{ role: 'user', content: 'Hello from direct test' }],
         max_tokens: 100
       })

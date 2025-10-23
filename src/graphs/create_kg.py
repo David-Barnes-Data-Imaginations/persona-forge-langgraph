@@ -3,7 +3,7 @@ import re
 from typing import Annotated, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from typing_extensions import TypedDict
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
@@ -22,6 +22,7 @@ from ..prompts.text_prompts import (
 )
 from ..tools.text_graph_tools import submit_cypher
 from ..utils.embeddings import embed_texts
+from ..io_py.edge.config import LLMConfigGraphs
 
 # Load environment variables
 load_dotenv()
@@ -56,12 +57,15 @@ if LLM_PROVIDER == "gemini":
         f"Using Gemini model: {os.getenv('CYPHER_GEMINI_MODEL', 'google_genai:gemini-2.5-flash')}"
     )
 else:
-    # Use Ollama (default)
-    llm = ChatOllama(
-        model=os.getenv("CYPHER_OLLAMA_MODEL", "gpt-oss:20b"),
-        temperature=0.1,
+    # Use LM Studio (default) - using config
+    llm = ChatOpenAI(
+        model=LLMConfigGraphs.model_name,
+        temperature=LLMConfigGraphs.temperature,
+        max_tokens=LLMConfigGraphs.max_tokens,
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     )
-    print(f"Using Ollama model: {os.getenv('CYPHER_OLLAMA_MODEL', 'gpt-oss:20b')}")
+    print(f"Using LM Studio model: {LLMConfigGraphs.model_name}")
 
 
 class State(TypedDict):

@@ -56,14 +56,16 @@ def test_local_models():
     print("Testing Local Models (Main PC)")
     print("=" * 60)
 
-    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
 
     # Test peon model
     print(f"\nTesting Peon model: {LLMConfigPeon.model_name}")
     try:
-        peon = ChatOllama(
+        peon = ChatOpenAI(
             model=LLMConfigPeon.model_name,
-            temperature=0.0
+            temperature=0.0,
+            base_url="http://localhost:1234/v1",
+            api_key="lm-studio"
         )
         response = peon.invoke("Say 'test' in one word")
         print(f"✅ Peon model working: {response.content[:50]}")
@@ -73,9 +75,11 @@ def test_local_models():
     # Test overseer model
     print(f"\nTesting Overseer model: {LLMConfigOverseer.model_name}")
     try:
-        overseer = ChatOllama(
+        overseer = ChatOpenAI(
             model=LLMConfigOverseer.model_name,
-            temperature=0.0
+            temperature=0.0,
+            base_url="http://localhost:1234/v1",
+            api_key="lm-studio"
         )
         response = overseer.invoke("Say 'test' in one word")
         print(f"✅ Overseer model working: {response.content[:50]}")
@@ -89,17 +93,18 @@ def test_remote_model():
     print("Testing Remote Model (Mini-ITX)")
     print("=" * 60)
 
-    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
 
     print(f"\nTesting Scribe model: {LLMConfigScribe.model_name}")
     print(f"Remote execution: {LLMConfigScribe.use_remote}")
     print(f"Remote port: {LLMConfigScribe.remote_port}")
 
     try:
-        scribe = ChatOllama(
+        scribe = ChatOpenAI(
             model=LLMConfigScribe.model_name,
             temperature=0.0,
-            base_url=f"http://localhost:{LLMConfigScribe.remote_port}"
+            base_url=f"http://localhost:{LLMConfigScribe.remote_port}/v1",
+            api_key="lm-studio"
         )
         response = scribe.invoke("Say 'test' in one word")
         print(f"✅ Scribe model working: {response.content[:50]}")

@@ -32,7 +32,7 @@ def setup_sandbox():
 
     with console.status("[bold cyan]📦 Installing dependencies...", spinner="dots"):
         result = sandbox.commands.run(
-            "pip install neo4j langchain langchain-core langchain-ollama", timeout=120
+            "pip install neo4j langchain langchain-core langchain-openai", timeout=120
         )
         if result.exit_code != 0:
             console.print(f"[yellow]⚠️  Warning: {result.stderr}[/yellow]")
@@ -82,7 +82,7 @@ def create_e2b_agent(sandbox):
         E2B_SUBAGENT_INSTRUCTIONS,
     )
     from langgraph.prebuilt import create_react_agent
-    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
 
     # Set global sandbox for E2B tools
     console.print("[bold cyan]🔧 Setting up global sandbox...[/bold cyan]")
@@ -140,14 +140,14 @@ def create_e2b_agent(sandbox):
         PERSONA_FORGE_TOOLS + research_tools + core_tools + delegation_tools
     )
 
-    # Create architect model
+    # Create architect model - LM Studio configuration
     console.print("[bold cyan]🧠 Creating architect model...[/bold cyan]")
-    model = ChatOllama(
+    model = ChatOpenAI(
         model=LLMConfigArchitect.model_name,
         temperature=LLMConfigArchitect.temperature,
-        reasoning=LLMConfigArchitect.reasoning,
-        num_predict=32768,  # Doubled for gpt-oss:20b - it needs more tokens for tool calls
-        num_ctx=100000,  # Context window size
+        max_tokens=32768,  # Doubled for gpt-oss:20b - it needs more tokens for tool calls
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     ).with_config(
         {"recursion_limit": 75}  # Allow more steps since thinking counts as steps
     )

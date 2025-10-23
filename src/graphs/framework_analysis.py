@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Annotated, Optional
 from typing_extensions import TypedDict
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate
@@ -12,12 +12,15 @@ from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import tools_condition
 from ..prompts.text_prompts import SYSTEM_PROMPT
 from ..tools.text_graph_tools import submit_analysis
+from ..io_py.edge.config import LLMConfigGraphs
 
-# LLM
-llm = ChatOllama(
-    model="gpt-oss:20b",
-    temperature=0.1,
-    # other params...
+# LLM - LM Studio configuration using config
+llm = ChatOpenAI(
+    model=LLMConfigGraphs.model_name,
+    temperature=LLMConfigGraphs.temperature,
+    max_tokens=LLMConfigGraphs.max_tokens,
+    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+    api_key="lm-studio",  # LM Studio doesn't require a real key
 )
 
 

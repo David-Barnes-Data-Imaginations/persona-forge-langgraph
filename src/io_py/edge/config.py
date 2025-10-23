@@ -11,9 +11,9 @@ load_dotenv()
 class LLMConfigVoice:
     """Configuration for voice-enabled chat interface"""
 
-    # gpt-oss:20b is 14GB VRAM
+    # openai/gpt-oss-20b is 14GB VRAM
     # model_name = "granite4:small-h"
-    model_name = "gpt-oss:20b"
+    model_name = "openai/gpt-oss-20b"
     temperature = 0.1
     max_tokens = 8192
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
@@ -37,13 +37,26 @@ class LLMConfigPeon:
     # Voice-specific settings
     voice_enabled = False
 
+class LLMConfigGraphs:
+    """Configuration for lead deep agent"""
+
+    # openai/gpt-oss-20b is 14GB VRAM
+    # model_name = "granite4:small-h"  # Default model for chat
+    model_name = "openai/gpt-oss-20b"
+    # model_name = "gemma3:12b"
+    temperature = 0.0
+    max_tokens = 16384  # Increased for long tool calls
+    reasoning = True  # Reasoning mode can interfere with tool calling
+
+    # Voice-specific settings
+    voice_enabled = False
 
 class LLMConfigArchitect:
     """Configuration for lead deep agent"""
 
-    # gpt-oss:20b is 14GB VRAM
+    # openai/gpt-oss-20b is 14GB VRAM
     # model_name = "granite4:small-h"  # Default model for chat
-    model_name = "gpt-oss:20b"
+    model_name = "openai/gpt-oss-20b"
     # model_name = "gemma3:12b"
     temperature = 0.0
     max_tokens = 16384  # Increased for long tool calls
@@ -78,7 +91,7 @@ class LLMConfigScribe:
     # Randomblock1/nemotron-nano is 4.9GB VRAM
     # model_name = "Randomblock1/nemotron-nano:8b"
     model_name = (
-        "gpt-oss:20b"  # GPT running on the mini also as its best by a long shot
+        "openai/gpt-oss-20b"  # GPT running on the mini also as its best by a long shot
     )
     temperature = 0.0
     max_tokens = 16384

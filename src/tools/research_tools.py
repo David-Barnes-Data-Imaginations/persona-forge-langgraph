@@ -20,7 +20,7 @@ from markdownify import markdownify
 from pydantic import BaseModel, Field
 from tavily import TavilyClient
 from typing_extensions import Annotated, Literal
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from ..prompts.deep_prompts import SUMMARIZE_WEB_SEARCH
 from ..agent_utils.state import DeepAgentState
 
@@ -30,11 +30,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from ..io_py.edge.config import LLMConfigArchitect
 
 """
-# Summarization model - using local Ollama instead of OpenAI
-summarization_model = ChatOllama(
+# Summarization model - using local LM Studio instead of OpenAI
+summarization_model = ChatOpenAI(
     model=LLMConfigArchitect.model_name,
     temperature=LLMConfigArchitect.temperature,
-    reasoning=LLMConfigArchitect.reasoning,
+    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+    api_key="lm-studio",  # LM Studio doesn't require a real key
 )"""
 
 gemini_model = ChatGoogleGenerativeAI(

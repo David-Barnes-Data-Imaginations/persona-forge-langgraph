@@ -12,7 +12,7 @@ import os
 import re
 from datetime import datetime
 from dotenv import load_dotenv
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
@@ -27,9 +27,10 @@ load_dotenv()
 # Import the prompts and tools
 from src.prompts.text_prompts import CYPHER_QA_PAIR_PROMPT
 from src.tools.text_graph_tools import submit_cypher
+from src.io_py.edge.config import LLMConfigGraphs
 
-# LLM configuration - supports Ollama, Anthropic, and Gemini
-LLM_PROVIDER = os.getenv("CYPHER_LLM_PROVIDER", "ollama").lower()
+# LLM configuration - supports LM Studio, Anthropic, and Gemini
+LLM_PROVIDER = os.getenv("CYPHER_LLM_PROVIDER", "lmstudio").lower()
 
 if LLM_PROVIDER == "anthropic":
     llm = ChatAnthropic(
@@ -47,11 +48,15 @@ elif LLM_PROVIDER == "gemini":
     )
     print(f"Using Gemini model: {os.getenv('CYPHER_GEMINI_MODEL', 'gemini-2.0-flash-exp')}")
 else:
-    llm = ChatOllama(
-        model=os.getenv("CYPHER_OLLAMA_MODEL", "gpt-oss:20b"),
-        temperature=0.1,
+    # Use LM Studio (default) - using config
+    llm = ChatOpenAI(
+        model=LLMConfigGraphs.model_name,
+        temperature=LLMConfigGraphs.temperature,
+        max_tokens=LLMConfigGraphs.max_tokens,
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     )
-    print(f"Using Ollama model: {os.getenv('CYPHER_OLLAMA_MODEL', 'gpt-oss:20b')}")
+    print(f"Using LM Studio model: {LLMConfigGraphs.model_name}")
 
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]

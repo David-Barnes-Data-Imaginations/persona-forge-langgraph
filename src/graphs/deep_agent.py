@@ -6,7 +6,7 @@ from langgraph.prebuilt import create_react_agent
 from regex import P
 from ..agent_utils.deep_utils import format_messages
 from langgraph.graph.state import CompiledStateGraph
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from IPython.display import JSON
 from langchain_core.messages import messages_to_dict
 from typing import Annotated, Literal, NotRequired
@@ -57,19 +57,21 @@ from ..io_py.edge.config import (
 - Overseer - high level tasks, planning, analysis, report writing
 
 """
-# Local models (main PC)
-alt_model = ChatOllama(
+# Local models (main PC) - LM Studio configuration
+alt_model = ChatOpenAI(
     model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
-    reasoning=LLMConfigPeon.reasoning,
-    num_predict=LLMConfigPeon.max_tokens,
+    max_tokens=LLMConfigPeon.max_tokens,
+    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+    api_key="lm-studio",  # LM Studio doesn't require a real key
 )
 
-overseer_model = ChatOllama(
+overseer_model = ChatOpenAI(
     model=LLMConfigOverseer.model_name,
     temperature=LLMConfigOverseer.temperature,
-    reasoning=LLMConfigOverseer.reasoning,
-    num_predict=LLMConfigOverseer.max_tokens,
+    max_tokens=LLMConfigOverseer.max_tokens,
+    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+    api_key="lm-studio",  # LM Studio doesn't require a real key
 )
 
 # Remote model (mini-itx) - setup SSH tunnel first
@@ -78,22 +80,23 @@ if LLMConfigScribe.use_remote:
 
     ensure_mini_tunnel()  # Start SSH tunnel to mini-itx
 
-    scribe_model = ChatOllama(
+    scribe_model = ChatOpenAI(
         model=LLMConfigScribe.model_name,  # aka 'Scribe'
         temperature=LLMConfigScribe.temperature,
-        reasoning=LLMConfigScribe.reasoning,
-        num_predict=LLMConfigScribe.max_tokens,
-        base_url=f"http://localhost:{LLMConfigScribe.remote_port}",  # Use tunneled port
+        max_tokens=LLMConfigScribe.max_tokens,
+        base_url=f"http://localhost:{LLMConfigScribe.remote_port}/v1",  # Use tunneled port with /v1 endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     )
     print(
         f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}"
     )
 else:
-    scribe_model = ChatOllama(
+    scribe_model = ChatOpenAI(
         model=LLMConfigScribe.model_name,
         temperature=LLMConfigScribe.temperature,
-        reasoning=LLMConfigScribe.reasoning,
-        num_predict=LLMConfigScribe.max_tokens,
+        max_tokens=LLMConfigScribe.max_tokens,
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     )
 
 # Online models for testing (commented out - not currently used)
@@ -217,7 +220,7 @@ def get_new_deep_agent(
 ) -> CompiledStateGraph:
 
     from langgraph.prebuilt import create_react_agent
-    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
 
     model = ChatOllama(
         model=LLMConfigArchitect.model_name,

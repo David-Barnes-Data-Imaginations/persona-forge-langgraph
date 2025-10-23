@@ -21,7 +21,7 @@ def setup_sandbox():
     # Install dependencies
     print("📦 Installing dependencies...")
     sandbox.commands.run(
-        "pip install neo4j langchain langchain-core langchain-ollama",
+        "pip install neo4j langchain langchain-core langchain-openai",
         timeout=120
     )
 
@@ -62,7 +62,7 @@ def create_e2b_agent(sandbox):
     from src.tools.task_tool import _create_task_tool
     from src.prompts.e2b_prompts import E2B_ARCHITECT_INSTRUCTIONS, E2B_SUBAGENT_INSTRUCTIONS
     from langgraph.prebuilt import create_react_agent
-    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
 
     # Set global sandbox for E2B tools
     print("🔧 Setting up global sandbox...")
@@ -107,14 +107,14 @@ def create_e2b_agent(sandbox):
     # Architect has all tools for visibility
     architect_tools = DEEP_PERSONA_FORGE_TOOLS + research_tools + core_tools + delegation_tools
 
-    # Create architect model
+    # Create architect model - LM Studio configuration
     print("🧠 Creating architect model...")
-    model = ChatOllama(
+    model = ChatOpenAI(
         model=LLMConfigArchitect.model_name,
         temperature=LLMConfigArchitect.temperature,
-        reasoning=LLMConfigArchitect.reasoning,
-        num_predict=32768,  # Doubled for gpt-oss:20b - it needs more tokens for tool calls
-        num_ctx=100000,     # Context window size
+        max_tokens=32768,  # Doubled for gpt-oss:20b - it needs more tokens for tool calls
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
     )
 
     # Create agent
