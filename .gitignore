@@ -1,0 +1,45 @@
+/data/
+/output/
+/DO_NOT_COMMIT/
+/src/io_py/edge/.env
+/src/.env
+/.env
+*.env
+!.env.example
+
+# Output files
+/output/workflow_1_and_2_examples.txt
+
+# Continue.dev configs
+.continue/permissions.yaml
+.continue/rules/project_architecture.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test outputs
+test_output/
