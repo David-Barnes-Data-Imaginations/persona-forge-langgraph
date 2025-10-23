@@ -9,15 +9,15 @@
 
 ## Workflows & Tools
 
-• A Speech to Text (STT) model to transcribe therapy sessions.
-• A Text to Speech (TTS) model to enable voice chat with the therapy assistant.
-• A robust data-tagging workflow to analyze therapy sessions using 7 psychological frameworks. This is used to supply an LLM with a script of 24k tokens, the data is then processed and analyzed by the LLM to generate comprehensive insights and actionable recommendations.
-• A knowledge graph (KG) workflow to store and query the therapy session data, including the psychological analysis results.
-• A voice enabled chat interface (Python, FastApi, Gradio) providinga user‑friendly interface for interactive sessions, enabling users to query the therapy session data and insights. 
-• It provides a conversational interface that allows users to interact with the data and gain insights through natural language queries, enabling a seamless and intuitive user experience. The chatbot uses 'Hybrid Graph-RAG' to query the KG, using the psychological analysis results and insights gained from the tagging workflow.
-• A React Native based UI for a text-based chatbot, built using 'copilotkit' and 'AG_UI',providing a more immersive and interactive experience for users. This workflow allows the Agent to build visualizations on demand.
-• The system provides a comprehensive dashboard for monitoring the progress of the therapy sessions, including visualizations of the psychological analysis results.
-• A CLI tool built in the style of 'Claude Code', featuring a team of 8 Agents to write therapy notes for patients ready for a human to review, using the psychological analysis results and insights gained from the tagging workflow.
+- A Speech to Text (STT) model to transcribe therapy sessions.
+- A Text to Speech (TTS) model to enable voice chat with the therapy assistant.
+- A robust data-tagging workflow to analyze therapy sessions using 7 psychological frameworks. This is used to supply an LLM with a script of 24k tokens, the data is then processed and analyzed by the LLM to generate comprehensive insights and actionable recommendations.
+- A knowledge graph (KG) workflow to store and query the therapy session data, including the psychological analysis results.
+- A voice enabled chat interface (Python, FastApi, Gradio) providinga user‑friendly interface for interactive sessions, enabling users to query the therapy session data and insights. 
+- It provides a conversational interface that allows users to interact with the data and gain insights through natural language queries, enabling a seamless and intuitive user experience. The chatbot uses 'Hybrid Graph-RAG' to query the KG, using the psychological analysis results and insights gained from the tagging workflow.
+- A React Native based UI for a text-based chatbot, built using 'copilotkit' and 'AG_UI',providing a more immersive and interactive experience for users. This workflow allows the Agent to build visualizations on demand.
+- The system provides a comprehensive dashboard for monitoring the progress of the therapy sessions, including visualizations of the psychological analysis results.
+- A CLI tool built in the style of 'Claude Code', featuring a team of 8 Agents to write therapy notes for patients ready for a human to review, using the psychological analysis results and insights gained from the tagging workflow.
 
 The Persona-Forge has been a project of mine for close to two years, 'evolving' as I have 'pivoted' towards new tech and ideas.
 
@@ -73,7 +73,6 @@ My lifelong passion for Psychology, the pace of AI, and my preference for 'altru
 <p align="center">
   <img src="./agent_workflow_output.png" alt="SOAP-note">
 </p>
-
 
 <h2 align='center'>
   Voice mode (Sound on) Leveraging TTS/STT models (tested with 'Piper', 'Faster_whisper', 'NVIDEA RIVA')

@@ -471,7 +471,9 @@ class LangGraphChatInterface:
 
             # Create a wrapper function for when TTS is not available
             def respond_no_tts(message, history):
-                return respond(message, history, False)
+                # respond returns 3 values (chatbot, msg_input, audio), but we only need the first 2
+                for chatbot_update, msg_clear, _ in respond(message, history, False):
+                    yield chatbot_update, msg_clear
 
             # Wire up events - with TTS support
             if voice_available:

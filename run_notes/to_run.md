@@ -29,3 +29,12 @@ Then `kill -9 484855`
 
 
 
+'get_personality_summary' using session 001. Paste the output into chat. Thanks!
+search_psychological_insights
+get_personality_summary
+get_extreme_values
+get_qa_pair_details
+retrieve_diagnosis
+get_subjective_analysis
+get_objective_statistics
+get_plan

@@ -270,67 +270,294 @@ async def circumplex_endpoint(request: VisualizationRequest):
 @app.post("/deep_agent")
 async def deep_agent_endpoint():
     """
-    Endpoint to run deep agent workflow and return state
+    Endpoint to read deep agent analysis from output/plan.txt and return state
     """
     try:
+        import os
 
-        mock_state = {
-            "current_task": "Analyzing psychological patterns in therapy session",
-            "status": "working",
-            "progress": 65,
-            "todos": [
-                {
-                    "id": "1",
-                    "task": "Extract emotional patterns from session data",
-                    "status": "completed",
-                    "priority": "high",
-                    "created_at": datetime.now().isoformat(),
-                },
-                {
-                    "id": "2",
-                    "task": "Analyze cognitive distortions",
-                    "status": "in_progress",
-                    "priority": "medium",
-                    "created_at": datetime.now().isoformat(),
-                },
-                {
-                    "id": "3",
-                    "task": "Generate treatment recommendations",
-                    "status": "pending",
-                    "priority": "high",
-                    "created_at": datetime.now().isoformat(),
-                },
-            ],
-            "thoughts": [
-                {
-                    "id": "1",
-                    "content": "The client shows strong patterns of emotional dysregulation, particularly in response to interpersonal stressors.",
-                    "type": "observation",
-                    "timestamp": datetime.now().isoformat(),
-                    "confidence": 0.8,
-                },
-                {
-                    "id": "2",
-                    "content": "I should focus on attachment style analysis to better understand the underlying patterns.",
-                    "type": "reasoning",
-                    "timestamp": datetime.now().isoformat(),
-                    "confidence": 0.7,
-                },
-                {
-                    "id": "3",
-                    "content": "The next step should be to correlate emotional responses with specific therapeutic interventions.",
-                    "type": "plan",
-                    "timestamp": datetime.now().isoformat(),
-                    "confidence": 0.9,
-                },
-            ],
+        # Path to the plan file
+        plan_file = os.path.join(os.path.dirname(__file__), "output", "plan.txt")
+
+        if not os.path.exists(plan_file):
+            raise HTTPException(
+                status_code=404,
+                detail="Plan file not found. Run deep agent workflow first."
+            )
+
+        # Read the plan file
+        with open(plan_file, "r", encoding="utf-8") as f:
+            plan_content = f.read()
+
+        # Parse the content into structured data
+        # Split into sections
+        sections = plan_content.split("\n\n")
+
+        subjective_text = ""
+        statistics_text = ""
+
+        # Extract sections
+        for i, section in enumerate(sections):
+            if section.strip().startswith("Subjective"):
+                # Get the next section as subjective content
+                if i + 1 < len(sections):
+                    subjective_text = sections[i + 1].strip()
+            elif section.strip().startswith("Statistics Summary"):
+                # Get remaining text as statistics
+                if i + 1 < len(sections):
+                    statistics_text = "\n".join(sections[i + 1:]).strip()
+
+        # Parse statistics into structured thoughts
+        thoughts = []
+        thought_id = 1
+
+        # Add subjective analysis as first thought
+        if subjective_text:
+            thoughts.append({
+                "id": str(thought_id),
+                "content": f"Subjective Analysis: {subjective_text}",
+                "type": "observation",
+                "timestamp": datetime.now().isoformat(),
+                "confidence": 0.9,
+            })
+            thought_id += 1
+
+        # Parse statistics lines into thoughts
+        if statistics_text:
+            stat_lines = statistics_text.split("\n")
+            i = 0
+            while i < len(stat_lines):
+                line = stat_lines[i]
+                if line.strip() and ":" in line:
+                    # Parse each statistic line
+                    parts = line.split(":", 1)
+                    if len(parts) == 2:
+                        category = parts[0].strip()
+                        data = parts[1].strip()
+
+                        # Check if this is "Personality" and the next line contains the actual data
+                        if category == "Personality" and not data and i + 1 < len(stat_lines):
+                            # Get the next line which has the personality data
+                            data = stat_lines[i + 1].strip()
+                            i += 1  # Skip the next line since we've already used it
+
+                        if data:  # Only add if we have actual data
+                            thoughts.append({
+                                "id": str(thought_id),
+                                "content": f"{category}: {data}",
+                                "type": "analysis",
+                                "timestamp": datetime.now().isoformat(),
+                                "confidence": 0.85,
+                            })
+                            thought_id += 1
+                i += 1
+
+        # Create todos based on the analysis
+        todos = [
+            {
+                "id": "1",
+                "task": "Analyze emotional patterns from session data",
+                "status": "completed",
+                "priority": "high",
+                "created_at": datetime.now().isoformat(),
+            },
+            {
+                "id": "2",
+                "task": "Identify cognitive distortions and schemas",
+                "status": "completed",
+                "priority": "high",
+                "created_at": datetime.now().isoformat(),
+            },
+            {
+                "id": "3",
+                "task": "Assess personality traits and attachment styles",
+                "status": "completed",
+                "priority": "medium",
+                "created_at": datetime.now().isoformat(),
+            },
+            {
+                "id": "4",
+                "task": "Generate comprehensive treatment plan",
+                "status": "completed",
+                "priority": "high",
+                "created_at": datetime.now().isoformat(),
+            },
+        ]
+
+        # Build the response
+        state = {
+            "current_task": "Deep psychological analysis completed",
+            "status": "completed",
+            "progress": 100,
+            "todos": todos,
+            "thoughts": thoughts,
+            "raw_analysis": plan_content,  # Include raw content for reference
         }
 
-        return mock_state
+        return state
 
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Plan file not found. Run deep agent workflow first."
+        )
     except Exception as e:
         print(f"Error in deep agent endpoint: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Deep agent error: {str(e)}")
+
+
+@app.post("/psychological_graphs")
+async def psychological_graphs_endpoint(session_id: str = "session_001"):
+    """
+    Get all psychological graph data formatted for React/Plotly visualizations.
+
+    This endpoint calls get_objective_statistics and formats the data into
+    the exact structure needed by the React visualization components.
+
+    Returns:
+        - emotions: Valence-arousal scatter plot data
+        - personality: Big Five radar chart data
+        - statistics: Bar chart data for various psychological patterns
+        - extreme_values: Highest/lowest trait values
+    """
+    try:
+        from src.tools.hybrid_rag_tools import get_objective_statistics, get_extreme_values
+        import re
+
+        # Get the raw statistics
+        stats_result = get_objective_statistics.invoke({"session_id": session_id})
+
+        # Initialize response structure
+        graph_data = {
+            "emotions": [],
+            "personality": {},
+            "statistics": {
+                "emotions": {"categories": [], "values": []},
+                "distortions": {"categories": [], "values": []},
+                "schemas": {"categories": [], "values": []},
+                "attachments": {"categories": [], "values": []},
+                "defenses": {"categories": [], "values": []}
+            },
+            "extreme_values": {},
+            "session_id": session_id
+        }
+
+        # Parse the text output from get_objective_statistics
+        lines = stats_result.split('\n')
+
+        current_section = None
+
+        for line in lines:
+            line = line.strip()
+
+            # Detect sections
+            if line.startswith("Top 5 Emotions:"):
+                current_section = "emotions"
+                continue
+            elif line.startswith("Top 5 Cognitive Distortions:"):
+                current_section = "distortions"
+                continue
+            elif line.startswith("Top 5 Core Schemas:"):
+                current_section = "schemas"
+                continue
+            elif line.startswith("Attachment Styles:"):
+                current_section = "attachments"
+                continue
+            elif line.startswith("Top 5 Defense Mechanisms:"):
+                current_section = "defenses"
+                continue
+            elif line.startswith("Big Five Personality Averages:"):
+                current_section = "personality"
+                continue
+
+            # Parse emotion data (with valence and arousal)
+            if current_section == "emotions" and line.startswith("-"):
+                # Format: "- Sadness: 10 occurrences (avg valence: -0.54, avg arousal: 0.39)"
+                match = re.search(r'-\s+([^:]+):\s+(\d+)\s+occurrences\s+\(avg valence:\s+([-\d.]+),\s+avg arousal:\s+([-\d.]+)\)', line)
+                if match:
+                    emotion_name = match.group(1).strip()
+                    count = int(match.group(2))
+                    valence = float(match.group(3))
+                    arousal = float(match.group(4))
+
+                    graph_data["emotions"].append({
+                        "name": emotion_name,
+                        "valence": valence,
+                        "arousal": arousal,
+                        "confidence": min(count / 15.0, 1.0),  # Normalize count to confidence (0-1)
+                        "count": count
+                    })
+
+                    # Also add to statistics
+                    graph_data["statistics"]["emotions"]["categories"].append(emotion_name)
+                    graph_data["statistics"]["emotions"]["values"].append(count)
+
+            # Parse distortions
+            elif current_section == "distortions" and line.startswith("-"):
+                # Format: "- Labeling: 6 occurrences"
+                match = re.search(r'-\s+([^:]+):\s+(\d+)\s+occurrences', line)
+                if match:
+                    name = match.group(1).strip()
+                    count = int(match.group(2))
+                    graph_data["statistics"]["distortions"]["categories"].append(name)
+                    graph_data["statistics"]["distortions"]["values"].append(count)
+
+            # Parse schemas
+            elif current_section == "schemas" and line.startswith("-"):
+                match = re.search(r'-\s+([^:]+):\s+(\d+)\s+occurrences', line)
+                if match:
+                    name = match.group(1).strip()
+                    count = int(match.group(2))
+                    graph_data["statistics"]["schemas"]["categories"].append(name)
+                    graph_data["statistics"]["schemas"]["values"].append(count)
+
+            # Parse attachments
+            elif current_section == "attachments" and line.startswith("-"):
+                match = re.search(r'-\s+([^:]+):\s+(\d+)\s+occurrences', line)
+                if match:
+                    name = match.group(1).strip()
+                    count = int(match.group(2))
+                    graph_data["statistics"]["attachments"]["categories"].append(name)
+                    graph_data["statistics"]["attachments"]["values"].append(count)
+
+            # Parse defenses
+            elif current_section == "defenses" and line.startswith("-"):
+                match = re.search(r'-\s+([^:]+):\s+(\d+)\s+occurrences', line)
+                if match:
+                    name = match.group(1).strip()
+                    count = int(match.group(2))
+                    graph_data["statistics"]["defenses"]["categories"].append(name)
+                    graph_data["statistics"]["defenses"]["values"].append(count)
+
+            # Parse Big Five personality
+            elif current_section == "personality" and line.startswith("-"):
+                # Format: "- Openness: 0.73 (High)"
+                match = re.search(r'-\s+([^:]+):\s+([\d.]+)\s+\(([^)]+)\)', line)
+                if match:
+                    trait = match.group(1).strip().lower()
+                    value = float(match.group(2))
+                    graph_data["personality"][trait] = value
+
+        # Get extreme values for neuroticism (as an example)
+        try:
+            extreme_neuroticism = get_extreme_values.invoke({
+                "property_type": "neuroticism",
+                "session_id": session_id,
+                "limit": 3
+            })
+            graph_data["extreme_values"]["neuroticism"] = extreme_neuroticism
+        except Exception as e:
+            print(f"Error getting extreme values: {e}")
+            graph_data["extreme_values"]["neuroticism"] = "No extreme value data available"
+
+        return graph_data
+
+    except Exception as e:
+        print(f"Error in psychological_graphs endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Graph data error: {str(e)}")
 
 
 @app.get("/tools")

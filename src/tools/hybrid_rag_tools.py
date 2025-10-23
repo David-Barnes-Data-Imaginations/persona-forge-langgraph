@@ -798,103 +798,154 @@ def get_qa_pair_details(qa_pair_id: str) -> str:
 
 
 @tool
-def get_personality_summary(focus_area: str = "overall") -> str:
+def get_personality_summary(focus_area: str = "overall", session_id: str = "session_001") -> str:
     """
-    Get a summary of personality traits and psychological patterns.
+    Get a summary of personality traits and psychological patterns across a session.
+
+    This tool uses direct graph queries (not vector search) to aggregate psychological
+    patterns and provide a comprehensive personality profile.
 
     Args:
         focus_area: Area to focus on - 'overall', 'emotions', 'cognition', 'attachment', or 'personality'
+        session_id: The session to analyze (default: 'session_001')
 
     Returns:
         Summary of psychological patterns and personality insights
     """
     rag = get_rag_instance()
 
-    # Use a broad search to get general personality patterns
-    if focus_area == "overall":
-        query = "personality emotions attachment cognitive patterns"
-    elif focus_area == "emotions":
-        query = "emotional patterns feelings empathy mood"
-    elif focus_area == "cognition":
-        query = "thinking patterns cognitive distortions mental processing"
-    elif focus_area == "attachment":
-        query = "relationships attachment style interpersonal"
-    elif focus_area == "personality":
-        query = "personality traits big five characteristics"
-    else:
-        query = focus_area
-
     try:
-        results = rag.search_psychological_context(query, k=5)
+        # Build Cypher query based on focus area
+        if focus_area == "overall":
+            # Get everything
+            cypher = """
+            MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
 
-        if not results:
-            return f"No personality data available for focus area: {focus_area}"
+            // Get all psychological relationships
+            OPTIONAL MATCH (qa)-[emo_rel:REVEALS_EMOTION]->(e:Emotion)
+            OPTIONAL MATCH (qa)-[dist_rel:EXHIBITS_DISTORTION]->(d:Cognitive_Distortion)
+            OPTIONAL MATCH (qa)-[att_rel:REVEALS_ATTACHMENT_STYLE]->(a:Attachment_Style)
+            OPTIONAL MATCH (qa)-[sch_rel:REVEALS_SCHEMA]->(sch:Schema)
+            OPTIONAL MATCH (qa)-[def_rel:USES_DEFENSE_MECHANISM]->(dm:Defense_Mechanism)
+            OPTIONAL MATCH (qa)-[bf_rel:SHOWS_BIG_FIVE]->(bf:Big_Five)
 
-        # Aggregate patterns across results
-        all_emotions = []
-        all_distortions = []
-        all_attachments = []
-        all_schemas = []
-        all_defenses = []
-        big_five_data = {}
+            WITH
+                collect(DISTINCT e.name) as emotions,
+                collect(DISTINCT d.type) as distortions,
+                collect(DISTINCT a.name) as attachments,
+                collect(DISTINCT sch.name) as schemas,
+                collect(DISTINCT dm.name) as defenses,
+                collect(DISTINCT {
+                    openness: bf_rel.openness,
+                    conscientiousness: bf_rel.conscientiousness,
+                    extraversion: bf_rel.extraversion,
+                    agreeableness: bf_rel.agreeableness,
+                    neuroticism: bf_rel.neuroticism
+                }) as big_five_list
 
-        for result in results:
-            # Extract names from the structured data
-            all_emotions.extend([e["name"] for e in result["emotions"] if e["name"]])
-            all_distortions.extend(
-                [d["type"] for d in result["distortions"] if d["type"]]
-            )
-            all_attachments.extend(
-                [a["name"] for a in result["attachment_styles"] if a["name"]]
-            )
-            all_schemas.extend([s["name"] for s in result["schemas"] if s["name"]])
-            all_defenses.extend(
-                [d["name"] for d in result["defense_mechanisms"] if d["name"]]
-            )
+            RETURN emotions, distortions, attachments, schemas, defenses, big_five_list
+            """
+        elif focus_area == "emotions":
+            cypher = """
+            MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+            OPTIONAL MATCH (qa)-[emo_rel:REVEALS_EMOTION]->(e:Emotion)
+            RETURN collect(DISTINCT e.name) as emotions
+            """
+        elif focus_area == "cognition":
+            cypher = """
+            MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+            OPTIONAL MATCH (qa)-[dist_rel:EXHIBITS_DISTORTION]->(d:Cognitive_Distortion)
+            OPTIONAL MATCH (qa)-[sch_rel:REVEALS_SCHEMA]->(sch:Schema)
+            RETURN collect(DISTINCT d.type) as distortions, collect(DISTINCT sch.name) as schemas
+            """
+        elif focus_area == "attachment":
+            cypher = """
+            MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+            OPTIONAL MATCH (qa)-[att_rel:REVEALS_ATTACHMENT_STYLE]->(a:Attachment_Style)
+            RETURN collect(DISTINCT a.name) as attachments
+            """
+        elif focus_area == "personality":
+            cypher = """
+            MATCH (s:Session {session_id: $session_id})-[:INCLUDES]->(qa:QA_Pair)
+            OPTIONAL MATCH (qa)-[bf_rel:SHOWS_BIG_FIVE]->(bf:Big_Five)
+            RETURN collect(DISTINCT {
+                openness: bf_rel.openness,
+                conscientiousness: bf_rel.conscientiousness,
+                extraversion: bf_rel.extraversion,
+                agreeableness: bf_rel.agreeableness,
+                neuroticism: bf_rel.neuroticism
+            }) as big_five_list
+            """
+        else:
+            return f"Unknown focus area: {focus_area}. Use 'overall', 'emotions', 'cognition', 'attachment', or 'personality'."
 
-            # Collect Big Five data
-            if result["openness"] is not None:
-                big_five_data["openness"] = result["openness"]
-            if result["conscientiousness"] is not None:
-                big_five_data["conscientiousness"] = result["conscientiousness"]
-            if result["extraversion"] is not None:
-                big_five_data["extraversion"] = result["extraversion"]
-            if result["agreeableness"] is not None:
-                big_five_data["agreeableness"] = result["agreeableness"]
-            if result["neuroticism"] is not None:
-                big_five_data["neuroticism"] = result["neuroticism"]
+        with rag.driver.session() as session:
+            result = session.run(cypher, session_id=session_id)
+            record = result.single()
 
-        # Create summary
-        summary_parts = [f"=== PERSONALITY SUMMARY: {focus_area.upper()} ===\n"]
+            if not record:
+                return f"No data found for session: {session_id}"
 
-        if all_emotions:
-            dominant_emotions = list(set(all_emotions))
-            summary_parts.append(f"Dominant Emotions: {', '.join(dominant_emotions)}")
+            # Build summary based on what we got
+            summary_parts = [f"=== PERSONALITY SUMMARY: {focus_area.upper()} ({session_id}) ===\n"]
 
-        if all_distortions:
-            key_distortions = list(set(all_distortions))
-            summary_parts.append(f"Cognitive Patterns: {', '.join(key_distortions)}")
+            # Process based on focus area
+            if focus_area in ["overall", "emotions"]:
+                emotions = [e for e in record.get("emotions", []) if e]
+                if emotions:
+                    unique_emotions = list(set(emotions))
+                    summary_parts.append(f"Dominant Emotions ({len(unique_emotions)}): {', '.join(unique_emotions)}")
 
-        if all_attachments:
-            attachment_styles = list(set(all_attachments))
-            summary_parts.append(f"Attachment Style: {', '.join(attachment_styles)}")
+            if focus_area in ["overall", "cognition"]:
+                distortions = [d for d in record.get("distortions", []) if d]
+                if distortions:
+                    unique_distortions = list(set(distortions))
+                    summary_parts.append(f"Cognitive Patterns ({len(unique_distortions)}): {', '.join(unique_distortions)}")
 
-        if all_schemas:
-            core_schemas = list(set(all_schemas))
-            summary_parts.append(f"Core Schemas: {', '.join(core_schemas)}")
+                schemas = [s for s in record.get("schemas", []) if s]
+                if schemas:
+                    unique_schemas = list(set(schemas))
+                    summary_parts.append(f"Core Schemas ({len(unique_schemas)}): {', '.join(unique_schemas)}")
 
-        if all_defenses:
-            defense_mechanisms = list(set(all_defenses))
-            summary_parts.append(f"Defense Mechanisms: {', '.join(defense_mechanisms)}")
+            if focus_area in ["overall", "attachment"]:
+                attachments = [a for a in record.get("attachments", []) if a]
+                if attachments:
+                    unique_attachments = list(set(attachments))
+                    summary_parts.append(f"Attachment Styles ({len(unique_attachments)}): {', '.join(unique_attachments)}")
 
-        if big_five_data:
-            big_five_summary = []
-            for trait, score in big_five_data.items():
-                level = "High" if score > 0.7 else "Moderate" if score > 0.4 else "Low"
-                big_five_summary.append(f"{trait.title()}: {level} ({score:.1f})")
-            summary_parts.append(f"Big Five Profile: {' | '.join(big_five_summary)}")
+            if focus_area == "overall":
+                defenses = [d for d in record.get("defenses", []) if d]
+                if defenses:
+                    unique_defenses = list(set(defenses))
+                    summary_parts.append(f"Defense Mechanisms ({len(unique_defenses)}): {', '.join(unique_defenses)}")
 
-        return "\n".join(summary_parts)
+            if focus_area in ["overall", "personality"]:
+                big_five_list = record.get("big_five_list", [])
+                # Filter out entries where all values are None
+                valid_big_five = [bf for bf in big_five_list if bf.get("openness") is not None]
+
+                if valid_big_five:
+                    # Calculate averages
+                    traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+                    trait_avgs = {}
+
+                    for trait in traits:
+                        values = [bf[trait] for bf in valid_big_five if bf.get(trait) is not None]
+                        if values:
+                            trait_avgs[trait] = sum(values) / len(values)
+
+                    if trait_avgs:
+                        big_five_summary = []
+                        for trait, score in trait_avgs.items():
+                            level = "High" if score > 0.7 else "Moderate" if score > 0.4 else "Low"
+                            big_five_summary.append(f"{trait.title()}: {level} ({score:.2f})")
+                        summary_parts.append(f"Big Five Profile: {' | '.join(big_five_summary)}")
+
+            # If we have no data at all
+            if len(summary_parts) == 1:
+                summary_parts.append(f"No {focus_area} data found for this session.")
+
+            return "\n".join(summary_parts)
 
     except Exception as e:
         return f"Error generating personality summary: {str(e)}"
