@@ -37,6 +37,7 @@ class LLMConfigPeon:
     # Voice-specific settings
     voice_enabled = False
 
+
 class LLMConfigGraphs:
     """Configuration for lead deep agent"""
 
@@ -50,6 +51,7 @@ class LLMConfigGraphs:
 
     # Voice-specific settings
     voice_enabled = False
+
 
 class LLMConfigArchitect:
     """Configuration for lead deep agent"""
@@ -91,7 +93,7 @@ class LLMConfigScribe:
     # Randomblock1/nemotron-nano is 4.9GB VRAM
     # model_name = "Randomblock1/nemotron-nano:8b"
     model_name = (
-        "openai/gpt-oss-20b"  # GPT running on the mini also as its best by a long shot
+        "gpt-oss:20b"  # GPT running on the mini also as its best by a long shot
     )
     temperature = 0.0
     max_tokens = 16384

@@ -6,6 +6,7 @@ from langgraph.prebuilt import create_react_agent
 from regex import P
 from ..agent_utils.deep_utils import format_messages
 from langgraph.graph.state import CompiledStateGraph
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from IPython.display import JSON
 from langchain_core.messages import messages_to_dict
@@ -57,11 +58,12 @@ from ..io_py.edge.config import (
 - Overseer - high level tasks, planning, analysis, report writing
 
 """
-# Local models (main PC) - LM Studio configuration
+
 alt_model = ChatOpenAI(
     model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
     max_tokens=LLMConfigPeon.max_tokens,
+    reasoning=LLMConfigPeon.reasoning,
     base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
     api_key="lm-studio",  # LM Studio doesn't require a real key
 )
@@ -70,9 +72,61 @@ overseer_model = ChatOpenAI(
     model=LLMConfigOverseer.model_name,
     temperature=LLMConfigOverseer.temperature,
     max_tokens=LLMConfigOverseer.max_tokens,
+    reasoning=LLMConfigOverseer.reasoning,
     base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
     api_key="lm-studio",  # LM Studio doesn't require a real key
 )
+
+# Remote model (mini-itx) - setup SSH tunnel first - Ollama since using ssh
+if LLMConfigScribe.use_remote:
+    from ..io_py.edge.ssh_tunnel import ensure_mini_tunnel
+
+    ensure_mini_tunnel()  # Start SSH tunnel to mini-itx
+
+    scribe_model = ChatOllama(
+        model=LLMConfigScribe.model_name,  # aka 'Scribe'
+        temperature=LLMConfigScribe.temperature,
+        reasoning=LLMConfigScribe.reasoning,
+        num_predict=LLMConfigScribe.max_tokens,
+        base_url=f"http://localhost:{LLMConfigScribe.remote_port}",  # Use tunneled port
+    )
+    print(
+        f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}"
+    )
+else:
+    scribe_model = ChatOllama(
+        model=LLMConfigScribe.model_name,
+        temperature=LLMConfigScribe.temperature,
+        reasoning=LLMConfigScribe.reasoning,
+        num_predict=LLMConfigScribe.max_tokens,
+    )
+
+"""Sub Agent models for the workflow
+- The reason for different models is to test parrallelism and specialisation of tasks
+- Peon (aka 'Alt') - Used as a parrallel agent to the scribe for diversity of answers
+- Scribe/SmolScribe - research, web searching, summarization (RUNS ON MINI-ITX)
+- Overseer - high level tasks, planning, analysis, report writing
+
+"""
+
+"""
+# ***LMSTUDIO / Ollama ALTS - Change these to preferred***
+# Local models (main PC) - LM Studio configuration
+# Local models (main PC)
+alt_model = ChatOllama(
+    model=LLMConfigPeon.model_name,  # aka 'alt'
+    temperature=LLMConfigPeon.temperature,
+    reasoning=LLMConfigPeon.reasoning,
+    num_predict=LLMConfigPeon.max_tokens,
+)
+
+overseer_model = ChatOllama(
+    model=LLMConfigOverseer.model_name,
+    temperature=LLMConfigOverseer.temperature,
+    reasoning=LLMConfigOverseer.reasoning,
+    num_predict=LLMConfigOverseer.max_tokens,
+)
+
 
 # Remote model (mini-itx) - setup SSH tunnel first
 if LLMConfigScribe.use_remote:
@@ -80,12 +134,13 @@ if LLMConfigScribe.use_remote:
 
     ensure_mini_tunnel()  # Start SSH tunnel to mini-itx
 
-    scribe_model = ChatOpenAI(
+    scribe_model = ChatOllama(
         model=LLMConfigScribe.model_name,  # aka 'Scribe'
         temperature=LLMConfigScribe.temperature,
         max_tokens=LLMConfigScribe.max_tokens,
         base_url=f"http://localhost:{LLMConfigScribe.remote_port}/v1",  # Use tunneled port with /v1 endpoint
-        api_key="lm-studio",  # LM Studio doesn't require a real key
+        api_key="ollama",  # ollama doesn't require a real key
+        reasoning=LLMConfigScribe.reasoning,
     )
     print(
         f"✅ Scribe model configured for remote execution on {LLMConfigScribe.remote_host}"
@@ -98,7 +153,7 @@ else:
         base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
         api_key="lm-studio",  # LM Studio doesn't require a real key
     )
-
+"""
 # Online models for testing (commented out - not currently used)
 # anthropic_model = init_chat_model(
 #     model="anthropic:claude-3-5-sonnet-20241022", temperature=0.0
