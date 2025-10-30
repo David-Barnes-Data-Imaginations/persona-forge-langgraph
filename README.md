@@ -1,5 +1,4 @@
 # Intro
-### Note: I have recently started using VSCode for the first time after 10 years of Jetbrains suite, so carnage has ensued in my git repo's. I'm working on fixing all the errors and reformatting it's dumped in my files.
 
 # The Persona-Forge
 
