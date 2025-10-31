@@ -12,8 +12,21 @@ import json
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file.
+# Prefer an explicit .env located at the repository root so imports work
+# even when the working directory is different (e.g. when running uvicorn
+# from the React frontend folder).
+try:
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    env_path = os.path.join(repo_root, ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+    else:
+        # Fall back to default search behaviour
+        load_dotenv()
+except Exception:
+    # Best-effort: fall back to default loader if anything goes wrong
+    load_dotenv()
 
 # Global RAG instance (initialize once, use many times)
 _rag_instance = None
@@ -26,7 +39,13 @@ def get_rag_instance():
         # Get Neo4j credentials from environment variables with fallbacks
         neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
         neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-        neo4j_password = os.getenv("NEO4JP")  # Using your existing env var name
+        # Accept several common env var names for the Neo4j password to be robust
+        neo4j_password = (
+            os.getenv("NEO4JP")
+            or os.getenv("NEO4J_PASSWORD")
+            or os.getenv("NEO4J_PASS")
+            or os.getenv("NEO4J_PWD")
+        )
 
         if not neo4j_password:
             raise ValueError(
@@ -798,7 +817,9 @@ def get_qa_pair_details(qa_pair_id: str) -> str:
 
 
 @tool
-def get_personality_summary(focus_area: str = "overall", session_id: str = "session_001") -> str:
+def get_personality_summary(
+    focus_area: str = "overall", session_id: str = "session_001"
+) -> str:
     """
     Get a summary of personality traits and psychological patterns across a session.
 
@@ -887,59 +908,91 @@ def get_personality_summary(focus_area: str = "overall", session_id: str = "sess
                 return f"No data found for session: {session_id}"
 
             # Build summary based on what we got
-            summary_parts = [f"=== PERSONALITY SUMMARY: {focus_area.upper()} ({session_id}) ===\n"]
+            summary_parts = [
+                f"=== PERSONALITY SUMMARY: {focus_area.upper()} ({session_id}) ===\n"
+            ]
 
             # Process based on focus area
             if focus_area in ["overall", "emotions"]:
                 emotions = [e for e in record.get("emotions", []) if e]
                 if emotions:
                     unique_emotions = list(set(emotions))
-                    summary_parts.append(f"Dominant Emotions ({len(unique_emotions)}): {', '.join(unique_emotions)}")
+                    summary_parts.append(
+                        f"Dominant Emotions ({len(unique_emotions)}): {', '.join(unique_emotions)}"
+                    )
 
             if focus_area in ["overall", "cognition"]:
                 distortions = [d for d in record.get("distortions", []) if d]
                 if distortions:
                     unique_distortions = list(set(distortions))
-                    summary_parts.append(f"Cognitive Patterns ({len(unique_distortions)}): {', '.join(unique_distortions)}")
+                    summary_parts.append(
+                        f"Cognitive Patterns ({len(unique_distortions)}): {', '.join(unique_distortions)}"
+                    )
 
                 schemas = [s for s in record.get("schemas", []) if s]
                 if schemas:
                     unique_schemas = list(set(schemas))
-                    summary_parts.append(f"Core Schemas ({len(unique_schemas)}): {', '.join(unique_schemas)}")
+                    summary_parts.append(
+                        f"Core Schemas ({len(unique_schemas)}): {', '.join(unique_schemas)}"
+                    )
 
             if focus_area in ["overall", "attachment"]:
                 attachments = [a for a in record.get("attachments", []) if a]
                 if attachments:
                     unique_attachments = list(set(attachments))
-                    summary_parts.append(f"Attachment Styles ({len(unique_attachments)}): {', '.join(unique_attachments)}")
+                    summary_parts.append(
+                        f"Attachment Styles ({len(unique_attachments)}): {', '.join(unique_attachments)}"
+                    )
 
             if focus_area == "overall":
                 defenses = [d for d in record.get("defenses", []) if d]
                 if defenses:
                     unique_defenses = list(set(defenses))
-                    summary_parts.append(f"Defense Mechanisms ({len(unique_defenses)}): {', '.join(unique_defenses)}")
+                    summary_parts.append(
+                        f"Defense Mechanisms ({len(unique_defenses)}): {', '.join(unique_defenses)}"
+                    )
 
             if focus_area in ["overall", "personality"]:
                 big_five_list = record.get("big_five_list", [])
                 # Filter out entries where all values are None
-                valid_big_five = [bf for bf in big_five_list if bf.get("openness") is not None]
+                valid_big_five = [
+                    bf for bf in big_five_list if bf.get("openness") is not None
+                ]
 
                 if valid_big_five:
                     # Calculate averages
-                    traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+                    traits = [
+                        "openness",
+                        "conscientiousness",
+                        "extraversion",
+                        "agreeableness",
+                        "neuroticism",
+                    ]
                     trait_avgs = {}
 
                     for trait in traits:
-                        values = [bf[trait] for bf in valid_big_five if bf.get(trait) is not None]
+                        values = [
+                            bf[trait]
+                            for bf in valid_big_five
+                            if bf.get(trait) is not None
+                        ]
                         if values:
                             trait_avgs[trait] = sum(values) / len(values)
 
                     if trait_avgs:
                         big_five_summary = []
                         for trait, score in trait_avgs.items():
-                            level = "High" if score > 0.7 else "Moderate" if score > 0.4 else "Low"
-                            big_five_summary.append(f"{trait.title()}: {level} ({score:.2f})")
-                        summary_parts.append(f"Big Five Profile: {' | '.join(big_five_summary)}")
+                            level = (
+                                "High"
+                                if score > 0.7
+                                else "Moderate" if score > 0.4 else "Low"
+                            )
+                            big_five_summary.append(
+                                f"{trait.title()}: {level} ({score:.2f})"
+                            )
+                        summary_parts.append(
+                            f"Big Five Profile: {' | '.join(big_five_summary)}"
+                        )
 
             # If we have no data at all
             if len(summary_parts) == 1:

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCopilotAction } from "@copilotkit/react-core";
+import { useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
 import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PsychologicalVisualization } from "@/components/PsychologicalVisualization";
 import { InsightsDashboard } from "@/components/InsightsDashboard";
 import { CircumplexVisualization } from "@/components/CircumplexVisualization";
 import { DeepAgentDashboard } from "@/components/DeepAgentDashboard";
+import VoiceControl from "@/components/VoiceControl";
 import { getBackendUrl } from "@/lib/config";
 
 // Agent state type - this should match your LangGraph agent state
@@ -34,6 +35,37 @@ export default function CopilotKitPage() {
     primary: "purple",
     gradient: "from-slate-900 via-purple-900 to-slate-900"
   });
+
+  const { messages, append } = useCopilotChat();
+
+  const handleTranscript = (transcript: string) => {
+    append({ role: "user", content: transcript });
+  };
+
+  const playAudio = async (text: string) => {
+    try {
+      const response = await fetch(getBackendUrl(`/api/voice/synthesize?text=${encodeURIComponent(text)}`), {
+        method: 'POST',
+      });
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      }
+    } catch (error) {
+      console.error("Error synthesizing voice:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === "assistant") {
+        playAudio(lastMessage.content);
+      }
+    }
+  }, [messages]);
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions
   useCopilotAction({
@@ -309,6 +341,7 @@ export default function CopilotKitPage() {
   return (
     <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
       <YourMainContent themeColor={themeColor} state={state} mainTheme={mainTheme} />
+      <VoiceControl handleTranscript={handleTranscript} />
       <CopilotSidebar
         clickOutsideToClose={false}
         defaultOpen={true}
@@ -361,8 +394,11 @@ function YourMainContent({ themeColor, state, mainTheme }: {
             <h1 className="text-4xl font-bold text-white mb-2">
               SentimentSuite AI
             </h1>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Welcome to your AI-powered therapy analysis platform.
+            </h2>
             <p className="text-slate-300 text-lg">
-              Advanced Psychological Analysis & Therapy Insights
+              <a href="/upload" className="text-purple-400 hover:text-purple-300">Upload a therapy session CSV</a> to begin.
             </p>
             <p className="text-slate-400 text-sm mt-2">
               Current Analysis: {state.current_analysis}
