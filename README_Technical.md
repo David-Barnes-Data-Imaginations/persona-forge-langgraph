@@ -65,7 +65,9 @@
 
 > I have set this up to run with Ollama for ease of use. These can be adapted to use online or other local model providers by editing 'config.py' and adapting the langchain ollama blocks in the 'src/graphs/' files. A gemini api key is also required unless the model provider is changed in 'deep_agent.py', 'hybrid_rag_tools.py' and 'research_tools.py'.
 
-> The workflows are much quicker using online models, Ollama models take around 1-3 hours to complete 'create_kg' and 'framework_analysis'. I've set these to gemini for ease of use for the user.
+> The workflows are much quicker using online models, local models take around 1-3 hours to complete 'create_kg' and 'framework_analysis'. I've set these to gemini for ease of use for the user.
+
+> I've now merged all functionality into the react app, so you only need to use the fastapi one if the react one isn't working (there's no reason it shouldn't).
 
 1. Download all project files. Rename the data_pub directory to just 'data', and rename the 'therapy_fictional.csv' to 'therapy_working.csv' (see also 'creating your own therapy script'). 
 
@@ -78,8 +80,15 @@ Install piper on your system if not already.
 2. Create a venv `uv venv` and activate it. `source .venv/bin/activate`  
 3. Install from requirements.txt: `uv pip install -r requirements.txt`
 4. Here are the services you need to start each time:
-a) Use start_services.sh
+a) Use 
+
+```
+cd /home/david-barnes/Documents/persona-forge-langgraph-master
+./start_services.sh
+```
+
 OR
+
 b)
 Backend API (required for tools/graphs):
 `uv run uvicorn ag_ui_backend:app --reload --port 8001 --host 127.0.0.1`
@@ -99,7 +108,6 @@ Click on 'create graph' to begin the Cypher workflow. Paste the output file into
 
 All the embeddings for hybrid-graph-rag are created for you.
 
-7. In the port 8000 app, click onto chat for the voice activated chat mode. Check the 'transcribe' and 'voice mode' buttons then chat away.
 
 ### Creating your own therapy script
 
