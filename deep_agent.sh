@@ -10,4 +10,4 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 cd "$SCRIPT_DIR" || exit 1
 
 # Run the deep agent with uv
-uv run python run_deep_agent.py "$@"
+uv run python run_deep_agent_e2b.py "$@"

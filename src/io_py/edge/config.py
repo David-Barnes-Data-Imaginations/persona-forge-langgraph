@@ -77,10 +77,10 @@ class LLMConfigOverseer:
 
     # THIS GOES ON THE MAIN PC
     # Randomblock1/nemotron-nano is 4.9GB VRAM
-    model_name = "Randomblock1/nemotron-nano:8b"
+    model_name = "nvidia_nvidia-nemotron-nano-12b-v2@q4_k_m"
     temperature = 0.0
     max_tokens = 16384
-    reasoning = True  # Add reasoning parameter for LangGraph compatibility
+    reasoning = False  # Add reasoning parameter for LangGraph compatibility
 
     # Voice-specific settings
     voice_enabled = False
