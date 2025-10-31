@@ -1,9 +1,19 @@
 INFO:     Will watch for changes in these directories: ['/home/david-barnes/Documents/persona-forge-langgraph-master']
 INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [24432] using StatReload
-INFO:     Started server process [24439]
+INFO:     Started reloader process [48341] using StatReload
+INFO:     Started server process [48344]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     127.0.0.1:60990 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49986 - "OPTIONS /visualize HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49986 - "POST /visualize HTTP/1.1" 200 OK
+🚀 Loading faster-whisper model...
+🎯 Loading model with CPU (cuDNN issues detected)...
+✅ faster-whisper model loaded successfully with CPU!
+INFO:     127.0.0.1:56088 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39860 - "WebSocket /ws/vad-stream" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:41472 - "WebSocket /ws/vad-stream" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:59292 - "WebSocket /ws/vad-stream" [accepted]
+INFO:     connection open
+INFO:     connection closed

@@ -1,96 +1,31 @@
 "use client";
 
-import { useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
-import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
-import { useState } from "react";
-import { PsychologicalVisualization } from "@/components/PsychologicalVisualization";
-import { InsightsDashboard } from "@/components/InsightsDashboard";
-import { CircumplexVisualization } from "@/components/CircumplexVisualization";
-import { DeepAgentDashboard } from "@/components/DeepAgentDashboard";
-import VoiceControl from "@/components/VoiceControl";
-import { getBackendUrl } from "@/lib/config";
-import Header from "@/components/Header";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// Agent state type - this should match your LangGraph agent state
-type SentimentAgentState = {
-  visualizations: any[];
-  insights: any[];
-  circumplex_data: any;
-  deep_agent_state: any;
-  current_analysis: string;
+export default function RootPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/landing");
+  }, [router]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting...</p>
+      </div>
+    </div>
+  );
 }
 
-export default function CopilotKitPage() {
-  const [themeColor, setThemeColor] = useState("#6366f1");
-
-  // State management for psychological analysis
-  const [state, setState] = useState<SentimentAgentState>({
-    visualizations: [],
-    insights: [],
-    circumplex_data: null,
-    deep_agent_state: null,
-    current_analysis: "Ready to analyze psychological data",
-  });
-
-  const [mainTheme, setMainTheme] = useState({
+/*
+// OLD CODE - REMOVED FOR REDIRECT
+const [mainTheme, setMainTheme] = useState({
     primary: "purple",
     gradient: "from-slate-900 via-purple-900 to-slate-900"
   });
-
-  // Store the voice transcript and trigger AI to respond
-  const [voiceTranscript, setVoiceTranscript] = useState<string>("");
-
-  const handleTranscript = (transcript: string) => {
-    console.log("🎤 Voice transcript received:", transcript);
-    
-    // Update state to show the transcript
-    setState({
-      ...state,
-      current_analysis: `🎤 Voice: "${transcript}"`,
-    });
-    
-    // Store transcript for the action to process
-    setVoiceTranscript(transcript);
-  };
-
-  // Action to process voice input - this makes it available to the AI
-  useCopilotAction({
-    name: "handleVoiceInput",
-    description: "Handle voice input from the user. This is automatically called when the user speaks into the microphone.",
-    parameters: [],
-    handler: async () => {
-      if (voiceTranscript) {
-        const input = voiceTranscript;
-        setVoiceTranscript(""); // Clear after processing
-        
-        // Return the transcript so the AI can respond to it
-        return `User said via voice: "${input}". Please respond to this as if it was typed in the chat.`;
-      }
-      return "No voice input available";
-    },
-  });
-
-  const playAudio = async (text: string) => {
-    try {
-      const response = await fetch(getBackendUrl(`/api/voice/synthesize?text=${encodeURIComponent(text)}`), {
-        method: 'POST',
-      });
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      }
-    } catch (error) {
-      console.error("Error synthesizing voice:", error);
-    }
-  };
-
-  // Note: Auto-playing TTS for responses is commented out for now
-  // You can enable this later by tracking when the assistant responds
-  // useEffect(() => {
-  //   // Play audio when assistant responds
-  // }, []);
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions
   useCopilotAction({
@@ -365,21 +300,15 @@ export default function CopilotKitPage() {
 
   return (
     <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
-      <Header />
       <YourMainContent themeColor={themeColor} state={state} mainTheme={mainTheme} />
-      <VoiceControl handleTranscript={handleTranscript} />
       <CopilotSidebar
         clickOutsideToClose={false}
         defaultOpen={true}
         labels={{
-          title: "Persona Forge AI Assistant",
-          initial: "👋 Hi! I'm your psychological analysis assistant.\n\n🎤 **Voice Mode**: Click the blue microphone button to speak!\n\nI can help you:\n\n- **Analyze Emotions**: \"Show me emotional patterns\"\n- **Personality Analysis**: \"Generate Big Five summary\"\n- **Statistical Overview**: \"Show psychological patterns\"\n- **Circumplex Visualization**: \"Create emotional circumplex\"\n- **Read Therapy Note**: \"Show the therapy assessment\"\n\nTry typing or speaking any command!"
+          title: "SentimentSuite AI Assistant",
+          initial: "👋 Hi! I'm your psychological analysis assistant. I can help you:\n\n- **Analyze Emotions**: \"Show me emotional patterns in the therapy session\"\n- **Personality Analysis**: \"Generate a Big Five personality summary\"\n- **Statistical Overview**: \"Show me statistical analysis of psychological patterns\"\n- **Circumplex Visualization**: \"Create an emotional circumplex plot\"\n- **Deep Analysis**: \"Run a deep analysis workflow\"\n\nTry any of these commands to see the AI-powered visualizations!"
         }}
         suggestions={[
-          {
-            title: "🎤 Process Voice Input",
-            message: voiceTranscript ? `Use the handleVoiceInput tool to process: "${voiceTranscript}"` : "Use the handleVoiceInput tool when user speaks"
-          },
           {
             title: "Analyze Emotions",
             message: "Use the analyzeEmotions tool to pull emotional patterns from the therapy session data and create visualizations now."
@@ -417,33 +346,25 @@ function YourMainContent({ themeColor, state, mainTheme }: {
   mainTheme: { primary: string; gradient: string }
 }) {
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className={`flex h-screen bg-gradient-to-br ${mainTheme.gradient}`}>
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <header className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              Persona Forge AI Chat
+            <h1 className="text-4xl font-bold text-white mb-2">
+              SentimentSuite AI
             </h1>
-            <h2 className="text-xl font-medium text-gray-600 mb-2">
-              AI-powered psychological analysis and insights.
-            </h2>
-            {state.current_analysis && (
-              <div className={`mt-3 p-3 rounded-lg ${
-                state.current_analysis.includes("Voice") 
-                  ? "bg-blue-100 border border-blue-300" 
-                  : "bg-gray-100 border border-gray-300"
-              }`}>
-                <p className="text-gray-700 text-sm">
-                  {state.current_analysis}
-                </p>
-              </div>
-            )}
+            <p className="text-slate-300 text-lg">
+              Advanced Psychological Analysis & Therapy Insights
+            </p>
+            <p className="text-slate-400 text-sm mt-2">
+              Current Analysis: {state.current_analysis}
+            </p>
           </header>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Visualization Panel */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-blue-100 shadow-lg">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">
                 Data Visualizations
               </h2>
               {state.visualizations && state.visualizations.length > 0 ? (
@@ -457,29 +378,29 @@ function YourMainContent({ themeColor, state, mainTheme }: {
                   ))}
                 </div>
               ) : (
-                <div className="text-gray-400 text-center py-12">
+                <div className="text-slate-400 text-center py-12">
                   Ask the AI to visualize psychological data to see charts here
                 </div>
               )}
             </div>
 
             {/* Insights Panel */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-blue-100 shadow-lg">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">
                 Psychological Insights
               </h2>
               {state.insights && state.insights.length > 0 ? (
                 <InsightsDashboard insights={state.insights} />
               ) : (
-                <div className="text-gray-400 text-center py-12">
+                <div className="text-slate-400 text-center py-12">
                   Ask the AI for psychological insights to see analysis here
                 </div>
               )}
             </div>
 
             {/* Circumplex Panel */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-blue-100 shadow-lg">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+              <h2 className="text-xl font-semibold text-white mb-4">
                 Emotional Circumplex
               </h2>
               {state.circumplex_data ? (
@@ -488,7 +409,7 @@ function YourMainContent({ themeColor, state, mainTheme }: {
                   title={state.circumplex_data.title} 
                 />
               ) : (
-                <div className="text-gray-400 text-center py-12">
+                <div className="text-slate-400 text-center py-12">
                   Ask the AI to create a circumplex plot to see emotional mapping here
                 </div>
               )}
