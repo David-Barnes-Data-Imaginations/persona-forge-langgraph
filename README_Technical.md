@@ -78,6 +78,9 @@ Install piper on your system if not already.
 2. Create a venv `uv venv` and activate it. `source .venv/bin/activate`  
 3. Install from requirements.txt: `uv pip install -r requirements.txt`
 4. Here are the services you need to start each time:
+a) Use start_services.sh
+OR
+b)
 Backend API (required for tools/graphs):
 `uv run uvicorn ag_ui_backend:app --reload --port 8001 --host 127.0.0.1`
 React Frontend:
