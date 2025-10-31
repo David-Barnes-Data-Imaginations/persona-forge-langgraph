@@ -1,3 +1,5 @@
+### Note: I'm currently building a production ready (all features centralized into a single dashboard) version of this project into GCP, which allow for easier testing without local compute requirements.
+
 # Intro
 
 # The Persona-Forge
