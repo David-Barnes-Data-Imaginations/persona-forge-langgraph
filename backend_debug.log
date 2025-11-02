@@ -1,0 +1,18 @@
+INFO:     Will watch for changes in these directories: ['/home/david-barnes/Documents/persona-forge-langgraph-master']
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [21632] using StatReload
+INFO:     Started server process [21634]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54772 - "WebSocket /ws/vad-stream" [accepted]
+INFO:     connection open
+Traceback (most recent call last):
+  File "/home/david-barnes/Documents/persona-forge-langgraph-master/ag_ui_backend.py", line 873, in vad_websocket_endpoint
+    data = await websocket.receive()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/david-barnes/Documents/persona-forge-langgraph-master/.venv/lib/python3.13/site-packages/starlette/websockets.py", line 57, in receive
+    raise RuntimeError('Cannot call "receive" once a disconnect message has been received.')
+RuntimeError: Cannot call "receive" once a disconnect message has been received.
+INFO:     connection closed
+/home/david-barnes/.local/share/uv/python/cpython-3.13.3-linux-x86_64-gnu/lib/python3.13/multiprocessing/resource_tracker.py:301: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-cjkg0d8d'}
+  warnings.warn(

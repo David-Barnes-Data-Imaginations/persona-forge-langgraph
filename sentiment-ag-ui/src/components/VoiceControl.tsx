@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Volume2 } from "lucide-react";
 
@@ -14,19 +13,23 @@ export default function VoiceControl({ handleTranscript }: VoiceControlProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [status, setStatus] = useState<string>("Ready");
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     return () => {
       if (socket) {
         socket.close();
       }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
+      if (processorRef.current) {
+        processorRef.current.disconnect();
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, [socket]);
@@ -43,32 +46,54 @@ export default function VoiceControl({ handleTranscript }: VoiceControlProps) {
         setStatus("Listening...");
         
         try {
+          // Get microphone stream
           const stream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
               channelCount: 1,
               sampleRate: 16000,
               echoCancellation: true,
               noiseSuppression: true,
+              autoGainControl: true,
             } 
           });
-          
-          const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: "audio/webm;codecs=opus"
-          });
-          mediaRecorderRef.current = mediaRecorder;
+          streamRef.current = stream;
 
-          mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-              ws.send(event.data);
+          // Create audio context
+          const audioContext = new AudioContext({ sampleRate: 16000 });
+          audioContextRef.current = audioContext;
+
+          const source = audioContext.createMediaStreamSource(stream);
+          
+          // Create script processor to get raw audio data
+          const processor = audioContext.createScriptProcessor(4096, 1, 1);
+          processorRef.current = processor;
+
+          let chunkCount = 0;
+          processor.onaudioprocess = (e) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              const inputData = e.inputBuffer.getChannelData(0);
+              
+              // Convert float32 to int16 PCM
+              const pcmData = new Int16Array(inputData.length);
+              for (let i = 0; i < inputData.length; i++) {
+                const s = Math.max(-1, Math.min(1, inputData[i]));
+                pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              }
+              
+              // Send raw PCM data
+              ws.send(pcmData.buffer);
+              chunkCount++;
+              
+              // Log every 50 chunks (roughly every 2 seconds)
+              if (chunkCount % 50 === 0) {
+                console.log(`📦 Sent ${chunkCount} audio chunks (${pcmData.length} samples each)`);
+              }
             }
           };
 
-          mediaRecorder.onstop = () => {
-            stream.getTracks().forEach(track => track.stop());
-            ws.close();
-          };
-
-          mediaRecorder.start(1000); // Send data every second
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+          
           setIsRecording(true);
         } catch (error) {
           console.error("❌ Microphone access error:", error);
@@ -84,10 +109,19 @@ export default function VoiceControl({ handleTranscript }: VoiceControlProps) {
             console.log("✅ Received transcript:", message.text);
             handleTranscript(message.text);
             setStatus("Transcribed!");
-            setTimeout(() => setStatus("Listening..."), 2000);
+            
+            // Close WebSocket after receiving transcript
+            setTimeout(() => {
+              console.log("✅ Closing WebSocket after successful transcription");
+              if (ws) ws.close();
+            }, 500);
           } else if (message.type === "ERROR") {
             console.error("❌ Transcription error:", message.message);
             setStatus("Error: " + message.message);
+            if (ws) ws.close();
+          } else if (message.type === "STATUS") {
+            console.log("ℹ️ Status:", message.message);
+            if (ws) ws.close();
           }
         } catch (error) {
           console.error("❌ Message parse error:", error);
@@ -98,6 +132,7 @@ export default function VoiceControl({ handleTranscript }: VoiceControlProps) {
         console.log("🎤 WebSocket closed");
         setIsRecording(false);
         setStatus("Ready");
+        cleanup();
       };
 
       ws.onerror = (error) => {
@@ -112,11 +147,48 @@ export default function VoiceControl({ handleTranscript }: VoiceControlProps) {
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+  const cleanup = () => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
     }
-    setStatus("Stopping...");
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const stopRecording = () => {
+    console.log("🛑 Stopping recording...");
+    setStatus("Processing...");
+    
+    // Send UTTERANCE_END message to trigger transcription
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const endMessage = JSON.stringify({ type: "UTTERANCE_END" });
+      console.log("📤 Sending UTTERANCE_END message:", endMessage);
+      console.log("⏳ Keeping WebSocket open to receive transcription response...");
+      socket.send(endMessage);
+      
+      // DON'T close immediately - wait for transcription response!
+      // The onmessage handler will receive the response and close after
+      // Set a timeout in case backend doesn't respond
+      setTimeout(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          console.log("⏰ Timeout waiting for transcription response, closing WebSocket");
+          socket.close();
+        }
+      }, 30000);  // 30 second timeout
+    } else {
+      console.error("❌ Cannot send UTTERANCE_END - socket not open. State:", socket?.readyState);
+    }
+    
+    // Stop audio capture but keep WebSocket open for response
+    cleanup();
+    setIsRecording(false);
   };
 
   return (

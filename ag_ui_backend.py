@@ -16,6 +16,8 @@ import tempfile
 import os
 import glob
 import subprocess
+import numpy as np
+import soundfile as sf
 
 # Import your existing LangGraph components
 from src.graphs.chat_agent import get_new_agent
@@ -36,6 +38,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://localhost:3002",
         "http://localhost:3003",
+        "http://localhost:3004",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -844,73 +847,121 @@ except Exception as e:
 
 
 @app.websocket("/ws/vad-stream")
-async def websocket_voice_stream(websocket: WebSocket):
+async def vad_websocket_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for real-time voice transcription
-    Receives audio chunks and returns transcription
+    WebSocket endpoint for VAD-based streaming transcription.
+    Expects raw PCM audio data and UTTERANCE_END control messages.
     """
     await websocket.accept()
-
-    if not VOICE_SERVICE_AVAILABLE:
-        await websocket.send_json(
-            {"type": "ERROR", "message": "Voice service not available"}
-        )
+    print("🎤 VAD WebSocket connection accepted")
+    
+    # Check if faster_whisper_service is available
+    if not faster_whisper_service:
+        print("❌ Faster Whisper service not available")
+        await websocket.send_json({
+            "type": "ERROR",
+            "message": "Faster Whisper service not available"
+        })
         await websocket.close()
         return
-
-    print("🎤 Voice WebSocket connected")
-    audio_buffer = bytearray()
-
+    
+    current_frames = []
+    chunk_count = 0
+    
     try:
         while True:
-            # Receive audio data
-            data = await websocket.receive_bytes()
-            audio_buffer.extend(data)
-
-            # Process when buffer reaches threshold (e.g., 1 second of audio)
-            # Assuming 16kHz, 16-bit audio = 32000 bytes per second
-            if len(audio_buffer) >= 64000:  # ~2 seconds of audio
-                print(f"🎤 Processing {len(audio_buffer)} bytes of audio")
-
-                # Save to temporary WAV file
-                with tempfile.NamedTemporaryFile(
-                    suffix=".wav", delete=False
-                ) as tmp_file:
-                    tmp_path = tmp_file.name
-
-                    # Write WAV header + audio data
-                    # This is a simplified approach - adjust based on your audio format
-                    import wave
-
-                    with wave.open(tmp_path, "wb") as wav_file:
-                        wav_file.setnchannels(1)  # mono
-                        wav_file.setsampwidth(2)  # 16-bit
-                        wav_file.setframerate(16000)  # 16kHz
-                        wav_file.writeframes(bytes(audio_buffer))
-
+            data = await websocket.receive()
+            
+            # Handle binary audio data (raw PCM)
+            if "bytes" in data:
+                pcm_data = np.frombuffer(data["bytes"], dtype=np.int16)
+                current_frames.append(pcm_data)
+                chunk_count += 1
+                
+                # Log every 50 chunks (roughly every 2 seconds)
+                if chunk_count % 50 == 0:
+                    print(f"📦 Received {chunk_count} PCM chunks, total samples: {sum(len(f) for f in current_frames)}")
+            
+            # Handle text messages (control messages)
+            elif "text" in data:
                 try:
-                    # Transcribe using faster-whisper
-                    transcript = faster_whisper_service.transcribe_audio_file(tmp_path)
-
-                    if transcript and transcript.strip():
-                        await websocket.send_json(
-                            {"type": "TRANSCRIPT", "text": transcript}
-                        )
-                        print(f"✅ Transcribed: {transcript}")
-
-                finally:
-                    # Clean up temp file
-                    if os.path.exists(tmp_path):
-                        os.remove(tmp_path)
-
-                # Clear buffer after processing
-                audio_buffer.clear()
-
+                    message = json.loads(data["text"])
+                    print(f"📨 Received message: {message}")
+                    
+                    # UTTERANCE_END triggers transcription
+                    if message.get("type") == "UTTERANCE_END":
+                        print(f"� UTTERANCE_END received. Chunks collected: {chunk_count}")
+                        
+                        if not current_frames:
+                            print("⚠️ No audio data received")
+                            await websocket.send_json({
+                                "type": "STATUS",
+                                "message": "No audio data received"
+                            })
+                            continue
+                        
+                        # Concatenate all frames
+                        full_audio = np.concatenate(current_frames)
+                        print(f"🔄 Processing utterance: {len(full_audio)} samples ({len(full_audio)/16000:.2f} seconds)")
+                        
+                        # Convert to float32 for soundfile (normalize int16 to float range)
+                        audio_float = full_audio.astype(np.float32) / 32768.0
+                        print(f"🔊 Audio stats - Min: {audio_float.min():.4f}, Max: {audio_float.max():.4f}, Mean: {audio_float.mean():.4f}")
+                        
+                        # Save to temporary WAV file
+                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                            sf.write(tmp_file.name, audio_float, 16000)
+                            print(f"💾 Saved WAV file: {tmp_file.name}")
+                            
+                            # Transcribe
+                            print("🎯 Starting transcription...")
+                            transcription = faster_whisper_service.transcribe_audio_file(tmp_file.name)
+                            print(f"📝 Transcription result: '{transcription}'")
+                            
+                            # Clean up temp file
+                            os.unlink(tmp_file.name)
+                            print(f"🗑️ Cleaned up temp file")
+                        
+                        # Check if transcription has meaningful content
+                        if transcription and len(transcription.strip()) > 0:
+                            print(f"✅ Sending transcript to frontend: '{transcription.strip()}'")
+                            await websocket.send_json({
+                                "type": "TRANSCRIPT",
+                                "text": transcription.strip(),
+                                "timestamp": datetime.now().isoformat()
+                            })
+                        else:
+                            print("⚠️ No speech detected in audio")
+                            await websocket.send_json({
+                                "type": "STATUS",
+                                "message": "No speech detected"
+                            })
+                        
+                        # Clear frames for next utterance
+                        current_frames = []
+                        chunk_count = 0
+                        print("🔄 Frames cleared, ready for next utterance")
+                        
+                except json.JSONDecodeError as e:
+                    print(f"❌ JSON decode error: {e}")
+                    await websocket.send_json({
+                        "type": "ERROR",
+                        "message": f"Invalid JSON: {str(e)}"
+                    })
+    
     except WebSocketDisconnect:
-        print("🎤 Voice WebSocket disconnected")
+        print("🔌 WebSocket disconnected")
     except Exception as e:
-        print(f"❌ Voice WebSocket error: {e}")
-        await websocket.send_json({"type": "ERROR", "message": str(e)})
+        print(f"❌ WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            await websocket.send_json({
+                "type": "ERROR",
+                "message": str(e)
+            })
+        except:
+            pass
 
 
 @app.post("/api/voice/synthesize")

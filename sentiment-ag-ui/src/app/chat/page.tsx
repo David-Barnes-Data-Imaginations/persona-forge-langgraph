@@ -37,8 +37,8 @@ export default function CopilotKitPage() {
     gradient: "from-slate-900 via-purple-900 to-slate-900"
   });
 
-  // Store the voice transcript and trigger AI to respond
-  const [voiceTranscript, setVoiceTranscript] = useState<string>("");
+  // Get CopilotKit's chat functions
+  const copilotChat = useCopilotChat();
 
   const handleTranscript = (transcript: string) => {
     console.log("🎤 Voice transcript received:", transcript);
@@ -49,26 +49,117 @@ export default function CopilotKitPage() {
       current_analysis: `🎤 Voice: "${transcript}"`,
     });
     
-    // Store transcript for the action to process
-    setVoiceTranscript(transcript);
-  };
-
-  // Action to process voice input - this makes it available to the AI
-  useCopilotAction({
-    name: "handleVoiceInput",
-    description: "Handle voice input from the user. This is automatically called when the user speaks into the microphone.",
-    parameters: [],
-    handler: async () => {
-      if (voiceTranscript) {
-        const input = voiceTranscript;
-        setVoiceTranscript(""); // Clear after processing
-        
-        // Return the transcript so the AI can respond to it
-        return `User said via voice: "${input}". Please respond to this as if it was typed in the chat.`;
+    // IMPORTANT: Inject the transcript into the CopilotKit sidebar
+    // We'll trigger the chat input by finding the textarea and simulating user input
+    setTimeout(() => {
+      console.log("🔍 Looking for chat input textarea...");
+      
+      // Try multiple selectors to find the chat input
+      let chatInput = document.querySelector('textarea[placeholder*="Message"]') as HTMLTextAreaElement;
+      
+      if (!chatInput) {
+        console.log("⚠️ Trying alternative selector...");
+        chatInput = document.querySelector('textarea') as HTMLTextAreaElement;
       }
-      return "No voice input available";
-    },
-  });
+      
+      if (chatInput) {
+        console.log("✅ Found chat input, setting value:", transcript);
+        
+        // Get the form that contains the textarea
+        const form = chatInput.closest('form');
+        console.log("📝 Found form:", form ? "YES" : "NO");
+        
+        // Set the value
+        chatInput.value = transcript;
+        
+        // Trigger multiple events to ensure React picks it up
+        const inputEvent = new Event('input', { bubbles: true });
+        const changeEvent = new Event('change', { bubbles: true });
+        chatInput.dispatchEvent(inputEvent);
+        chatInput.dispatchEvent(changeEvent);
+        
+        // Focus the input
+        chatInput.focus();
+        
+        console.log("🔍 Looking for send button...");
+        
+        // Method 1: Try to find submit button
+        let sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+        
+        if (!sendButton && form) {
+          // Look for button inside the form
+          sendButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        }
+        
+        if (!sendButton) {
+          console.log("⚠️ Trying alternative button selectors...");
+          // Look for button with aria-label
+          sendButton = document.querySelector('button[aria-label*="Send"]') as HTMLButtonElement;
+        }
+        
+        if (!sendButton) {
+          // Try finding button with SVG icon (send icon)
+          const buttons = Array.from(document.querySelectorAll('button'));
+          sendButton = buttons.find(btn => {
+            const svg = btn.querySelector('svg');
+            const hasIcon = svg && (
+              svg.innerHTML.includes('path') || 
+              svg.innerHTML.includes('polygon')
+            );
+            return hasIcon || 
+              btn.textContent?.toLowerCase().includes('send') ||
+              btn.getAttribute('aria-label')?.toLowerCase().includes('send');
+          }) as HTMLButtonElement;
+          
+          if (sendButton) {
+            console.log("✅ Found button with icon!");
+          }
+        }
+        
+        if (sendButton) {
+          setTimeout(() => {
+            console.log("✅ Clicking send button!");
+            sendButton.click();
+            console.log("✅ Voice input sent to chat!");
+          }, 200);
+        } else if (form) {
+          // Try submitting the form directly
+          console.log("📤 Trying to submit form directly...");
+          setTimeout(() => {
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(submitEvent);
+            console.log("✅ Form submitted!");
+          }, 200);
+        } else {
+          console.error("❌ Could not find send button or form. Trying Enter key...");
+          // Fallback: trigger Enter key (without Shift for submission)
+          const enterEvent = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true
+          });
+          chatInput.dispatchEvent(enterEvent);
+          
+          // Also try keypress and keyup
+          const keypressEvent = new KeyboardEvent('keypress', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true
+          });
+          chatInput.dispatchEvent(keypressEvent);
+        }
+      } else {
+        console.error("❌ Could not find chat input textarea!");
+        console.log("Available textareas:", document.querySelectorAll('textarea'));
+      }
+    }, 100);
+  };
 
   const playAudio = async (text: string) => {
     try {
@@ -376,10 +467,6 @@ export default function CopilotKitPage() {
           initial: "👋 Hi! I'm your psychological analysis assistant.\n\n🎤 **Voice Mode**: Click the blue microphone button to speak!\n\nI can help you:\n\n- **Analyze Emotions**: \"Show me emotional patterns\"\n- **Personality Analysis**: \"Generate Big Five summary\"\n- **Statistical Overview**: \"Show psychological patterns\"\n- **Circumplex Visualization**: \"Create emotional circumplex\"\n- **Read Therapy Note**: \"Show the therapy assessment\"\n\nTry typing or speaking any command!"
         }}
         suggestions={[
-          {
-            title: "🎤 Process Voice Input",
-            message: voiceTranscript ? `Use the handleVoiceInput tool to process: "${voiceTranscript}"` : "Use the handleVoiceInput tool when user speaks"
-          },
           {
             title: "Analyze Emotions",
             message: "Use the analyzeEmotions tool to pull emotional patterns from the therapy session data and create visualizations now."

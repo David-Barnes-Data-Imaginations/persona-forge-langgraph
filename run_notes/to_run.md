@@ -65,3 +65,8 @@ Process a range of QA pairs:
 uv run python fixes/anonymize_therapy_csv.py --start 1 --end 10
 Process ALL QA pairs:
 uv run python fixes/anonymize_therapy_csv.py --all
+
+
+# Make sure both services are running
+cd /home/david-barnes/Documents/persona-forge-langgraph-master
+./start_services.sh
