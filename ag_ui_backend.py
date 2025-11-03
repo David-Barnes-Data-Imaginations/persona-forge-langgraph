@@ -9,12 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import json
-import asyncio
 from datetime import datetime
-import io
 import tempfile
 import os
-import glob
 import subprocess
 import shutil
 import numpy as np
@@ -113,7 +110,7 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
         config = {"configurable": {"thread_id": request.thread_id}}
 
         # Run the agent
-        result = await agent.ainvoke({"messages": messages}, config=config)
+        result = await agent.ainvoke({"messages": messages}, config=config)  # type: ignore[arg-type]
 
         # Extract the response
         if result and "messages" in result:
@@ -184,7 +181,7 @@ async def visualize_endpoint(request: VisualizationRequest):
 
                     numbers = re.findall(r"(\w+):\s*(\d+)", result)
                     data = {key: int(value) for key, value in numbers}
-                except:
+                except Exception:
                     data = {"raw_result": result}
             else:
                 data = result
@@ -840,8 +837,8 @@ async def get_cypher_output():
 
 # Import voice service
 try:
-    from google.cloud import speech_v1p1beta1 as speech
-    from google.cloud import texttospeech
+    from google.cloud import speech_v1p1beta1 as speech  # type: ignore[import]
+    from google.cloud import texttospeech  # type: ignore[import]
     from dotenv import load_dotenv
 
     load_dotenv()
@@ -919,7 +916,7 @@ async def websocket_endpoint(websocket: WebSocket):
         traceback.print_exc()
         try:
             await websocket.send_json({"type": "ERROR", "message": str(e)})
-        except:
+        except Exception:
             pass
 
 
@@ -928,7 +925,11 @@ async def websocket_endpoint(websocket: WebSocket):
 async def vad_websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for VAD audio streaming, using faster-whisper."""
     await websocket.accept()
-    print("🎤 VAD WebSocket connection established for AG-UI")
+    provider_choice = websocket.query_params.get("provider", "local").lower()
+    language_code = os.getenv("GOOGLE_SPEECH_LANGUAGE", "en-US")
+    print(
+        f"🎤 VAD WebSocket connection established for AG-UI (provider={provider_choice}, language={language_code})"
+    )
 
     current_frames = []
 
@@ -954,36 +955,95 @@ async def vad_websocket_endpoint(websocket: WebSocket):
                     full_audio = np.concatenate(current_frames)
                     current_frames = []
 
+                    tmp_path = None
                     try:
                         with tempfile.NamedTemporaryFile(
                             suffix=".wav", delete=False
                         ) as tmp_file:
+                            tmp_path = tmp_file.name
                             audio_float = full_audio.astype(np.float32) / 32768.0
-                            sf.write(tmp_file.name, audio_float, 16000)
+                            sf.write(tmp_path, audio_float, 16000)
 
-                        print(f"🎤 Transcribing {len(audio_float)} samples...")
-                        transcription = faster_whisper_service.transcribe_audio_file(
-                            tmp_file.name
+                        print(
+                            f"🎤 Transcribing {len(full_audio)} samples via {provider_choice}"
                         )
-                        os.unlink(tmp_file.name)
+
+                        active_provider = provider_choice
+                        transcription = ""
+
+                        if provider_choice == "google" and not VOICE_SERVICE_AVAILABLE:
+                            warning_message = "Google Speech service unavailable, falling back to local STT"
+                            print(f"⚠️ {warning_message}")
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "type": "STATUS",
+                                        "message": "Falling back to on-device speech recognition",
+                                        "timestamp": datetime.now().isoformat(),
+                                    }
+                                )
+                            )
+                            active_provider = "local"
+
+                        if active_provider == "google":
+                            try:
+                                with open(tmp_path, "rb") as wav_file:
+                                    wav_bytes = wav_file.read()
+
+                                client = speech.SpeechClient()
+                                audio = speech.RecognitionAudio(content=wav_bytes)
+                                config = speech.RecognitionConfig(
+                                    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                                    sample_rate_hertz=16000,
+                                    language_code=language_code,
+                                )
+
+                                response = client.recognize(config=config, audio=audio)
+
+                                if response.results:
+                                    transcription = (
+                                        response.results[0].alternatives[0].transcript
+                                    )
+
+                            except Exception as google_error:
+                                print(f"❌ Google STT error: {google_error}")
+                                await websocket.send_text(
+                                    json.dumps(
+                                        {
+                                            "type": "STATUS",
+                                            "message": "Google transcription failed, retrying locally",
+                                            "timestamp": datetime.now().isoformat(),
+                                        }
+                                    )
+                                )
+                                active_provider = "local"
+
+                        if active_provider != "google":
+                            transcription = (
+                                faster_whisper_service.transcribe_audio_file(tmp_path)
+                                or ""
+                            )
 
                         if (
                             transcription
                             and transcription.strip()
                             and "error" not in transcription.lower()
                         ):
+                            cleaned = transcription.strip()
                             await websocket.send_text(
                                 json.dumps(
                                     {
                                         "type": "TRANSCRIPT",
-                                        "text": transcription.strip(),
+                                        "text": cleaned,
                                         "timestamp": datetime.now().isoformat(),
                                     }
                                 )
                             )
-                            print(f"✅ Sent transcription: '{transcription.strip()}'")
+                            print(f"✅ Sent transcription: '{cleaned}'")
                         else:
-                            print(f"⚠️ Empty or error transcription: '{transcription}'")
+                            print(
+                                f"⚠️ Empty or error transcription from {active_provider}: '{transcription}'"
+                            )
                             await websocket.send_text(
                                 json.dumps(
                                     {
@@ -1005,6 +1065,9 @@ async def vad_websocket_endpoint(websocket: WebSocket):
                                 }
                             )
                         )
+                    finally:
+                        if tmp_path and os.path.exists(tmp_path):
+                            os.unlink(tmp_path)
 
     except WebSocketDisconnect:
         print("🔌 VAD WebSocket connection closed for AG-UI")

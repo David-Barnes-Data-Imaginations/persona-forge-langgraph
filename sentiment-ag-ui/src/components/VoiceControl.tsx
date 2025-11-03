@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square } from "lucide-react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8001";
+const VOICE_PROVIDER = (process.env.NEXT_PUBLIC_VOICE_PROVIDER || "local").toLowerCase();
 
 const WORKLET_CODE = `
     class VADProcessor extends AudioWorkletProcessor {
@@ -183,8 +184,9 @@ export default function VoiceControl({ handleTranscript, isSpeaking = false }: V
       return Promise.resolve(existing);
     }
 
-    const wsUrl = BACKEND_URL.replace(/^http/, "ws");
-    const ws = new WebSocket(`${wsUrl}/ws/vad`);
+  const wsUrl = BACKEND_URL.replace(/^http/, "ws");
+  const providerQuery = encodeURIComponent(VOICE_PROVIDER);
+  const ws = new WebSocket(`${wsUrl}/ws/vad?provider=${providerQuery}`);
     socketRef.current = ws;
     socketReadyRef.current = false;
     updateStatus("Connecting...");

@@ -11,6 +11,8 @@ import VoiceControl from "@/components/VoiceControl";
 import { getBackendUrl } from "@/lib/config";
 import Header from "@/components/Header";
 
+const DEFAULT_TTS_PROVIDER = (process.env.NEXT_PUBLIC_TTS_PROVIDER || process.env.NEXT_PUBLIC_VOICE_PROVIDER || "local").toLowerCase();
+
 // Agent state type - this should match your LangGraph agent state
 type EmotionDatum = {
   name: string;
@@ -115,7 +117,7 @@ export default function CopilotKitPage() {
     gradient: "from-slate-900 via-purple-900 to-slate-900"
   });
 
-  // Play audio using Piper TTS
+  // Play audio using the configured TTS provider
   const playAudio = useCallback(async (text: string) => {
     if (!voiceModeEnabled || !text || text.trim().length === 0) {
       return;
@@ -125,11 +127,18 @@ export default function CopilotKitPage() {
       console.log("🔊 Playing TTS for:", text.substring(0, 50) + "...");
       setIsSpeaking(true);
 
-  // Use URLSearchParams to properly encode the text parameter
-  const params = new URLSearchParams({ text, provider: "local" });
-      const response = await fetch(getBackendUrl(`/api/voice/synthesize?${params}`), {
+      const params = new URLSearchParams({ text, provider: DEFAULT_TTS_PROVIDER });
+      let response = await fetch(getBackendUrl(`/api/voice/synthesize?${params}`), {
         method: 'POST',
       });
+
+      if (!response.ok && DEFAULT_TTS_PROVIDER !== "local") {
+        console.warn(`Primary TTS provider '${DEFAULT_TTS_PROVIDER}' failed (${response.status}). Falling back to local Piper.`);
+        const fallbackParams = new URLSearchParams({ text, provider: "local" });
+        response = await fetch(getBackendUrl(`/api/voice/synthesize?${fallbackParams}`), {
+          method: 'POST',
+        });
+      }
       
       if (response.ok) {
         const audioBlob = await response.blob();
