@@ -16,6 +16,7 @@ import tempfile
 import os
 import glob
 import subprocess
+import shutil
 import numpy as np
 import soundfile as sf
 
@@ -582,7 +583,9 @@ async def psychological_graphs_endpoint(session_id: str = "session_001"):
             graph_data["extreme_values"]["neuroticism"] = extreme_neuroticism
         except Exception as e:
             print(f"Error getting extreme values: {e}")
-            graph_data["extreme_values"]["neuroticism"] = "No extreme value data available"
+            graph_data["extreme_values"][
+                "neuroticism"
+            ] = "No extreme value data available"
 
         return graph_data
 
@@ -715,7 +718,9 @@ async def knowledge_graph_endpoint():
         from src.graphs.create_kg import process_kg_creation
         import os
 
-        analysis_file = "output/psychological_analysis/psychological_analysis_master.txt"
+        analysis_file = (
+            "output/psychological_analysis/psychological_analysis_master.txt"
+        )
         if not os.path.exists(analysis_file):
             raise HTTPException(
                 status_code=404,
@@ -755,7 +760,9 @@ async def get_analysis_results():
     try:
         import os
 
-        analysis_file = "output/psychological_analysis/psychological_analysis_master.txt"
+        analysis_file = (
+            "output/psychological_analysis/psychological_analysis_master.txt"
+        )
 
         if os.path.exists(analysis_file):
             with open(analysis_file, "r", encoding="utf-8") as f:
@@ -836,11 +843,13 @@ try:
     from google.cloud import speech_v1p1beta1 as speech
     from google.cloud import texttospeech
     from dotenv import load_dotenv
+
     load_dotenv()
     VOICE_SERVICE_AVAILABLE = True
 except Exception as e:
     print(f"⚠️ Voice service not available: {e}")
     VOICE_SERVICE_AVAILABLE = False
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -854,7 +863,9 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.close()
         return
 
-    print(f"🔐 Google credentials loaded: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS') is not None}")
+    print(
+        f"🔐 Google credentials loaded: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS') is not None}"
+    )
 
     try:
         while True:
@@ -899,12 +910,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     {"type": "ERROR", "message": f"Transcription failed: {e}"}
                 )
 
-
     except WebSocketDisconnect:
         print("🔌 WebSocket disconnected")
     except Exception as e:
         print(f"❌ WebSocket error: {e}")
         import traceback
+
         traceback.print_exc()
         try:
             await websocket.send_json({"type": "ERROR", "message": str(e)})
@@ -912,6 +923,7 @@ async def websocket_endpoint(websocket: WebSocket):
             pass
 
 
+@app.websocket("/ws/vad")
 @app.websocket("/ws/vad-stream")
 async def vad_websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for VAD audio streaming, using faster-whisper."""
@@ -943,36 +955,56 @@ async def vad_websocket_endpoint(websocket: WebSocket):
                     current_frames = []
 
                     try:
-                        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                        with tempfile.NamedTemporaryFile(
+                            suffix=".wav", delete=False
+                        ) as tmp_file:
                             audio_float = full_audio.astype(np.float32) / 32768.0
                             sf.write(tmp_file.name, audio_float, 16000)
 
                         print(f"🎤 Transcribing {len(audio_float)} samples...")
-                        transcription = faster_whisper_service.transcribe_audio_file(tmp_file.name)
+                        transcription = faster_whisper_service.transcribe_audio_file(
+                            tmp_file.name
+                        )
                         os.unlink(tmp_file.name)
 
-                        if transcription and transcription.strip() and "error" not in transcription.lower():
-                            await websocket.send_text(json.dumps({
-                                "type": "TRANSCRIPT",
-                                "text": transcription.strip(),
-                                "timestamp": datetime.now().isoformat()
-                            }))
+                        if (
+                            transcription
+                            and transcription.strip()
+                            and "error" not in transcription.lower()
+                        ):
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "type": "TRANSCRIPT",
+                                        "text": transcription.strip(),
+                                        "timestamp": datetime.now().isoformat(),
+                                    }
+                                )
+                            )
                             print(f"✅ Sent transcription: '{transcription.strip()}'")
                         else:
                             print(f"⚠️ Empty or error transcription: '{transcription}'")
-                            await websocket.send_text(json.dumps({
-                                "type": "STATUS",
-                                "message": "No speech detected",
-                                "timestamp": datetime.now().isoformat()
-                            }))
+                            await websocket.send_text(
+                                json.dumps(
+                                    {
+                                        "type": "STATUS",
+                                        "message": "No speech detected",
+                                        "timestamp": datetime.now().isoformat(),
+                                    }
+                                )
+                            )
 
                     except Exception as transcription_error:
                         print(f"❌ Transcription error: {transcription_error}")
-                        await websocket.send_text(json.dumps({
-                            "type": "ERROR",
-                            "message": f"Transcription failed: {str(transcription_error)}",
-                            "timestamp": datetime.now().isoformat()
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {
+                                    "type": "ERROR",
+                                    "message": f"Transcription failed: {str(transcription_error)}",
+                                    "timestamp": datetime.now().isoformat(),
+                                }
+                            )
+                        )
 
     except WebSocketDisconnect:
         print("🔌 VAD WebSocket connection closed for AG-UI")
@@ -983,53 +1015,130 @@ async def vad_websocket_endpoint(websocket: WebSocket):
 
 
 @app.post("/api/voice/synthesize")
-async def synthesize_speech(text: str):
-    """
-    Text-to-speech endpoint using Google Cloud TTS
-    Returns WAV audio file
-    """
+async def synthesize_speech(text: str, provider: str = "local"):
+    """Text-to-speech endpoint supporting local Piper (default) and Google Cloud."""
     if not text or len(text.strip()) == 0:
         return Response(status_code=400, content="Text parameter is required")
 
-    print(f"🔊 Synthesizing speech with Google TTS: '{text[:50]}...'")
+    provider_choice = (provider or "local").lower()
+    clean_text = text.strip()
+
+    if provider_choice == "google":
+        if not VOICE_SERVICE_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Google TTS not available")
+
+        print(f"🔊 Synthesizing speech with Google TTS: '{clean_text[:50]}...'")
+
+        try:
+            client = texttospeech.TextToSpeechClient()
+
+            synthesis_input = texttospeech.SynthesisInput(text=clean_text)
+
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="en-US",
+                ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
+            )
+
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3
+            )
+
+            response = client.synthesize_speech(
+                input=synthesis_input, voice=voice, audio_config=audio_config
+            )
+
+            print(f"✅ Synthesized {len(response.audio_content)} bytes of audio")
+
+            return Response(
+                content=response.audio_content,
+                media_type="audio/mpeg",
+                headers={"Content-Disposition": "inline; filename=speech.mp3"},
+            )
+
+        except Exception as exc:
+            print(f"❌ Google TTS error: {exc}")
+            raise HTTPException(status_code=500, detail=f"TTS error: {exc}")
+
+    print(f"🔊 Synthesizing speech with Piper TTS: '{clean_text[:50]}...'")
+    output_path = None
 
     try:
-        client = texttospeech.TextToSpeechClient()
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+            output_path = tmp_file.name
 
-        synthesis_input = texttospeech.SynthesisInput(text=text)
+        piper_model = os.path.expanduser("~/piper/en_GB-alba-medium.onnx")
+        if not os.path.exists(piper_model):
+            piper_model = "en_GB-alba-medium"
 
-        voice = texttospeech.VoiceSelectionParams(
-            language_code="en-US", ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
+        process = subprocess.run(
+            ["piper", "--model", piper_model, "--output_file", output_path],
+            input=clean_text,
+            text=True,
+            capture_output=True,
+            timeout=30,
         )
 
-        audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3
-        )
+        if (
+            process.returncode != 0
+            or not os.path.exists(output_path)
+            or os.path.getsize(output_path) == 0
+        ):
+            error_msg = process.stderr or "Unknown Piper error"
+            print(f"❌ Piper TTS failed: {error_msg}")
+            if output_path and os.path.exists(output_path):
+                os.unlink(output_path)
+            raise HTTPException(
+                status_code=500, detail=f"TTS generation failed: {error_msg}"
+            )
 
-        response = client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=audio_config
-        )
+        with open(output_path, "rb") as audio_file:
+            audio_bytes = audio_file.read()
 
-        print(f"✅ Synthesized {len(response.audio_content)} bytes of audio")
+        os.unlink(output_path)
 
         return Response(
-            content=response.audio_content,
-            media_type="audio/mpeg",
-            headers={"Content-Disposition": f"inline; filename=speech.mp3"},
+            content=audio_bytes,
+            media_type="audio/wav",
+            headers={"Content-Disposition": "inline; filename=speech.wav"},
         )
 
-    except Exception as e:
-        print(f"❌ Google TTS error: {e}")
-        raise HTTPException(status_code=500, detail=f"TTS error: {str(e)}")
+    except subprocess.TimeoutExpired:
+        print("❌ Piper TTS timeout")
+        if output_path and os.path.exists(output_path):
+            os.unlink(output_path)
+        raise HTTPException(status_code=500, detail="TTS generation timeout")
+    except FileNotFoundError:
+        print("❌ Piper executable not found")
+        if output_path and os.path.exists(output_path):
+            os.unlink(output_path)
+        raise HTTPException(status_code=500, detail="Piper TTS not installed")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"❌ Piper TTS error: {exc}")
+        if output_path and os.path.exists(output_path):
+            os.unlink(output_path)
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/api/voice/status")
 async def voice_status():
     """Check voice service availability"""
+    whisper_ready = faster_whisper_service.is_available()
+    piper_model_paths = [
+        os.path.expanduser("~/piper/en_GB-alba-medium.onnx"),
+        "./en_US-lessac-medium.onnx",
+    ]
+    piper_binary = shutil.which("piper")
+    piper_model_present = any(os.path.exists(path) for path in piper_model_paths)
+
     return {
-        "whisper_available": VOICE_SERVICE_AVAILABLE,
-        "piper_available": os.path.exists("./en_US-lessac-medium.onnx"),
-        "status": "ready" if VOICE_SERVICE_AVAILABLE else "unavailable",
+        "whisper_available": whisper_ready,
+        "google_available": VOICE_SERVICE_AVAILABLE,
+        "piper_available": bool(piper_binary) and piper_model_present,
+        "status": (
+            "ready" if whisper_ready or VOICE_SERVICE_AVAILABLE else "unavailable"
+        ),
     }
 
 

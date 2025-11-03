@@ -1,8 +1,7 @@
 "use client";
 
-import { useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
-import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
-import { TextMessage, MessageRole } from "@copilotkit/runtime-client-gql";
+import { useCopilotAction, useCopilotChatHeadless_c } from "@copilotkit/react-core";
+import { CopilotSidebar } from "@copilotkit/react-ui";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PsychologicalVisualization } from "@/components/PsychologicalVisualization";
 import { InsightsDashboard } from "@/components/InsightsDashboard";
@@ -13,13 +12,80 @@ import { getBackendUrl } from "@/lib/config";
 import Header from "@/components/Header";
 
 // Agent state type - this should match your LangGraph agent state
+type EmotionDatum = {
+  name: string;
+  valence: number;
+  arousal: number;
+  confidence?: number;
+  [key: string]: unknown;
+};
+
+type PersonalityProfile = {
+  openness: number;
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
+  summary: string;
+  [key: string]: unknown;
+};
+
+type VisualizationEntry =
+  | { type: "emotions"; data: EmotionDatum[]; timestamp: string }
+  | { type: "personality"; data: PersonalityProfile; timestamp: string }
+  | { type: string; data: unknown; timestamp: string };
+
+type InsightItem = {
+  type: string;
+  title: string;
+  content: string;
+  confidence?: number;
+  severity?: "low" | "medium" | "high";
+  category?: string;
+  timestamp?: string;
+};
+
+type CircumplexEmotion = EmotionDatum & {
+  quadrant?: string;
+};
+
+type CircumplexData = {
+  emotions: CircumplexEmotion[];
+  title: string;
+} | null;
+
+type AgentTodo = {
+  id: string;
+  task: string;
+  status: "pending" | "in_progress" | "completed" | "failed";
+  priority: "low" | "medium" | "high";
+  created_at: string;
+  updated_at?: string;
+};
+
+type AgentThought = {
+  id: string;
+  content: string;
+  type: "reasoning" | "observation" | "plan" | "reflection";
+  timestamp: string;
+  confidence?: number;
+};
+
+type DeepAgentState = {
+  current_task?: string;
+  todos: AgentTodo[];
+  thoughts: AgentThought[];
+  status: "idle" | "thinking" | "working" | "completed" | "error";
+  progress?: number;
+} | null;
+
 type SentimentAgentState = {
-  visualizations: any[];
-  insights: any[];
-  circumplex_data: any;
-  deep_agent_state: any;
+  visualizations: VisualizationEntry[];
+  insights: InsightItem[];
+  circumplex_data: CircumplexData;
+  deep_agent_state: DeepAgentState;
   current_analysis: string;
-}
+};
 
 export default function CopilotKitPage() {
   const [themeColor, setThemeColor] = useState("#6366f1");
@@ -27,7 +93,13 @@ export default function CopilotKitPage() {
   const [voiceModeEnabled, setVoiceModeEnabled] = useState(true); // Enabled by default when using voice
   const lastProcessedMessageRef = useRef<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { sendMessage } = useCopilotChat();
+  const { sendMessage } = useCopilotChatHeadless_c();
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--copilot-kit-primary-color", themeColor);
+    }
+  }, [themeColor]);
 
   // State management for psychological analysis
   const [state, setState] = useState<SentimentAgentState>({
@@ -53,8 +125,8 @@ export default function CopilotKitPage() {
       console.log("🔊 Playing TTS for:", text.substring(0, 50) + "...");
       setIsSpeaking(true);
 
-      // Use URLSearchParams to properly encode the text parameter
-      const params = new URLSearchParams({ text });
+  // Use URLSearchParams to properly encode the text parameter
+  const params = new URLSearchParams({ text, provider: "local" });
       const response = await fetch(getBackendUrl(`/api/voice/synthesize?${params}`), {
         method: 'POST',
       });
@@ -152,12 +224,13 @@ export default function CopilotKitPage() {
 
     console.log("📤 Sending transcript to CopilotKit...");
 
-    await sendMessage(
-      new TextMessage({
-        role: MessageRole.User,
-        content: transcript,
-      })
-    );
+    const message: Parameters<typeof sendMessage>[0] = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: transcript,
+    };
+
+    await sendMessage(message);
 
     console.log("✅ Voice transcript submitted!");
   };
@@ -434,7 +507,7 @@ export default function CopilotKitPage() {
   });
 
   return (
-    <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
+  <main>
       <Header />
       <YourMainContent themeColor={themeColor} state={state} mainTheme={mainTheme} />
       <VoiceControl 
