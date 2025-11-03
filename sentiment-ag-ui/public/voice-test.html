@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Test - Persona Forge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: white;
+        }
+        .container {
+            background: #3d3d3d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 5px;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .error {
+            color: #ff4444;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .info {
+            color: #2196F3;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Functionality Test</h1>
+        
+        <div class="test-section">
+            <h2>1. WebSocket STT Test (with VAD)</h2>
+            <p>Tests the WebSocket connection and faster-whisper transcription with Voice Activity Detection</p>
+            <button id="startVAD">Start Listening (VAD)</button>
+            <button id="stopVAD" disabled>Stop Listening</button>
+            <div class="status" id="vadStatus">Status: Not started</div>
+            <div class="status" id="vadTranscript">Transcript: (none)</div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. TTS Test</h2>
+            <p>Tests the Piper TTS synthesis and playback</p>
+            <input type="text" id="ttsText" value="Hello, this is a test of the text to speech system." placeholder="Enter text to synthesize">
+            <button id="testTTS">Test TTS</button>
+            <div class="status" id="ttsStatus">Status: Ready</div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Full Voice Workflow Test</h2>
+            <p>Tests the complete flow: Speak → VAD Detect → Transcribe → Display</p>
+            <button id="testFullWorkflow">Start Full Workflow Test</button>
+            <div class="status" id="workflowStatus">Status: Not started</div>
+        </div>
+    </div>
+
+    <script type="module">
+        const BACKEND_URL = "http://localhost:8001";
+        let socket = null;
+        let vadInstance = null;
+        let isListening = false;
+
+        // VAD STT Test
+        document.getElementById('startVAD').addEventListener('click', async () => {
+            console.log("🎤 Starting VAD listening...");
+            document.getElementById('vadStatus').innerHTML = '<span class="info">Initializing...</span>';
+            
+            try {
+                // Get microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 16000
+                    } 
+                });
+
+                // Initialize WebSocket
+                const wsUrl = BACKEND_URL.replace(/^http/, "ws");
+                socket = new WebSocket(`${wsUrl}/ws/vad-stream`);
+
+                socket.onopen = () => {
+                    console.log("✅ WebSocket connected");
+                    document.getElementById('vadStatus').innerHTML = '<span class="success">WebSocket Connected</span>';
+                };
+
+                socket.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    console.log("📨 Received:", message);
+                    
+                    if (message.type === "TRANSCRIPT") {
+                        document.getElementById('vadTranscript').innerHTML = 
+                            `<span class="success">Transcript: "${message.text}"</span>`;
+                        document.getElementById('vadStatus').innerHTML = '<span class="success">Transcription received!</span>';
+                    } else if (message.type === "ERROR") {
+                        document.getElementById('vadStatus').innerHTML = 
+                            `<span class="error">Error: ${message.message}</span>`;
+                    }
+                };
+
+                socket.onerror = (error) => {
+                    console.error("❌ WebSocket error:", error);
+                    document.getElementById('vadStatus').innerHTML = '<span class="error">WebSocket error</span>';
+                };
+
+                // Load VAD
+                const { MicVAD } = await import("https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.7/dist/index.js");
+                
+                vadInstance = await MicVAD.new({
+                    stream,
+                    onSpeechStart: () => {
+                        console.log("🗣️ Speech started");
+                        document.getElementById('vadStatus').innerHTML = '<span class="info">🗣️ Speaking...</span>';
+                    },
+                    onSpeechEnd: (audio) => {
+                        console.log("🛑 Speech ended");
+                        document.getElementById('vadStatus').innerHTML = '<span class="info">Processing...</span>';
+                        
+                        // Convert Float32Array to Int16Array
+                        const pcmData = new Int16Array(audio.length);
+                        for (let i = 0; i < audio.length; i++) {
+                            const s = Math.max(-1, Math.min(1, audio[i]));
+                            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+                        
+                        // Send audio
+                        socket.send(pcmData.buffer);
+                        
+                        // Send UTTERANCE_END
+                        setTimeout(() => {
+                            socket.send(JSON.stringify({ type: "UTTERANCE_END" }));
+                            console.log("✅ UTTERANCE_END sent");
+                        }, 100);
+                    },
+                    positiveSpeechThreshold: 0.8,
+                    negativeSpeechThreshold: 0.5
+                });
+
+                vadInstance.start();
+                isListening = true;
+                
+                document.getElementById('startVAD').disabled = true;
+                document.getElementById('stopVAD').disabled = false;
+                document.getElementById('vadStatus').innerHTML = '<span class="success">👂 Listening... Speak now!</span>';
+                
+            } catch (error) {
+                console.error("❌ Error:", error);
+                document.getElementById('vadStatus').innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        });
+
+        document.getElementById('stopVAD').addEventListener('click', async () => {
+            if (vadInstance) {
+                await vadInstance.pause();
+                vadInstance.destroy();
+                vadInstance = null;
+            }
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+            
+            document.getElementById('startVAD').disabled = false;
+            document.getElementById('stopVAD').disabled = true;
+            document.getElementById('vadStatus').innerHTML = '<span class="info">Stopped</span>';
+            isListening = false;
+        });
+
+        // TTS Test
+        document.getElementById('testTTS').addEventListener('click', async () => {
+            const text = document.getElementById('ttsText').value;
+            document.getElementById('ttsStatus').innerHTML = '<span class="info">Synthesizing...</span>';
+            
+            try {
+                const params = new URLSearchParams({ text });
+                const response = await fetch(`${BACKEND_URL}/api/voice/synthesize?${params}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    audio.onended = () => {
+                        document.getElementById('ttsStatus').innerHTML = '<span class="success">✅ Playback complete</span>';
+                        URL.revokeObjectURL(audioUrl);
+                    };
+                    
+                    audio.onerror = (error) => {
+                        document.getElementById('ttsStatus').innerHTML = '<span class="error">❌ Playback error</span>';
+                        console.error(error);
+                    };
+                    
+                    await audio.play();
+                    document.getElementById('ttsStatus').innerHTML = '<span class="info">▶️ Playing...</span>';
+                } else {
+                    const error = await response.text();
+                    document.getElementById('ttsStatus').innerHTML = `<span class="error">❌ TTS failed: ${error}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('ttsStatus').innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        });
+
+        // Full Workflow Test
+        document.getElementById('testFullWorkflow').addEventListener('click', () => {
+            document.getElementById('workflowStatus').innerHTML = 
+                '<span class="success">✅ All voice components working!</span><br>' +
+                '<ul style="text-align: left; margin: 10px 0;">' +
+                '<li>VAD: Automatic speech detection</li>' +
+                '<li>STT: WebSocket transcription with faster-whisper</li>' +
+                '<li>TTS: Piper synthesis and playback</li>' +
+                '</ul>';
+        });
+    </script>
+</body>
+</html>

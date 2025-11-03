@@ -1,8 +1,8 @@
 "use client";
 
-import { useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
+import { useCopilotAction } from "@copilotkit/react-core";
 import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PsychologicalVisualization } from "@/components/PsychologicalVisualization";
 import { InsightsDashboard } from "@/components/InsightsDashboard";
 import { CircumplexVisualization } from "@/components/CircumplexVisualization";
@@ -22,6 +22,10 @@ type SentimentAgentState = {
 
 export default function CopilotKitPage() {
   const [themeColor, setThemeColor] = useState("#6366f1");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState(true); // Enabled by default when using voice
+  const lastProcessedMessageRef = useRef<string>("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // State management for psychological analysis
   const [state, setState] = useState<SentimentAgentState>({
@@ -37,10 +41,104 @@ export default function CopilotKitPage() {
     gradient: "from-slate-900 via-purple-900 to-slate-900"
   });
 
-  // Get CopilotKit's chat functions
-  const copilotChat = useCopilotChat();
+  // Play audio using Piper TTS
+  const playAudio = useCallback(async (text: string) => {
+    if (!voiceModeEnabled || !text || text.trim().length === 0) {
+      return;
+    }
+
+    try {
+      console.log("🔊 Playing TTS for:", text.substring(0, 50) + "...");
+      setIsSpeaking(true);
+
+      // Use URLSearchParams to properly encode the text parameter
+      const params = new URLSearchParams({ text });
+      const response = await fetch(getBackendUrl(`/api/voice/synthesize?${params}`), {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Stop any existing audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+        
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        
+        // When audio ends, update speaking state
+        audio.onended = () => {
+          console.log("✅ TTS playback complete");
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = (error) => {
+          console.error("❌ Audio playback error:", error);
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+        console.log("▶️ TTS playback started");
+      } else {
+        console.error("❌ TTS synthesis failed:", response.statusText);
+        setIsSpeaking(false);
+      }
+    } catch (error) {
+      console.error("❌ Error playing audio:", error);
+      setIsSpeaking(false);
+    }
+  }, [voiceModeEnabled]);
+
+  // Monitor chat messages and play TTS for assistant responses
+  useEffect(() => {
+    if (!voiceModeEnabled) return;
+    
+    // Poll the chat sidebar for new assistant messages
+    const checkForNewMessages = () => {
+      // Find all assistant messages in the sidebar
+      const messageElements = document.querySelectorAll('[data-role="assistant"]');
+      if (messageElements.length === 0) {
+        // Try alternative selectors
+        const altMessages = document.querySelectorAll('.copilot-message, [class*="assistant"]');
+        if (altMessages.length > 0) {
+          const lastMessage = altMessages[altMessages.length - 1];
+          const messageText = lastMessage.textContent || "";
+          
+          if (messageText && messageText !== lastProcessedMessageRef.current) {
+            lastProcessedMessageRef.current = messageText;
+            console.log("🆕 New assistant message detected, playing TTS");
+            playAudio(messageText);
+          }
+        }
+        return;
+      }
+      
+      const lastMessage = messageElements[messageElements.length - 1];
+      const messageText = lastMessage.textContent || "";
+      
+      // Check if this is a new message we haven't processed yet
+      if (messageText && messageText !== lastProcessedMessageRef.current) {
+        lastProcessedMessageRef.current = messageText;
+        console.log("🆕 New assistant message detected, playing TTS");
+        playAudio(messageText);
+      }
+    };
+
+    // Check for new messages every 500ms
+    const interval = setInterval(checkForNewMessages, 500);
+
+    return () => clearInterval(interval);
+  }, [voiceModeEnabled, playAudio]); // Dependencies: voiceModeEnabled and playAudio
 
   const handleTranscript = (transcript: string) => {
+    // Enable voice mode when user uses voice input
+    setVoiceModeEnabled(true);
     console.log("🎤 Voice transcript received:", transcript);
     
     // Update state to show the transcript
@@ -49,139 +147,90 @@ export default function CopilotKitPage() {
       current_analysis: `🎤 Voice: "${transcript}"`,
     });
     
-    // IMPORTANT: Inject the transcript into the CopilotKit sidebar
-    // We'll trigger the chat input by finding the textarea and simulating user input
+    // Use DOM manipulation to inject transcript into CopilotKit chat
+    console.log("📤 Injecting transcript into chat...");
+    
     setTimeout(() => {
-      console.log("🔍 Looking for chat input textarea...");
-      
-      // Try multiple selectors to find the chat input
-      let chatInput = document.querySelector('textarea[placeholder*="Message"]') as HTMLTextAreaElement;
-      
-      if (!chatInput) {
-        console.log("⚠️ Trying alternative selector...");
-        chatInput = document.querySelector('textarea') as HTMLTextAreaElement;
-      }
+      // Find the chat input textarea
+      const chatInput = document.querySelector('textarea[placeholder*="Message"]') as HTMLTextAreaElement 
+        || document.querySelector('textarea') as HTMLTextAreaElement;
       
       if (chatInput) {
         console.log("✅ Found chat input, setting value:", transcript);
         
-        // Get the form that contains the textarea
-        const form = chatInput.closest('form');
-        console.log("📝 Found form:", form ? "YES" : "NO");
+        // Set the value using React's internal setter to trigger onChange
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          'value'
+        )?.set;
+        nativeInputValueSetter?.call(chatInput, transcript);
         
-        // Set the value
-        chatInput.value = transcript;
-        
-        // Trigger multiple events to ensure React picks it up
+        // Trigger input event to notify React
         const inputEvent = new Event('input', { bubbles: true });
-        const changeEvent = new Event('change', { bubbles: true });
         chatInput.dispatchEvent(inputEvent);
-        chatInput.dispatchEvent(changeEvent);
         
         // Focus the input
         chatInput.focus();
         
         console.log("🔍 Looking for send button...");
         
-        // Method 1: Try to find submit button
-        let sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
-        
-        if (!sendButton && form) {
-          // Look for button inside the form
-          sendButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-        }
-        
-        if (!sendButton) {
-          console.log("⚠️ Trying alternative button selectors...");
-          // Look for button with aria-label
-          sendButton = document.querySelector('button[aria-label*="Send"]') as HTMLButtonElement;
-        }
-        
-        if (!sendButton) {
-          // Try finding button with SVG icon (send icon)
-          const buttons = Array.from(document.querySelectorAll('button'));
-          sendButton = buttons.find(btn => {
-            const svg = btn.querySelector('svg');
-            const hasIcon = svg && (
-              svg.innerHTML.includes('path') || 
-              svg.innerHTML.includes('polygon')
-            );
-            return hasIcon || 
-              btn.textContent?.toLowerCase().includes('send') ||
-              btn.getAttribute('aria-label')?.toLowerCase().includes('send');
-          }) as HTMLButtonElement;
+        // Try to find and click submit button
+        setTimeout(() => {
+          const form = chatInput.closest('form');
+          let sendButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement;
           
-          if (sendButton) {
-            console.log("✅ Found button with icon!");
+          if (!sendButton) {
+            // Try alternative selectors
+            sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
           }
-        }
-        
-        if (sendButton) {
-          setTimeout(() => {
+          
+          if (!sendButton) {
+            // Look for any button near the textarea that might be the send button
+            const buttons = Array.from(document.querySelectorAll('button'));
+            sendButton = buttons.find(btn => {
+              const hasIcon = btn.querySelector('svg');
+              const isNearTextarea = chatInput.parentElement?.contains(btn) || 
+                                     chatInput.parentElement?.parentElement?.contains(btn);
+              return (hasIcon || btn.textContent?.toLowerCase().includes('send')) && isNearTextarea;
+            }) as HTMLButtonElement;
+          }
+          
+          if (sendButton && !sendButton.disabled) {
             console.log("✅ Clicking send button!");
             sendButton.click();
-            console.log("✅ Voice input sent to chat!");
-          }, 200);
-        } else if (form) {
-          // Try submitting the form directly
-          console.log("📤 Trying to submit form directly...");
-          setTimeout(() => {
-            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-            form.dispatchEvent(submitEvent);
-            console.log("✅ Form submitted!");
-          }, 200);
-        } else {
-          console.error("❌ Could not find send button or form. Trying Enter key...");
-          // Fallback: trigger Enter key (without Shift for submission)
-          const enterEvent = new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true
-          });
-          chatInput.dispatchEvent(enterEvent);
-          
-          // Also try keypress and keyup
-          const keypressEvent = new KeyboardEvent('keypress', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true
-          });
-          chatInput.dispatchEvent(keypressEvent);
-        }
+            console.log("✅ Voice transcript submitted!");
+          } else {
+            console.log("⚠️ Send button not found or disabled, trying Enter key...");
+            // Fallback: trigger Enter key
+            const enterEvent = new KeyboardEvent('keydown', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              which: 13,
+              bubbles: true,
+              cancelable: true,
+            });
+            chatInput.dispatchEvent(enterEvent);
+            
+            // Also try keypress
+            const keypressEvent = new KeyboardEvent('keypress', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              which: 13,
+              bubbles: true,
+              cancelable: true,
+            });
+            chatInput.dispatchEvent(keypressEvent);
+            console.log("✅ Enter key triggered!");
+          }
+        }, 300); // Increased timeout to ensure React updates
       } else {
         console.error("❌ Could not find chat input textarea!");
         console.log("Available textareas:", document.querySelectorAll('textarea'));
       }
-    }, 100);
+    }, 150); // Give UI time to render
   };
-
-  const playAudio = async (text: string) => {
-    try {
-      const response = await fetch(getBackendUrl(`/api/voice/synthesize?text=${encodeURIComponent(text)}`), {
-        method: 'POST',
-      });
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      }
-    } catch (error) {
-      console.error("Error synthesizing voice:", error);
-    }
-  };
-
-  // Note: Auto-playing TTS for responses is commented out for now
-  // You can enable this later by tracking when the assistant responds
-  // useEffect(() => {
-  //   // Play audio when assistant responds
-  // }, []);
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions
   useCopilotAction({
@@ -458,7 +507,10 @@ export default function CopilotKitPage() {
     <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
       <Header />
       <YourMainContent themeColor={themeColor} state={state} mainTheme={mainTheme} />
-      <VoiceControl handleTranscript={handleTranscript} />
+      <VoiceControl 
+        handleTranscript={handleTranscript} 
+        isSpeaking={isSpeaking}
+      />
       <CopilotSidebar
         clickOutsideToClose={false}
         defaultOpen={true}
@@ -498,10 +550,10 @@ export default function CopilotKitPage() {
   );
 }
 
-function YourMainContent({ themeColor, state, mainTheme }: {
-  themeColor: string,
+function YourMainContent({ state }: {
+  themeColor?: string,  // Reserved for future use
   state: SentimentAgentState,
-  mainTheme: { primary: string; gradient: string }
+  mainTheme?: { primary: string; gradient: string }  // Reserved for future use
 }) {
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">

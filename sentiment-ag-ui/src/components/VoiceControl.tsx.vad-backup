@@ -1,0 +1,269 @@
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { Mic, MicOff, Volume2 } from "lucide-react";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8001";
+
+interface VoiceControlProps {
+  handleTranscript: (transcript: string) => void;
+  isSpeaking?: boolean;
+}
+
+export default function VoiceControl({ handleTranscript, isSpeaking = false }: VoiceControlProps) {
+  const [status, setStatus] = useState<string>("Ready");
+  const [isRecording, setIsRecording] = useState(false);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const isProcessingRef = useRef(false);
+
+  // Simple browser-based recording without complex VAD library
+  const startRecording = async () => {
+    startOnLoad: false,
+    onSpeechStart: () => {
+      console.log("🎤 Speech started - User is speaking");
+      setStatus("Listening...");
+      isProcessingRef.current = false;
+      
+      // Connect WebSocket if not already connected
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        const wsUrl = BACKEND_URL.replace(/^http/, "ws");
+        const ws = new WebSocket(`${wsUrl}/ws/vad-stream`);
+        setSocket(ws);
+        
+        ws.onopen = () => {
+          console.log("✅ WebSocket connected");
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === "TRANSCRIPT" && message.text) {
+              console.log("✅ Received transcript:", message.text);
+              handleTranscript(message.text);
+              setStatus("Transcribed!");
+              setTimeout(() => {
+                setStatus("Ready");
+              }, 2000);
+            } else if (message.type === "ERROR") {
+              console.error("❌ Transcription error:", message.message);
+              setStatus("Error: " + message.message);
+            } else if (message.type === "STATUS") {
+              console.log("ℹ️ Status:", message.message);
+              setStatus("Ready");
+            }
+          } catch (error) {
+            console.error("❌ Message parse error:", error);
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error("❌ WebSocket error:", error);
+          setStatus("Connection error");
+        };
+        
+        ws.onclose = () => {
+          console.log("🔌 WebSocket closed");
+          setSocket(null);
+        };
+      }
+    },
+    
+    onSpeechEnd: async (audio) => {
+      console.log("🛑 Speech ended - Processing audio");
+      if (isProcessingRef.current) {
+        console.log("⚠️ Already processing, skipping...");
+        return;
+      }
+      
+      isProcessingRef.current = true;
+      setStatus("Processing...");
+      
+      // Convert Float32Array to Int16 PCM
+      const pcmData = new Int16Array(audio.length);
+      for (let i = 0; i < audio.length; i++) {
+        const s = Math.max(-1, Math.min(1, audio[i]));
+        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      
+      // Send audio data to backend
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log(`📤 Sending ${pcmData.length} audio samples to backend`);
+        socket.send(pcmData.buffer);
+        
+        // Send UTTERANCE_END to trigger transcription
+        setTimeout(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            const endMessage = JSON.stringify({ type: "UTTERANCE_END" });
+            console.log("📤 Sending UTTERANCE_END message");
+            socket.send(endMessage);
+          }
+        }, 100);
+      } else {
+        console.error("❌ WebSocket not open, cannot send audio");
+        setStatus("Connection error");
+        isProcessingRef.current = false;
+      }
+      
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 3000);
+    },
+    
+    onVADMisfire: () => {
+      console.log("⚠️ VAD misfire - false positive speech detection");
+      setStatus("Ready");
+    },
+    
+    // Configure paths for VAD assets
+    // @ts-expect-error - workletURL and modelURL may not be in official types
+    workletURL: "/vad.worklet.bundle.min.js",
+    modelURL: "/silero_vad_legacy.onnx",
+    ortConfig: (ort) => {
+      // Set WASM paths
+      ort.env.wasm.wasmPaths = "/";
+      ort.env.wasm.numThreads = 1;
+    },
+    positiveSpeechThreshold: 0.5,
+    negativeSpeechThreshold: 0.35,
+    redemptionFrames: 8,
+  });
+
+  // Log VAD state changes
+  useEffect(() => {
+    console.log("📊 VAD state changed:", {
+      listening: vad.listening,
+      loading: vad.loading,
+      userSpeaking: vad.userSpeaking,
+      errored: vad.errored,
+    });
+  }, [vad.listening, vad.loading, vad.userSpeaking, vad.errored]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        socket.close();
+      }
+      if (vad.listening) {
+        vad.pause();
+      }
+    };
+  }, [socket, vad]);
+
+  const toggleListening = async () => {
+    console.log("🔵 Button clicked! Current state:", {
+      listening: vad.listening,
+      loading: vad.loading,
+      userSpeaking: vad.userSpeaking,
+      isSpeaking,
+    });
+    
+    if (vad.listening) {
+      console.log("🔴 Stopping VAD");
+      vad.pause();
+      setStatus("Ready");
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    } else {
+      console.log("🎤 Starting VAD - Requesting microphone access");
+      try {
+        // Request microphone permission first
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("✅ Microphone permission granted, stream:", stream);
+        
+        // Stop the stream immediately as VAD will request its own
+        stream.getTracks().forEach(track => {
+          console.log("🛑 Stopping track:", track.label);
+          track.stop();
+        });
+        
+        // Now start VAD
+        console.log("▶️ Calling vad.start()...");
+        vad.start();
+        console.log("✅ vad.start() called, listening should be:", vad.listening);
+        setStatus("Ready to speak");
+      } catch (error) {
+        console.error("❌ Microphone permission denied:", error);
+        setStatus("Microphone access denied");
+        setTimeout(() => setStatus("Ready"), 3000);
+      }
+    }
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      <div className="flex flex-col items-end space-y-2">
+        {/* Status Badge */}
+        {(vad.listening || vad.userSpeaking) && (
+          <div className={`bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border ${
+            vad.userSpeaking ? "border-green-400 animate-pulse" : "border-blue-200"
+          }`}>
+            <p className="text-sm text-gray-700 font-medium">
+              {vad.userSpeaking ? "🎤 Speaking..." : status}
+            </p>
+          </div>
+        )}
+
+        {/* Voice Control Button */}
+        <button
+          onClick={toggleListening}
+          disabled={isSpeaking || vad.loading}
+          className={`group relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
+            vad.userSpeaking
+              ? "bg-green-500 hover:bg-green-600 scale-110 animate-pulse"
+              : vad.listening
+              ? "bg-blue-500 hover:bg-blue-600 scale-105"
+              : isSpeaking
+              ? "bg-purple-400 cursor-not-allowed"
+              : vad.loading
+              ? "bg-gray-400 cursor-wait"
+              : "bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:scale-110"
+          }`}
+          title={
+            vad.loading
+              ? "Loading VAD..."
+              : vad.listening
+              ? "Stop listening"
+              : isSpeaking
+              ? "AI is speaking"
+              : "Start listening"
+          }
+        >
+          {isSpeaking ? (
+            <Volume2 className="w-7 h-7 text-white animate-bounce" />
+          ) : vad.userSpeaking ? (
+            <Mic className="w-7 h-7 text-white animate-pulse" />
+          ) : vad.listening ? (
+            <Mic className="w-7 h-7 text-white" />
+          ) : (
+            <MicOff className="w-7 h-7 text-white" />
+          )}
+
+          {/* Pulsing ring animation when actively speaking */}
+          {vad.userSpeaking && (
+            <span className="absolute inset-0 rounded-full border-4 border-green-400 animate-ping opacity-75"></span>
+          )}
+        </button>
+
+        {/* Instruction Text */}
+        {!vad.listening && !isSpeaking && !vad.loading && (
+          <p className="text-xs text-gray-500 bg-white/80 backdrop-blur-sm rounded px-2 py-1">
+            Click to start
+          </p>
+        )}
+        {vad.loading && (
+          <p className="text-xs text-gray-500 bg-white/80 backdrop-blur-sm rounded px-2 py-1">
+            Loading...
+          </p>
+        )}
+        {vad.listening && !vad.userSpeaking && (
+          <p className="text-xs text-blue-600 bg-white/80 backdrop-blur-sm rounded px-2 py-1 animate-pulse">
+            Speak now...
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

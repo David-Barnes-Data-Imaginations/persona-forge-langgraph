@@ -500,7 +500,7 @@ async def psychological_graphs_endpoint(session_id: str = "session_001"):
             if current_section == "emotions" and line.startswith("-"):
                 # Format: "- Sadness: 10 occurrences (avg valence: -0.54, avg arousal: 0.39)"
                 match = re.search(
-                    r"-\s+([^:]+):\s+(\d+)\s+occurrences\s+\(avg valence:\s+([-\d.]+),\s+avg arousal:\s+([-\d.]+)\)",
+                    r"-\s+([^:]+):\s+(\d+)\s+occurrences\s+\(avg valence:\s+([-\d.]+),\s+avg arousal:\s+([-\d.]+)",
                     line,
                 )
                 if match:
@@ -581,9 +581,7 @@ async def psychological_graphs_endpoint(session_id: str = "session_001"):
             graph_data["extreme_values"]["neuroticism"] = extreme_neuroticism
         except Exception as e:
             print(f"Error getting extreme values: {e}")
-            graph_data["extreme_values"][
-                "neuroticism"
-            ] = "No extreme value data available"
+            graph_data["extreme_values"]["neuroticism"] = "No extreme value data available"
 
         return graph_data
 
@@ -620,9 +618,11 @@ async def health_check():
     """
     try:
         agent = get_agent()
+        print(f"🎤 Voice service available: {VOICE_SERVICE_AVAILABLE}")
         return {
             "status": "healthy",
             "agent_available": agent is not None,
+            "voice_service_available": VOICE_SERVICE_AVAILABLE,
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
@@ -714,10 +714,7 @@ async def knowledge_graph_endpoint():
         from src.graphs.create_kg import process_kg_creation
         import os
 
-        # Check if analysis file exists
-        analysis_file = (
-            "output/psychological_analysis/psychological_analysis_master.txt"
-        )
+        analysis_file = "output/psychological_analysis/psychological_analysis_master.txt"
         if not os.path.exists(analysis_file):
             raise HTTPException(
                 status_code=404,
@@ -757,9 +754,7 @@ async def get_analysis_results():
     try:
         import os
 
-        analysis_file = (
-            "output/psychological_analysis/psychological_analysis_master.txt"
-        )
+        analysis_file = "output/psychological_analysis/psychological_analysis_master.txt"
 
         if os.path.exists(analysis_file):
             with open(analysis_file, "r", encoding="utf-8") as f:
@@ -837,118 +832,72 @@ async def get_cypher_output():
 
 # Import voice service
 try:
-    from src.voice_service_faster import faster_whisper_service
-
-    VOICE_SERVICE_AVAILABLE = faster_whisper_service.is_available()
+    from google.cloud import speech_v1p1beta1 as speech
+    from dotenv import load_dotenv
+    load_dotenv()
+    VOICE_SERVICE_AVAILABLE = True
 except Exception as e:
     print(f"⚠️ Voice service not available: {e}")
     VOICE_SERVICE_AVAILABLE = False
-    faster_whisper_service = None
 
-
-@app.websocket("/ws/vad-stream")
-async def vad_websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for VAD-based streaming transcription.
-    Expects raw PCM audio data and UTTERANCE_END control messages.
-    """
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("🎤 VAD WebSocket connection accepted")
-    
-    # Check if faster_whisper_service is available
-    if not faster_whisper_service:
-        print("❌ Faster Whisper service not available")
-        await websocket.send_json({
-            "type": "ERROR",
-            "message": "Faster Whisper service not available"
-        })
+    print("🎤 WebSocket connection accepted")
+    if not VOICE_SERVICE_AVAILABLE:
+        print("❌ Google Cloud Speech service not available")
+        await websocket.send_json(
+            {"type": "ERROR", "message": "Google Cloud Speech service not available"}
+        )
         await websocket.close()
         return
-    
-    current_frames = []
-    chunk_count = 0
-    
+
+    print(f"🔐 Google credentials loaded: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS') is not None}")
+
     try:
         while True:
-            data = await websocket.receive()
-            
-            # Handle binary audio data (raw PCM)
-            if "bytes" in data:
-                pcm_data = np.frombuffer(data["bytes"], dtype=np.int16)
-                current_frames.append(pcm_data)
-                chunk_count += 1
-                
-                # Log every 50 chunks (roughly every 2 seconds)
-                if chunk_count % 50 == 0:
-                    print(f"📦 Received {chunk_count} PCM chunks, total samples: {sum(len(f) for f in current_frames)}")
-            
-            # Handle text messages (control messages)
-            elif "text" in data:
-                try:
-                    message = json.loads(data["text"])
-                    print(f"📨 Received message: {message}")
-                    
-                    # UTTERANCE_END triggers transcription
-                    if message.get("type") == "UTTERANCE_END":
-                        print(f"� UTTERANCE_END received. Chunks collected: {chunk_count}")
-                        
-                        if not current_frames:
-                            print("⚠️ No audio data received")
-                            await websocket.send_json({
-                                "type": "STATUS",
-                                "message": "No audio data received"
-                            })
-                            continue
-                        
-                        # Concatenate all frames
-                        full_audio = np.concatenate(current_frames)
-                        print(f"🔄 Processing utterance: {len(full_audio)} samples ({len(full_audio)/16000:.2f} seconds)")
-                        
-                        # Convert to float32 for soundfile (normalize int16 to float range)
-                        audio_float = full_audio.astype(np.float32) / 32768.0
-                        print(f"🔊 Audio stats - Min: {audio_float.min():.4f}, Max: {audio_float.max():.4f}, Mean: {audio_float.mean():.4f}")
-                        
-                        # Save to temporary WAV file
-                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
-                            sf.write(tmp_file.name, audio_float, 16000)
-                            print(f"💾 Saved WAV file: {tmp_file.name}")
-                            
-                            # Transcribe
-                            print("🎯 Starting transcription...")
-                            transcription = faster_whisper_service.transcribe_audio_file(tmp_file.name)
-                            print(f"📝 Transcription result: '{transcription}'")
-                            
-                            # Clean up temp file
-                            os.unlink(tmp_file.name)
-                            print(f"🗑️ Cleaned up temp file")
-                        
-                        # Check if transcription has meaningful content
-                        if transcription and len(transcription.strip()) > 0:
-                            print(f"✅ Sending transcript to frontend: '{transcription.strip()}'")
-                            await websocket.send_json({
-                                "type": "TRANSCRIPT",
-                                "text": transcription.strip(),
-                                "timestamp": datetime.now().isoformat()
-                            })
-                        else:
-                            print("⚠️ No speech detected in audio")
-                            await websocket.send_json({
-                                "type": "STATUS",
-                                "message": "No speech detected"
-                            })
-                        
-                        # Clear frames for next utterance
-                        current_frames = []
-                        chunk_count = 0
-                        print("🔄 Frames cleared, ready for next utterance")
-                        
-                except json.JSONDecodeError as e:
-                    print(f"❌ JSON decode error: {e}")
-                    await websocket.send_json({
-                        "type": "ERROR",
-                        "message": f"Invalid JSON: {str(e)}"
-                    })
-    
+            data = await websocket.receive_bytes()
+            print(f"📦 Received {len(data)} bytes of audio")
+
+            try:
+                client = speech.SpeechClient()
+                print("🤖 Initialized Google Speech Client")
+
+                audio = speech.RecognitionAudio(content=data)
+                config = speech.RecognitionConfig(
+                    encoding=speech.RecognitionConfig.AudioEncoding.WEBM_OPUS,
+                    sample_rate_hertz=48000,
+                    language_code="en-US",
+                )
+                print("⚙️ Configured Google Speech-to-Text request")
+
+                print("🗣️ Sending audio to Google for transcription...")
+                response = client.recognize(config=config, audio=audio)
+                print("✅ Received response from Google")
+
+                if response.results:
+                    transcription = response.results[0].alternatives[0].transcript
+                    print(f"📝 Transcription result: '{transcription}'")
+                    await websocket.send_json(
+                        {
+                            "type": "TRANSCRIPT",
+                            "text": transcription,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
+                    print("📤 Sent transcript to frontend")
+                else:
+                    print("⚠️ No speech detected in audio")
+                    await websocket.send_json(
+                        {"type": "STATUS", "message": "No speech detected"}
+                    )
+            except Exception as e:
+                print(f"❌ Error during transcription: {e}")
+                await websocket.send_json(
+                    {"type": "ERROR", "message": f"Transcription failed: {e}"}
+                )
+
+
     except WebSocketDisconnect:
         print("🔌 WebSocket disconnected")
     except Exception as e:
@@ -956,12 +905,12 @@ async def vad_websocket_endpoint(websocket: WebSocket):
         import traceback
         traceback.print_exc()
         try:
-            await websocket.send_json({
-                "type": "ERROR",
-                "message": str(e)
-            })
+            await websocket.send_json({"type": "ERROR", "message": str(e)})
         except:
             pass
+
+
+
 
 
 @app.post("/api/voice/synthesize")
@@ -977,18 +926,13 @@ async def synthesize_speech(text: str):
 
     try:
         # Use Piper TTS to synthesize speech
-        # Assuming you have piper installed and a model available
-        piper_model = "./en_US-lessac-medium.onnx"  # Adjust path as needed
+        piper_model = os.path.expanduser("~/piper/en_GB-alba-medium.onnx")
 
-        # Check if Piper is available
-        piper_cmd = ["piper", "--version"]
-        try:
-            subprocess.run(piper_cmd, check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # Piper not available, return error
+        if not os.path.exists(piper_model):
+            print(f"❌ Piper model not found at: {piper_model}")
             raise HTTPException(
                 status_code=503,
-                detail="Piper TTS not available. Please install piper-tts.",
+                detail=f"Piper model not found at {piper_model}",
             )
 
         # Create temporary output file
@@ -996,9 +940,10 @@ async def synthesize_speech(text: str):
             output_path = tmp_file.name
 
         # Run Piper TTS
-        # echo "text" | piper --model <model> --output_file <output>
+        # echo "text" | piper --model <model> --output-file <output>
+        print(f"🎙️ Running piper with model: {piper_model}")
         process = subprocess.Popen(
-            ["piper", "--model", piper_model, "--output_file", output_path],
+            ["piper", "--model", piper_model, "--output-file", output_path],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

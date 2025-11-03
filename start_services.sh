@@ -6,7 +6,7 @@ echo ""
 
 # Kill any existing processes on the ports
 echo "🧹 Cleaning up existing processes..."
-lsof -ti :8001 | xargs kill -9 2>/dev/null
+pkill -f 'uvicorn ag_ui_backend' 2>/dev/null
 lsof -ti :3000 | xargs kill -9 2>/dev/null
 
 # Start backend

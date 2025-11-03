@@ -42,7 +42,8 @@ dependencies = [
     "openai-whisper>=20250625",
     "librosa>=0.11.0",
     "soundfile>=0.13.1",
-    "faster-whisper>=1.2.0",
+    "faster-whisper",
     "e2b-code-interpreter==1.5.2",
+    "google-cloud-speech>=2.25.0",
 ]
 
