@@ -91,9 +91,9 @@ export default function CopilotKitPage() {
   const [themeColor, setThemeColor] = useState("#6366f1");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceModeEnabled, setVoiceModeEnabled] = useState(true); // Enabled by default when using voice
-  const lastProcessedMessageRef = useRef<string>("");
+  const lastProcessedAssistantRef = useRef<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { sendMessage } = useCopilotChatHeadless_c();
+  const { messages, sendMessage } = useCopilotChatHeadless_c();
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -172,43 +172,25 @@ export default function CopilotKitPage() {
   // Monitor chat messages and play TTS for assistant responses
   useEffect(() => {
     if (!voiceModeEnabled) return;
-    
-    // Poll the chat sidebar for new assistant messages
-    const checkForNewMessages = () => {
-      // Find all assistant messages in the sidebar
-      const messageElements = document.querySelectorAll('[data-role="assistant"]');
-      if (messageElements.length === 0) {
-        // Try alternative selectors
-        const altMessages = document.querySelectorAll('.copilot-message, [class*="assistant"]');
-        if (altMessages.length > 0) {
-          const lastMessage = altMessages[altMessages.length - 1];
-          const messageText = lastMessage.textContent || "";
-          
-          if (messageText && messageText !== lastProcessedMessageRef.current) {
-            lastProcessedMessageRef.current = messageText;
-            console.log("🆕 New assistant message detected, playing TTS");
-            playAudio(messageText);
-          }
-        }
-        return;
-      }
-      
-      const lastMessage = messageElements[messageElements.length - 1];
-      const messageText = lastMessage.textContent || "";
-      
-      // Check if this is a new message we haven't processed yet
-      if (messageText && messageText !== lastProcessedMessageRef.current) {
-        lastProcessedMessageRef.current = messageText;
-        console.log("🆕 New assistant message detected, playing TTS");
-        playAudio(messageText);
-      }
-    };
 
-    // Check for new messages every 500ms
-    const interval = setInterval(checkForNewMessages, 500);
+    const assistantMessages = messages.filter((message) => message.role === "assistant");
+    if (assistantMessages.length === 0) {
+      return;
+    }
 
-    return () => clearInterval(interval);
-  }, [voiceModeEnabled, playAudio]); // Dependencies: voiceModeEnabled and playAudio
+    const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
+    if (!latestAssistantMessage.content?.trim()) {
+      return;
+    }
+
+    if (lastProcessedAssistantRef.current === latestAssistantMessage.id) {
+      return;
+    }
+
+    lastProcessedAssistantRef.current = latestAssistantMessage.id;
+    console.log("🆕 New assistant message detected, playing TTS");
+    playAudio(latestAssistantMessage.content);
+  }, [messages, voiceModeEnabled, playAudio]);
 
   const handleTranscript = async (transcript: string) => {
     if (!transcript.trim()) return;
