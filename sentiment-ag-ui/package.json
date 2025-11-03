@@ -14,7 +14,7 @@
     "@copilotkit/react-core": "^1.10.5",
     "@copilotkit/react-ui": "^1.10.5",
     "@copilotkit/runtime": "^1.10.5",
-    "@ricky0123/vad-react": "^0.0.34",
+    "webrtc-vad": "^1.0.1",
     "@ricky0123/vad-web": "^0.0.28",
     "@types/plotly.js": "^3.0.6",
     "lucide-react": "^0.545.0",

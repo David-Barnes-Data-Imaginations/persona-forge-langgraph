@@ -1,7 +1,8 @@
 "use client";
 
-import { useCopilotAction } from "@copilotkit/react-core";
+import { useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
 import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
+import { TextMessage, MessageRole } from "@copilotkit/runtime-client-gql";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PsychologicalVisualization } from "@/components/PsychologicalVisualization";
 import { InsightsDashboard } from "@/components/InsightsDashboard";
@@ -26,6 +27,7 @@ export default function CopilotKitPage() {
   const [voiceModeEnabled, setVoiceModeEnabled] = useState(true); // Enabled by default when using voice
   const lastProcessedMessageRef = useRef<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { sendMessage } = useCopilotChat();
 
   // State management for psychological analysis
   const [state, setState] = useState<SentimentAgentState>({
@@ -136,100 +138,28 @@ export default function CopilotKitPage() {
     return () => clearInterval(interval);
   }, [voiceModeEnabled, playAudio]); // Dependencies: voiceModeEnabled and playAudio
 
-  const handleTranscript = (transcript: string) => {
-    // Enable voice mode when user uses voice input
-    setVoiceModeEnabled(true);
+  const handleTranscript = async (transcript: string) => {
+    if (!transcript.trim()) return;
+
     console.log("🎤 Voice transcript received:", transcript);
-    
+    setVoiceModeEnabled(true);
+
     // Update state to show the transcript
     setState({
       ...state,
       current_analysis: `🎤 Voice: "${transcript}"`,
     });
-    
-    // Use DOM manipulation to inject transcript into CopilotKit chat
-    console.log("📤 Injecting transcript into chat...");
-    
-    setTimeout(() => {
-      // Find the chat input textarea
-      const chatInput = document.querySelector('textarea[placeholder*="Message"]') as HTMLTextAreaElement 
-        || document.querySelector('textarea') as HTMLTextAreaElement;
-      
-      if (chatInput) {
-        console.log("✅ Found chat input, setting value:", transcript);
-        
-        // Set the value using React's internal setter to trigger onChange
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLTextAreaElement.prototype,
-          'value'
-        )?.set;
-        nativeInputValueSetter?.call(chatInput, transcript);
-        
-        // Trigger input event to notify React
-        const inputEvent = new Event('input', { bubbles: true });
-        chatInput.dispatchEvent(inputEvent);
-        
-        // Focus the input
-        chatInput.focus();
-        
-        console.log("🔍 Looking for send button...");
-        
-        // Try to find and click submit button
-        setTimeout(() => {
-          const form = chatInput.closest('form');
-          let sendButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement;
-          
-          if (!sendButton) {
-            // Try alternative selectors
-            sendButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
-          }
-          
-          if (!sendButton) {
-            // Look for any button near the textarea that might be the send button
-            const buttons = Array.from(document.querySelectorAll('button'));
-            sendButton = buttons.find(btn => {
-              const hasIcon = btn.querySelector('svg');
-              const isNearTextarea = chatInput.parentElement?.contains(btn) || 
-                                     chatInput.parentElement?.parentElement?.contains(btn);
-              return (hasIcon || btn.textContent?.toLowerCase().includes('send')) && isNearTextarea;
-            }) as HTMLButtonElement;
-          }
-          
-          if (sendButton && !sendButton.disabled) {
-            console.log("✅ Clicking send button!");
-            sendButton.click();
-            console.log("✅ Voice transcript submitted!");
-          } else {
-            console.log("⚠️ Send button not found or disabled, trying Enter key...");
-            // Fallback: trigger Enter key
-            const enterEvent = new KeyboardEvent('keydown', {
-              key: 'Enter',
-              code: 'Enter',
-              keyCode: 13,
-              which: 13,
-              bubbles: true,
-              cancelable: true,
-            });
-            chatInput.dispatchEvent(enterEvent);
-            
-            // Also try keypress
-            const keypressEvent = new KeyboardEvent('keypress', {
-              key: 'Enter',
-              code: 'Enter',
-              keyCode: 13,
-              which: 13,
-              bubbles: true,
-              cancelable: true,
-            });
-            chatInput.dispatchEvent(keypressEvent);
-            console.log("✅ Enter key triggered!");
-          }
-        }, 300); // Increased timeout to ensure React updates
-      } else {
-        console.error("❌ Could not find chat input textarea!");
-        console.log("Available textareas:", document.querySelectorAll('textarea'));
-      }
-    }, 150); // Give UI time to render
+
+    console.log("📤 Sending transcript to CopilotKit...");
+
+    await sendMessage(
+      new TextMessage({
+        role: MessageRole.User,
+        content: transcript,
+      })
+    );
+
+    console.log("✅ Voice transcript submitted!");
   };
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions

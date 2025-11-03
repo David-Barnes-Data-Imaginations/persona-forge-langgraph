@@ -22,6 +22,7 @@ import soundfile as sf
 # Import your existing LangGraph components
 from src.graphs.chat_agent import get_new_agent
 from src.io_py.edge.config import LLMConfigVoice
+from src.voice_service_faster import faster_whisper_service
 from src.tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
 from langgraph.checkpoint.memory import MemorySaver
 
@@ -833,6 +834,7 @@ async def get_cypher_output():
 # Import voice service
 try:
     from google.cloud import speech_v1p1beta1 as speech
+    from google.cloud import texttospeech
     from dotenv import load_dotenv
     load_dotenv()
     VOICE_SERVICE_AVAILABLE = True
@@ -910,73 +912,114 @@ async def websocket_endpoint(websocket: WebSocket):
             pass
 
 
+@app.websocket("/ws/vad-stream")
+async def vad_websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for VAD audio streaming, using faster-whisper."""
+    await websocket.accept()
+    print("🎤 VAD WebSocket connection established for AG-UI")
 
+    current_frames = []
+
+    try:
+        while True:
+            data = await websocket.receive()
+
+            if "bytes" in data:
+                # Raw PCM audio data
+                pcm_data = np.frombuffer(data["bytes"], dtype=np.int16)
+                current_frames.append(pcm_data)
+
+            elif "text" in data:
+                message = json.loads(data["text"])
+                if message.get("type") == "UTTERANCE_END":
+                    print("🎯 AG-UI: Processing utterance from VAD...")
+
+                    if not current_frames:
+                        print("⚠️ No audio frames to process.")
+                        continue
+
+                    # Concatenate all audio frames
+                    full_audio = np.concatenate(current_frames)
+                    current_frames = []
+
+                    try:
+                        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
+                            audio_float = full_audio.astype(np.float32) / 32768.0
+                            sf.write(tmp_file.name, audio_float, 16000)
+
+                        print(f"🎤 Transcribing {len(audio_float)} samples...")
+                        transcription = faster_whisper_service.transcribe_audio_file(tmp_file.name)
+                        os.unlink(tmp_file.name)
+
+                        if transcription and transcription.strip() and "error" not in transcription.lower():
+                            await websocket.send_text(json.dumps({
+                                "type": "TRANSCRIPT",
+                                "text": transcription.strip(),
+                                "timestamp": datetime.now().isoformat()
+                            }))
+                            print(f"✅ Sent transcription: '{transcription.strip()}'")
+                        else:
+                            print(f"⚠️ Empty or error transcription: '{transcription}'")
+                            await websocket.send_text(json.dumps({
+                                "type": "STATUS",
+                                "message": "No speech detected",
+                                "timestamp": datetime.now().isoformat()
+                            }))
+
+                    except Exception as transcription_error:
+                        print(f"❌ Transcription error: {transcription_error}")
+                        await websocket.send_text(json.dumps({
+                            "type": "ERROR",
+                            "message": f"Transcription failed: {str(transcription_error)}",
+                            "timestamp": datetime.now().isoformat()
+                        }))
+
+    except WebSocketDisconnect:
+        print("🔌 VAD WebSocket connection closed for AG-UI")
+    except Exception as e:
+        print(f"❌ VAD WebSocket error in AG-UI: {e}")
+        if websocket.state == "connected":
+            await websocket.close()
 
 
 @app.post("/api/voice/synthesize")
 async def synthesize_speech(text: str):
     """
-    Text-to-speech endpoint using Piper TTS
+    Text-to-speech endpoint using Google Cloud TTS
     Returns WAV audio file
     """
     if not text or len(text.strip()) == 0:
-        raise HTTPException(status_code=400, detail="Text parameter is required")
+        return Response(status_code=400, content="Text parameter is required")
 
-    print(f"🔊 Synthesizing speech: '{text[:50]}...'")
+    print(f"🔊 Synthesizing speech with Google TTS: '{text[:50]}...'")
 
     try:
-        # Use Piper TTS to synthesize speech
-        piper_model = os.path.expanduser("~/piper/en_GB-alba-medium.onnx")
+        client = texttospeech.TextToSpeechClient()
 
-        if not os.path.exists(piper_model):
-            print(f"❌ Piper model not found at: {piper_model}")
-            raise HTTPException(
-                status_code=503,
-                detail=f"Piper model not found at {piper_model}",
-            )
+        synthesis_input = texttospeech.SynthesisInput(text=text)
 
-        # Create temporary output file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
-            output_path = tmp_file.name
-
-        # Run Piper TTS
-        # echo "text" | piper --model <model> --output-file <output>
-        print(f"🎙️ Running piper with model: {piper_model}")
-        process = subprocess.Popen(
-            ["piper", "--model", piper_model, "--output-file", output_path],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        voice = texttospeech.VoiceSelectionParams(
+            language_code="en-US", ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
         )
 
-        stdout, stderr = process.communicate(input=text.encode("utf-8"))
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3
+        )
 
-        if process.returncode != 0:
-            print(f"❌ Piper TTS error: {stderr.decode()}")
-            raise HTTPException(
-                status_code=500, detail=f"TTS failed: {stderr.decode()}"
-            )
+        response = client.synthesize_speech(
+            input=synthesis_input, voice=voice, audio_config=audio_config
+        )
 
-        # Read the generated audio file
-        with open(output_path, "rb") as f:
-            audio_data = f.read()
+        print(f"✅ Synthesized {len(response.audio_content)} bytes of audio")
 
-        # Clean up temp file
-        os.remove(output_path)
-
-        print(f"✅ Synthesized {len(audio_data)} bytes of audio")
-
-        # Return audio as WAV file
         return Response(
-            content=audio_data,
-            media_type="audio/wav",
-            headers={"Content-Disposition": f"inline; filename=speech.wav"},
+            content=response.audio_content,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": f"inline; filename=speech.mp3"},
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"❌ TTS error: {e}")
+        print(f"❌ Google TTS error: {e}")
         raise HTTPException(status_code=500, detail=f"TTS error: {str(e)}")
 
 

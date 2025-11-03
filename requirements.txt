@@ -1,4 +1,3 @@
-
 nvidia-cublas-cu12==12.6.4.1
     # via
     #   nvidia-cudnn-cu12
@@ -102,6 +101,7 @@ langchain_community>=0.3.27
 langchain_tavily>=0.2.7
 langchain_mcp_adapters>=0.1.9
 langchain_google_genai
+google-cloud-texttospeech
 langgraph-sdk
 langsmith
 lazy-object-proxy

@@ -2,34 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
-    serverComponentsExternalPackages: [
+  serverExternalPackages: [
       'fast-xml-parser',
       '@aws-sdk/xml-builder',
       '@langchain/aws',
     ],
-  },
-  // Add rewrites to handle relative paths for VAD model files
-  async rewrites() {
-    return [
-      {
-        source: '/:path*/silero_vad_legacy.onnx',
-        destination: '/silero_vad_legacy.onnx',
-      },
-      {
-        source: '/:path*/vad.worklet.bundle.min.js',
-        destination: '/vad.worklet.bundle.min.js',
-      },
-      {
-        source: '/:path*/ort-wasm.wasm',
-        destination: '/ort-wasm.wasm',
-      },
-      {
-        source: '/:path*/ort-wasm-simd.wasm',
-        destination: '/ort-wasm-simd.wasm',
-      },
-    ];
-  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = config.externals || [];

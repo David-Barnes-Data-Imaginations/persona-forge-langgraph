@@ -46,3 +46,6 @@ Thumbs.db
 
 # Test outputs
 test_output/
+
+# Secrets
+gen-lang-client-0433672265-ce199ed40225.json
