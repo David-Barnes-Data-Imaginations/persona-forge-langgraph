@@ -1,12 +1,3 @@
-  <br><br>
-<p align="center">
-  <img src="./Forged_2.png" alt="Graph_2">
-</p>
-  <br><br>
-<p align="center">
-  <img src="./Forged_3.png" alt="Graph_3">
-</p>
-
 ### Overview
 Recent studies highlight the measurable benefits of artificial intelligence in clinical assessment. A University of Virginia (2024) study compared diagnostic accuracy between physicians and AI systems, finding:
 
@@ -17,17 +8,28 @@ Recent studies highlight the measurable benefits of artificial intelligence in c
 - AI systems alone: ~90%
 
 More recent work by the University of California, San Diego (2025) reinforced this, demonstrating that AI-assisted clinicians achieved greater diagnostic consistency and reduced bias, particularly across racially and socioeconomically diverse patient groups.
+
 Similar studies have taken place in Europe, most notably when a team from UniBE (Bern), Institute of Psychology, and UNIGE's (Geneva) Swiss Center for Affective Sciences (CISA) subjected six LLMs to emotional intelligence tests commonly used in both research and corporate settings. 
 
 In the end, the LLMs achieved 82% correct answers versus 56% for humans. 
 
-In a second stage, the scientists asked ChatGPT-4 to create new emotional intelligence tests, with new scenarios, then taken by over 400 participants. They proved to be as reliable, clear and realistic as the original tests, which had taken years to develop
+In a second stage, the scientists asked ChatGPT-4 to create new emotional intelligence tests, with new scenarios, then taken by over 400 participants. 
+
+They proved to be as reliable, clear and realistic as the original tests, which had taken years to develop
+
 These findings support the rationale for implementing AI-driven analytic workflows in psychotherapy and clinical documentation enhancing consistency, reducing subjective bias, and enabling more objective, quantifiable assessments.
+
 At present there are numerous US-based AI start-ups building solutions to relinquish clinicians of their administrative burdens, an endeavour promising to optimize commercial outcomes and efficiency.
 
 ### Workflow 1: Enhanced Analysis
-The first workflow transcribes or ingests therapy session data (audio or text) and decomposes it into structured QA pairs. Each pair is processed through multiple psychological frameworks and embedded into a graph-based cognitive-emotional architecture.
-This tagging approach expands traditional qualitative analysis by mapping why something was said (cognitive bias), when it matters (developmental anchor), how it felt (valence/arousal), and who it reflects (traits, schemas, defenses, attachments). The resulting knowledge graph allows clinicians or AI systems to perform semantic and quantitative searches across sessions.
+
+The first workflow transcribes or ingests therapy session data (audio or text) and decomposes it into structured QA pairs. 
+
+Each pair is processed through multiple psychological frameworks and embedded into a graph-based cognitive-emotional architecture.
+
+This tagging approach expands traditional qualitative analysis by mapping why something was said (cognitive bias), when it matters (developmental anchor), how it felt (valence/arousal), and who it reflects (traits, schemas, defenses, attachments). 
+
+The resulting knowledge graph allows clinicians or AI systems to perform semantic and quantitative searches across sessions.
 
 Figure 1: 
 
