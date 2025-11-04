@@ -67,6 +67,7 @@ Psychoeducation on self-emotion awareness
 Mindfulness/body-scan exercises to increase interoceptive sensitivity
 Emotion journaling for personal affect tracking
 Attachment-based reflection exercises
+
 ---
 
 Figure 2: Workflow Diagram 1
