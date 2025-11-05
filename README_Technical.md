@@ -160,7 +160,7 @@ OPENAI_BASE_URL=http://127.0.0.1:1234/v1
 
 This is a little more complex, since I use multiple PC's hosting local agents. The easiest way to change this is to ask your VS Code AI (Claude or whatever, but it needs terminal control) to change all the lm-studio model instances to your chosen online model.
 
-You can also editrun_deep_agent_e2b.py and 'src/graphs/deep_agent.py'. For example you would want to switch instances of:
+You can also edit run_deep_agent_e2b.py and 'src/graphs/deep_agent.py'. For example you would want to switch instances of:
 
 `from langchain_openai import ChatOpenAI`
 
@@ -169,9 +169,9 @@ and
 ```
 # Local models (main PC) - LM Studio configuration
 alt_model = ChatOpenAI(
-    model=LLMConfigPeon.model_name,  # aka 'alt'
-    temperature=LLMConfigPeon.temperature,
-    max_tokens=LLMConfigPeon.max_tokens,
+    model=LLMConfigVoice.model_name,  
+    temperature=LLMConfigVoice.temperature,
+    max_tokens=LLMConfigVoice.max_tokens,
     base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
     api_key="lm-studio",  # LM Studio doesn't require a real key
 )
@@ -194,8 +194,9 @@ def get_gemini_model():
     return genai.GenerativeModel(
         model_name="gemini-2.0-flash-exp",
         generation_config={
-            "temperature": 0.7,
-            "max_output_tokens": 2048,
+          model=LLMConfigVoice.model_name,  
+          temperature=LLMConfigVoice.temperature,
+          max_tokens=LLMConfigVoice.max_tokens,
         }
     )
 

@@ -196,9 +196,25 @@ export default function CopilotKitPage() {
       return;
     }
 
-    lastProcessedAssistantRef.current = latestAssistantMessage.id;
-    console.log("🆕 New assistant message detected, playing TTS");
-    playAudio(latestAssistantMessage.content);
+    // Debounce: Wait for message to be complete (no updates for 500ms)
+    const timeoutId = setTimeout(() => {
+      // Double-check the message hasn't changed
+      const currentMessages = messages.filter((m) => m.role === "assistant");
+      const currentLatest = currentMessages[currentMessages.length - 1];
+      
+      if (currentLatest && 
+          currentLatest.id === latestAssistantMessage.id && 
+          currentLatest.content === latestAssistantMessage.content &&
+          currentLatest.content?.trim() &&
+          lastProcessedAssistantRef.current !== currentLatest.id) {
+        
+        lastProcessedAssistantRef.current = currentLatest.id;
+        console.log("🆕 Complete assistant message detected, playing TTS:", currentLatest.content);
+        playAudio(currentLatest.content);
+      }
+    }, 500); // Wait 500ms for streaming to complete
+
+    return () => clearTimeout(timeoutId);
   }, [messages, voiceModeEnabled, playAudio]);
 
   const handleTranscript = async (transcript: string) => {

@@ -59,8 +59,8 @@ dnspython
 docstring-parser
 docutils
 email-validator
-e2b==1.11.1
-e2b_code_interpreter==1.5.2
+e2b<=1.11.1
+e2b_code_interpreter<=1.5.2
 fastapi
 fastmcp
 ffmpy
@@ -90,19 +90,24 @@ jsonschema
 jsonschema-path
 jsonschema-specifications
 kiwisolver
-langchain-core==0.1.10   # or any 0.1.x that still exposes `content`
-langchain-openai==0.2.0 
+langchain-openai
 langchain-mcp-adapters
 langgraph-checkpoint
 langgraph-checkpoint-sqlite
 langgraph-prebuilt
-langgraph>=1.0.0
-langchain>=1.0.0
-langchain-anthropic>=0.3.0
-langchain_community>=0.3.27
-langchain_tavily>=0.2.7
-langchain_mcp_adapters>=0.1.9
-langchain_google_genai
+langgraph
+langchain
+# these are correct
+langchain-google-genai>=1.0.0
+langchain-core>=0.2.0
+google-generativeai>=0.8.0
+
+langchain-anthropic
+langchain_community
+langchain_tavily
+langchain_mcp_adapters
+google-generativeai
+google-cloud-speech
 google-cloud-texttospeech
 langgraph-sdk
 langsmith

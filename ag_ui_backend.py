@@ -847,6 +847,13 @@ except Exception as e:
     print(f"⚠️ Voice service not available: {e}")
     VOICE_SERVICE_AVAILABLE = False
 
+print(f"🎤 Initial VOICE_SERVICE_AVAILABLE status: {VOICE_SERVICE_AVAILABLE}")
+if not VOICE_SERVICE_AVAILABLE:
+    print("   (This means Google Cloud Speech and Text-to-Speech libraries failed to import)")
+
+print(f"🔐 GOOGLE_APPLICATION_CREDENTIALS in backend: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
+print(f"🔑 GOOGLE_API_KEY in backend: {os.getenv('GOOGLE_API_KEY')}")
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -1007,6 +1014,8 @@ async def vad_websocket_endpoint(websocket: WebSocket):
 
                             except Exception as google_error:
                                 print(f"❌ Google STT error: {google_error}")
+                                import traceback
+                                traceback.print_exc() # Add this line for detailed traceback
                                 await websocket.send_text(
                                     json.dumps(
                                         {
@@ -1120,6 +1129,8 @@ async def synthesize_speech(text: str, provider: str = "local"):
 
         except Exception as exc:
             print(f"❌ Google TTS error: {exc}")
+            import traceback
+            traceback.print_exc() # Add this line for detailed traceback
             raise HTTPException(status_code=500, detail=f"TTS error: {exc}")
 
     print(f"🔊 Synthesizing speech with Piper TTS: '{clean_text[:50]}...'")

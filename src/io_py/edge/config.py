@@ -13,7 +13,7 @@ class LLMConfigVoice:
 
     # openai/gpt-oss-20b is 14GB VRAM
     # model_name = "granite4:small-h"
-    model_name = "openai/gpt-oss-20b"
+    model_name = "gemini-2.0-flash-exp"
     temperature = 0.1
     max_tokens = 8192
     reasoning = False  # Add reasoning parameter for LangGraph compatibility
@@ -22,7 +22,6 @@ class LLMConfigVoice:
     voice_enabled = True
     stt_model = "whisper"
     tts_model = "piper"
-
 
 # *************MAIN PC*************************************************
 class LLMConfigPeon:
