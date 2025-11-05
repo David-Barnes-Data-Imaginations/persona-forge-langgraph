@@ -79,6 +79,7 @@ def create_e2b_agent(sandbox):
     from src.tools.task_tool import _create_task_tool
     from src.prompts.e2b_prompts import (
         E2B_ARCHITECT_INSTRUCTIONS,
+        E2B_ARCHITECT_INSTRUCTIONS,
         E2B_SUBAGENT_INSTRUCTIONS,
     )
     from langgraph.prebuilt import create_react_agent

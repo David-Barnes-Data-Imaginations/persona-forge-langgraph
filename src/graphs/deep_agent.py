@@ -63,7 +63,6 @@ alt_model = ChatOpenAI(
     model=LLMConfigPeon.model_name,  # aka 'alt'
     temperature=LLMConfigPeon.temperature,
     max_tokens=LLMConfigPeon.max_tokens,
-    reasoning=LLMConfigPeon.reasoning,
     base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
     api_key="lm-studio",  # LM Studio doesn't require a real key
 )
@@ -72,7 +71,6 @@ overseer_model = ChatOpenAI(
     model=LLMConfigOverseer.model_name,
     temperature=LLMConfigOverseer.temperature,
     max_tokens=LLMConfigOverseer.max_tokens,
-    reasoning=LLMConfigOverseer.reasoning,
     base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
     api_key="lm-studio",  # LM Studio doesn't require a real key
 )
