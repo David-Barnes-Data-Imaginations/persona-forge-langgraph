@@ -12,6 +12,7 @@ export default function Header() {
   const navLinks = [
     { href: "/landing", label: "Home", icon: Home },
     { href: "/chat", label: "AI Chat", icon: MessageSquare },
+    { href: "/deep-agent", label: "Deep Agent", icon: Brain },
     { href: "/workflow/framework-analysis", label: "Analysis", icon: FileText },
     { href: "/workflow/knowledge-graph", label: "Knowledge Graph", icon: Network },
   ];

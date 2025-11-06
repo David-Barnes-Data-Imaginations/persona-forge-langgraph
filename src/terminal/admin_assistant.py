@@ -41,13 +41,24 @@ class DeepAgentTerminalUI:
         self.session_id = "session_001"  # Default session
 
         # Command execution safety lists
-        self.safe_commands = ["ls", "cat", "pwd", "echo", "grep", "find", "head", "tail"]
+        self.safe_commands = [
+            "ls",
+            "cat",
+            "pwd",
+            "echo",
+            "grep",
+            "find",
+            "head",
+            "tail",
+        ]
         self.requires_confirmation = ["rm", "mv", "cp", "mkdir", "touch"]
         self.blacklisted = ["rm -rf /", "dd if=", "mkfs", ":(){:|:&};:"]
 
     def initialize_agent(self):
         """Initialize the Deep Agent"""
-        with self.console.status("[bold cyan]Initializing Deep Agent...", spinner="dots"):
+        with self.console.status(
+            "[bold cyan]Initializing Deep Agent...", spinner="dots"
+        ):
             try:
                 short_term_memory = MemorySaver()
                 long_term_memory = None  # Can be configured later if needed
@@ -58,32 +69,40 @@ class DeepAgentTerminalUI:
                     long_term_memory=long_term_memory,
                 )
 
-                self.console.print(Panel(
-                    "[bold green]✓[/bold green] Deep Agent initialized successfully",
-                    border_style="green",
-                    box=box.ROUNDED
-                ))
+                self.console.print(
+                    Panel(
+                        "[bold green]✓[/bold green] Deep Agent initialized successfully",
+                        border_style="green",
+                        box=box.ROUNDED,
+                    )
+                )
                 return True
 
             except Exception as e:
-                self.console.print(Panel(
-                    f"[bold red]✗[/bold red] Error initializing agent: {e}",
-                    border_style="red",
-                    box=box.ROUNDED
-                ))
+                self.console.print(
+                    Panel(
+                        f"[bold red]✗[/bold red] Error initializing agent: {e}",
+                        border_style="red",
+                        box=box.ROUNDED,
+                    )
+                )
                 return False
 
     def show_welcome_banner(self):
         """Display welcome banner with system info"""
         banner = Text()
-        banner.append("╔═══════════════════════════════════════════════╗\n", style="cyan bold")
+        banner.append(
+            "╔═══════════════════════════════════════════════╗\n", style="cyan bold"
+        )
         banner.append("║  ", style="cyan bold")
         banner.append("SENTIMENT SUITE - DEEP AGENT TERMINAL", style="magenta bold")
         banner.append("  ║\n", style="cyan bold")
         banner.append("║  ", style="cyan bold")
         banner.append("Psychological Analysis & Report Generation", style="white")
         banner.append("   ║\n", style="cyan bold")
-        banner.append("╚═══════════════════════════════════════════════╝", style="cyan bold")
+        banner.append(
+            "╚═══════════════════════════════════════════════╝", style="cyan bold"
+        )
 
         self.console.print(banner)
         self.console.print()
@@ -100,12 +119,14 @@ class DeepAgentTerminalUI:
         help_table.add_row("/clear", "Clear conversation history")
         help_table.add_row("/exit", "Exit the application")
 
-        self.console.print(Panel(
-            help_table,
-            title="[bold cyan]Quick Commands[/bold cyan]",
-            border_style="cyan",
-            box=box.ROUNDED
-        ))
+        self.console.print(
+            Panel(
+                help_table,
+                title="[bold cyan]Quick Commands[/bold cyan]",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
         self.console.print()
 
     def handle_command(self, user_input: str) -> bool:
@@ -127,16 +148,22 @@ class DeepAgentTerminalUI:
         elif command == "/stats":
             self.show_statistics()
         elif command == "/todos":
-            if hasattr(self, '_last_agent_state') and self._last_agent_state:
+            if hasattr(self, "_last_agent_state") and self._last_agent_state:
                 self.display_todos(self._last_agent_state)
             else:
-                self.console.print("[yellow]No tasks to display yet. Start a conversation with the agent first.[/yellow]")
+                self.console.print(
+                    "[yellow]No tasks to display yet. Start a conversation with the agent first.[/yellow]"
+                )
         elif command == "/session":
             if args:
                 self.session_id = args.strip()
-                self.console.print(f"[green]✓[/green] Session changed to: {self.session_id}")
+                self.console.print(
+                    f"[green]✓[/green] Session changed to: {self.session_id}"
+                )
             else:
-                self.console.print(f"[yellow]Current session:[/yellow] {self.session_id}")
+                self.console.print(
+                    f"[yellow]Current session:[/yellow] {self.session_id}"
+                )
         elif command == "/clear":
             self.conversation_history = []
             self.console.clear()
@@ -180,12 +207,14 @@ The agent can create files with human-in-the-loop confirmation for:
 Type your request naturally, and the agent will guide you through the workflow.
         """
 
-        self.console.print(Panel(
-            Markdown(help_md),
-            title="[bold cyan]Help[/bold cyan]",
-            border_style="cyan",
-            box=box.ROUNDED
-        ))
+        self.console.print(
+            Panel(
+                Markdown(help_md),
+                title="[bold cyan]Help[/bold cyan]",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
 
     def show_statistics(self):
         """Quick statistics display"""
@@ -195,12 +224,14 @@ Type your request naturally, and the agent will guide you through the workflow.
 
                 stats = get_graph_statistics(self.session_id)
 
-                self.console.print(Panel(
-                    stats,
-                    title=f"[bold cyan]Statistics for {self.session_id}[/bold cyan]",
-                    border_style="cyan",
-                    box=box.ROUNDED
-                ))
+                self.console.print(
+                    Panel(
+                        stats,
+                        title=f"[bold cyan]Statistics for {self.session_id}[/bold cyan]",
+                        border_style="cyan",
+                        box=box.ROUNDED,
+                    )
+                )
             except Exception as e:
                 self.console.print(f"[red]Error fetching statistics:[/red] {e}")
 
@@ -226,15 +257,19 @@ Type your request naturally, and the agent will guide you through the workflow.
         op_table.add_row("File Path", file_path)
         op_table.add_row("Absolute Path", str(Path(file_path).resolve()))
 
-        self.console.print(Panel(
-            op_table,
-            title="[bold yellow]⚠ File Operation Request[/bold yellow]",
-            border_style="yellow",
-            box=box.ROUNDED
-        ))
+        self.console.print(
+            Panel(
+                op_table,
+                title="[bold yellow]⚠ File Operation Request[/bold yellow]",
+                border_style="yellow",
+                box=box.ROUNDED,
+            )
+        )
 
         # Ask for confirmation
-        return Confirm.ask("Do you want to proceed with this file operation?", default=False)
+        return Confirm.ask(
+            "Do you want to proceed with this file operation?", default=False
+        )
 
     def process_agent_message(self, message: str) -> str:
         """
@@ -266,9 +301,7 @@ Type your request naturally, and the agent will guide you through the workflow.
             displayed_tool_call_ids = set()  # Track displayed tool calls
 
             for chunk in self.agent.stream(
-                {"messages": messages},
-                config=self.config,
-                stream_mode="values"
+                {"messages": messages}, config=self.config, stream_mode="values"
             ):
                 final_state = chunk  # Keep track of final state
                 if "messages" in chunk:
@@ -283,16 +316,59 @@ Type your request naturally, and the agent will guide you through the workflow.
                                 # Only display if we haven't shown this one yet
                                 if tool_call_id not in displayed_tool_call_ids:
                                     if tool_call.get("name") == "think_tool":
-                                        reflection = tool_call.get("args", {}).get("reflection", "")
+                                        reflection = tool_call.get("args", {}).get(
+                                            "reflection", ""
+                                        )
                                         if reflection:
                                             self.console.print()
-                                            self.console.print(Panel(
-                                                f"[dim]{reflection}[/dim]",
-                                                title="[bold magenta]💭 Agent Thinking[/bold magenta]",
-                                                border_style="magenta",
-                                                box=box.ROUNDED
-                                            ))
+                                            self.console.print(
+                                                Panel(
+                                                    f"[dim]{reflection}[/dim]",
+                                                    title="[bold magenta]💭 Agent Thinking[/bold magenta]",
+                                                    border_style="magenta",
+                                                    box=box.ROUNDED,
+                                                )
+                                            )
                                     displayed_tool_call_ids.add(tool_call_id)
+
+                    # Also display any model-produced internal thoughts that may be attached
+                    # as metadata on messages or at the chunk level.
+                    thought_keys = [
+                        "thoughts",
+                        "internal",
+                        "chain_of_thought",
+                        "reasoning",
+                    ]
+                    # Chunk-level thoughts
+                    for k in thought_keys:
+                        if k in chunk and chunk[k]:
+                            self.console.print()
+                            self.console.print(
+                                Panel(
+                                    f"[dim]{str(chunk[k])}[/dim]",
+                                    title="[bold magenta]💭 Agent Thought[/bold magenta]",
+                                    border_style="magenta",
+                                    box=box.ROUNDED,
+                                )
+                            )
+
+                    # Message-level metadata thoughts
+                    latest_message = chunk["messages"][-1]
+                    if hasattr(latest_message, "metadata") and latest_message.metadata:
+                        for k in thought_keys:
+                            if (
+                                k in latest_message.metadata
+                                and latest_message.metadata[k]
+                            ):
+                                self.console.print()
+                                self.console.print(
+                                    Panel(
+                                        f"[dim]{str(latest_message.metadata[k])}[/dim]",
+                                        title="[bold magenta]💭 Agent Thought[/bold magenta]",
+                                        border_style="magenta",
+                                        box=box.ROUNDED,
+                                    )
+                                )
 
                     # Capture final response from latest message
                     latest_message = chunk["messages"][-1]
@@ -314,6 +390,7 @@ Type your request naturally, and the agent will guide you through the workflow.
 
         except Exception as e:
             import traceback
+
             error_details = traceback.format_exc()
             self.console.print(f"\n[red]Full error traceback:[/red]\n{error_details}")
             return f"❌ Error processing message: {str(e)}"
@@ -334,14 +411,14 @@ Type your request naturally, and the agent will guide you through the workflow.
         status_icons = {
             "pending": "⏳ Pending",
             "in_progress": "🔄 In Progress",
-            "completed": "✅ Done"
+            "completed": "✅ Done",
         }
 
         # Color mapping
         status_colors = {
             "pending": "yellow",
             "in_progress": "cyan",
-            "completed": "green"
+            "completed": "green",
         }
 
         for todo in todos:
@@ -354,12 +431,14 @@ Type your request naturally, and the agent will guide you through the workflow.
             todo_table.add_row(status_text, content)
 
         self.console.print()
-        self.console.print(Panel(
-            todo_table,
-            title="[bold blue]📋 Task Progress[/bold blue]",
-            border_style="blue",
-            box=box.ROUNDED
-        ))
+        self.console.print(
+            Panel(
+                todo_table,
+                title="[bold blue]📋 Task Progress[/bold blue]",
+                border_style="blue",
+                box=box.ROUNDED,
+            )
+        )
 
     def display_agent_response(self, response: str):
         """Display agent response with rich formatting"""
@@ -367,21 +446,25 @@ Type your request naturally, and the agent will guide you through the workflow.
 
         # Check if response contains markdown-like formatting
         if any(marker in response for marker in ["#", "**", "*", "-", "`"]):
-            self.console.print(Panel(
-                Markdown(response),
-                title="[bold green]Agent Response[/bold green]",
-                border_style="green",
-                box=box.ROUNDED,
-                padding=(1, 2)
-            ))
+            self.console.print(
+                Panel(
+                    Markdown(response),
+                    title="[bold green]Agent Response[/bold green]",
+                    border_style="green",
+                    box=box.ROUNDED,
+                    padding=(1, 2),
+                )
+            )
         else:
-            self.console.print(Panel(
-                response,
-                title="[bold green]Agent Response[/bold green]",
-                border_style="green",
-                box=box.ROUNDED,
-                padding=(1, 2)
-            ))
+            self.console.print(
+                Panel(
+                    response,
+                    title="[bold green]Agent Response[/bold green]",
+                    border_style="green",
+                    box=box.ROUNDED,
+                    padding=(1, 2),
+                )
+            )
 
     def run(self):
         """Main application loop"""
@@ -411,7 +494,7 @@ Type your request naturally, and the agent will guide you through the workflow.
                 response = self.process_agent_message(user_input)
 
                 # Display TODOs if available
-                if hasattr(self, '_last_agent_state') and self._last_agent_state:
+                if hasattr(self, "_last_agent_state") and self._last_agent_state:
                     self.display_todos(self._last_agent_state)
 
                 # Display response

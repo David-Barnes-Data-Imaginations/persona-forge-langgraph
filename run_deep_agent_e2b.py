@@ -230,6 +230,32 @@ def run_workflow(agent, sandbox, task: str):
         if "messages" in chunk:
             latest = chunk["messages"][-1]
 
+            # If model emits internal reasoning/thoughts in metadata or chunk-level keys,
+            # display them as dimmed 'Thought' panels so the CLI shows the agent's chain-of-thought.
+            thought_keys = ["thoughts", "internal", "chain_of_thought", "reasoning"]
+            # Chunk-level thoughts (some runtimes put thoughts at chunk level)
+            for k in thought_keys:
+                if k in chunk and chunk[k]:
+                    console.print(
+                        Panel(
+                            f"[dim]{str(chunk[k])}[/dim]",
+                            title="[magenta]💭 Agent Thought[/magenta]",
+                            border_style="magenta",
+                        )
+                    )
+
+            # Message-level metadata thoughts
+            if hasattr(latest, "metadata") and latest.metadata:
+                for k in thought_keys:
+                    if k in latest.metadata and latest.metadata[k]:
+                        console.print(
+                            Panel(
+                                f"[dim]{str(latest.metadata[k])}[/dim]",
+                                title="[magenta]💭 Agent Thought[/magenta]",
+                                border_style="magenta",
+                            )
+                        )
+
             # Update TODOs if changed
             if "todos" in chunk and chunk["todos"] != current_todos:
                 current_todos = chunk["todos"]

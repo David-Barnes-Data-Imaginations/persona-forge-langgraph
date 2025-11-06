@@ -849,9 +849,13 @@ except Exception as e:
 
 print(f"🎤 Initial VOICE_SERVICE_AVAILABLE status: {VOICE_SERVICE_AVAILABLE}")
 if not VOICE_SERVICE_AVAILABLE:
-    print("   (This means Google Cloud Speech and Text-to-Speech libraries failed to import)")
+    print(
+        "   (This means Google Cloud Speech and Text-to-Speech libraries failed to import)"
+    )
 
-print(f"🔐 GOOGLE_APPLICATION_CREDENTIALS in backend: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
+print(
+    f"🔐 GOOGLE_APPLICATION_CREDENTIALS in backend: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}"
+)
 print(f"🔑 GOOGLE_API_KEY in backend: {os.getenv('GOOGLE_API_KEY')}")
 
 
@@ -1015,7 +1019,8 @@ async def vad_websocket_endpoint(websocket: WebSocket):
                             except Exception as google_error:
                                 print(f"❌ Google STT error: {google_error}")
                                 import traceback
-                                traceback.print_exc() # Add this line for detailed traceback
+
+                                traceback.print_exc()  # Add this line for detailed traceback
                                 await websocket.send_text(
                                     json.dumps(
                                         {
@@ -1130,7 +1135,8 @@ async def synthesize_speech(text: str, provider: str = "local"):
         except Exception as exc:
             print(f"❌ Google TTS error: {exc}")
             import traceback
-            traceback.print_exc() # Add this line for detailed traceback
+
+            traceback.print_exc()  # Add this line for detailed traceback
             raise HTTPException(status_code=500, detail=f"TTS error: {exc}")
 
     print(f"🔊 Synthesizing speech with Piper TTS: '{clean_text[:50]}...'")
@@ -1193,6 +1199,268 @@ async def synthesize_speech(text: str, provider: str = "local"):
         if output_path and os.path.exists(output_path):
             os.unlink(output_path)
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/deep-agent/status")
+async def deep_agent_status():
+    """Check if deep agent dependencies are available"""
+    try:
+        # Check E2B availability
+        import e2b_code_interpreter
+
+        e2b_available = True
+    except ImportError:
+        e2b_available = False
+
+    # Check Neo4j connection
+    neo4j_uri = os.getenv("NEO4J_URI")
+    neo4j_available = bool(neo4j_uri)
+
+    return {
+        "e2b_available": e2b_available,
+        "neo4j_available": neo4j_available,
+        "status": "ready" if e2b_available and neo4j_available else "degraded",
+    }
+
+
+@app.post("/api/deep-agent/run")
+async def run_deep_agent_workflow():
+    """
+    Run the deep agent workflow and return streaming results
+
+    This mimics the CLI workflow but returns structured JSON for the UI
+    """
+    from fastapi.responses import StreamingResponse
+    import asyncio
+    from e2b_code_interpreter import Sandbox
+    from src.graphs.deep_agent import (
+        scribe_model,
+        overseer_model,
+        alt_model,
+        DeepAgentState,
+    )
+    from src.io_py.edge.config import LLMConfigArchitect
+    from src.tools.e2b_tools import E2B_TOOLS, set_global_sandbox
+    from src.tools.hybrid_rag_tools import PERSONA_FORGE_TOOLS
+    from src.tools.research_tools import tavily_search, pubmed_search, think_tool
+    from src.tools.todo_tools import write_todos, read_todos
+    from src.tools.task_tool import _create_task_tool
+    from src.prompts.e2b_prompts import (
+        E2B_ARCHITECT_INSTRUCTIONS,
+        E2B_SUBAGENT_INSTRUCTIONS,
+    )
+    from langgraph.prebuilt import create_react_agent
+    from langchain_openai import ChatOpenAI
+
+    async def generate_workflow_stream():
+        """Generate streaming JSON events for the deep agent workflow"""
+        sandbox = None
+
+        try:
+            # Send initial status
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Creating E2B sandbox...', 'step': 'init'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Create sandbox
+            sandbox = Sandbox()
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Installing dependencies...', 'step': 'setup'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Install dependencies (simplified for speed)
+            result = sandbox.commands.run(
+                "pip install neo4j langchain langchain-core langchain-openai",
+                timeout=120,
+            )
+
+            # Set environment variables
+            env_vars = {
+                "NEO4J_URI": os.getenv("NEO4J_URI", "bolt://host.docker.internal:7687"),
+                "NEO4J_USER": os.getenv("NEO4J_USER", "neo4j"),
+                "NEO4JP": os.getenv("NEO4JP"),
+                "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY"),
+                "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY"),
+            }
+
+            for key, value in env_vars.items():
+                if value:
+                    sandbox.commands.run(f"export {key}='{value}'")
+
+            sandbox.commands.run("mkdir -p ~/workspace/data")
+            sandbox.commands.run("mkdir -p ~/workspace/reports")
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Sandbox ready!', 'step': 'ready'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Set global sandbox
+            set_global_sandbox(sandbox)
+
+            # Create tools
+            core_tools = E2B_TOOLS + [write_todos, read_todos, think_tool]
+            research_tools = [tavily_search, pubmed_search]
+            assistant_tools = PERSONA_FORGE_TOOLS + research_tools + core_tools
+
+            assistant = {
+                "name": "assistant",
+                "description": "Delegate tasks to assistant for Neo4j queries and research",
+                "prompt": E2B_SUBAGENT_INSTRUCTIONS,
+                "tools": [t.name for t in assistant_tools],
+            }
+
+            delegation_tools = [
+                _create_task_tool(
+                    assistant_tools,
+                    [assistant],
+                    scribe_model,
+                    DeepAgentState,
+                    tool_name="delegate_to_scribe",
+                ),
+                _create_task_tool(
+                    assistant_tools,
+                    [assistant],
+                    overseer_model,
+                    DeepAgentState,
+                    tool_name="delegate_to_overseer",
+                ),
+                _create_task_tool(
+                    assistant_tools,
+                    [assistant],
+                    alt_model,
+                    DeepAgentState,
+                    tool_name="delegate_to_alt",
+                ),
+            ]
+
+            architect_tools = (
+                PERSONA_FORGE_TOOLS + research_tools + core_tools + delegation_tools
+            )
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Creating deep agent...', 'step': 'agent_init'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Create architect model
+            model = ChatOpenAI(
+                model=LLMConfigArchitect.model_name,
+                temperature=LLMConfigArchitect.temperature,
+                max_tokens=32768,
+                base_url="http://localhost:1234/v1",
+                api_key="lm-studio",
+            ).with_config({"recursion_limit": 75})
+
+            # Create agent
+            agent = create_react_agent(
+                model,
+                architect_tools,
+                prompt=E2B_ARCHITECT_INSTRUCTIONS,
+                checkpointer=MemorySaver(),
+                state_schema=DeepAgentState,
+            )
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Agent created! Starting workflow...', 'step': 'running'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Define the task
+            task = """Please start the workflow for client_001, session_001.
+
+1. Retrieve diagnosis using retrieve_diagnosis and save to /home/user/workspace/data/diagnosis.txt
+2. Retrieve subjective analysis using get_subjective_analysis and save to /home/user/workspace/data/subjective.txt
+3. Retrieve objective statistics for analysis using get_objective_analysis and save to /home/user/workspace/data/objective.txt
+4. Create a therapy note combining all three and save to /home/user/workspace/reports/therapy_note.txt
+
+IMPORTANT: The RAG tools return data but don't save files. You must use execute_bash to save each result."""
+
+            config = {
+                "configurable": {"thread_id": "web_workflow"},
+                "recursion_limit": 75,
+            }
+
+            initial_state = {
+                "messages": [{"role": "user", "content": task}],
+            }
+
+            step_count = 0
+
+            # Stream agent execution
+            for i, chunk in enumerate(
+                agent.stream(initial_state, config, stream_mode="values")
+            ):
+                if "messages" in chunk:
+                    latest = chunk["messages"][-1]
+
+                    # Handle TODOs
+                    if "todos" in chunk and chunk["todos"]:
+                        yield f"data: {json.dumps({'type': 'todos', 'data': chunk['todos']})}\n\n"
+                        await asyncio.sleep(0.05)
+
+                    # Handle tool calls
+                    if hasattr(latest, "tool_calls") and latest.tool_calls:
+                        step_count += 1
+                        for tool_call in latest.tool_calls:
+                            tool_name = tool_call.get("name")
+
+                            if tool_name == "think_tool":
+                                reflection = tool_call.get("args", {}).get(
+                                    "reflection", ""
+                                )
+                                yield f"data: {json.dumps({'type': 'thought', 'content': reflection, 'step': step_count})}\n\n"
+                            elif "delegate" in tool_name:
+                                args = tool_call.get("args", {})
+                                description = args.get("description", "No description")
+                                yield f"data: {json.dumps({'type': 'delegation', 'tool': tool_name, 'description': description, 'step': step_count})}\n\n"
+                            else:
+                                yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'step': step_count})}\n\n"
+
+                            await asyncio.sleep(0.05)
+
+                    # Handle responses
+                    if (
+                        hasattr(latest, "content")
+                        and latest.content
+                        and len(latest.content) > 10
+                    ):
+                        if "E2B sandbox not available" not in latest.content:
+                            yield f"data: {json.dumps({'type': 'response', 'content': latest.content[:500], 'step': step_count})}\n\n"
+                            await asyncio.sleep(0.05)
+
+            # Get final workspace contents
+            result = sandbox.commands.run("find ~/workspace -type f", timeout=10)
+            files = []
+            if result.stdout:
+                files = result.stdout.strip().split("\n")
+
+            yield f"data: {json.dumps({'type': 'files', 'data': files})}\n\n"
+
+            # Try to export report
+            report_files = sandbox.commands.run(
+                "ls ~/workspace/reports/*.txt", timeout=5
+            )
+            if report_files.exit_code == 0:
+                report_content = sandbox.commands.run(
+                    "cat ~/workspace/reports/therapy_note.txt", timeout=5
+                )
+                if report_content.exit_code == 0:
+                    yield f"data: {json.dumps({'type': 'report', 'content': report_content.stdout})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'complete', 'message': 'Workflow completed successfully!'})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+        finally:
+            if sandbox:
+                try:
+                    sandbox.kill()
+                except:
+                    pass
+
+    return StreamingResponse(
+        generate_workflow_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @app.get("/api/voice/status")
