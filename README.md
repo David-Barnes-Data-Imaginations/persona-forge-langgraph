@@ -6,6 +6,10 @@ https://www.youtube.com/watch?v=1di48I3zs5k
 
 https://www.youtube.com/watch?v=NklmW2PSNxU
 
+### My Portfolio Website:
+
+https://www.intelligent-automation.co.uk
+
 ### Overview
 Recent studies highlight the measurable benefits of artificial intelligence in clinical assessment. A University of Virginia (2024) study compared diagnostic accuracy between physicians and AI systems, finding:
 
