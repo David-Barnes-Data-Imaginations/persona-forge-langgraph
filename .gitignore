@@ -9,7 +9,7 @@
 *.env
 !.env.example
 /scratches/
-
+backend.log
 # Output files
 /output/workflow_1_and_2_examples.txt
 

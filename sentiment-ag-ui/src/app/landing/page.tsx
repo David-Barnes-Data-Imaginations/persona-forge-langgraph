@@ -112,7 +112,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <Link
-                href="/workflow/framework-analysis"
+                href="/framework-analysis"
                 className="block w-full px-4 py-2 bg-orange-600 text-white text-center rounded-lg hover:bg-orange-700 transition-colors"
               >
                 Upload Therapy Data
@@ -148,7 +148,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <Link
-                href="/workflow/knowledge-graph"
+                href="/kg-creation"
                 className="block w-full px-4 py-2 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 transition-colors"
               >
                 Create Knowledge Graph
@@ -166,14 +166,14 @@ export default function LandingPage() {
             </Link>
             <span className="text-gray-300">|</span>
             <Link
-              href="/workflow/framework-analysis"
+              href="/framework-analysis"
               className="text-sm text-orange-600 hover:text-orange-700 font-medium"
             >
               Upload Therapy Data
             </Link>
             <span className="text-gray-300">|</span>
             <Link
-              href="/workflow/knowledge-graph"
+              href="/kg-creation"
               className="text-sm text-green-600 hover:text-green-700 font-medium"
             >
               Create Graph

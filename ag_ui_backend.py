@@ -1236,11 +1236,20 @@ async def run_framework_analysis():
 
     async def generate_analysis_stream():
         """Generate streaming JSON events for framework analysis"""
+        import sys
+
+        sys.stderr.write("🚀 Starting generate_analysis_stream\n")
+        sys.stderr.flush()
+
         try:
             # Read CSV file
             csv_path = os.path.join(
                 os.getcwd(), "output", "data", "therapy_csvs", "therapy_WORKING.csv"
             )
+
+            sys.stderr.write(f"📂 CSV path: {csv_path}\n")
+            sys.stderr.write(f"📂 CSV exists: {os.path.exists(csv_path)}\n")
+            sys.stderr.flush()
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Reading therapy CSV...', 'step': 'init'})}\n\n"
             await asyncio.sleep(0.1)
@@ -1264,6 +1273,9 @@ async def run_framework_analysis():
 
             # Process each QA pair
             for idx, qa_pair in enumerate(qa_pairs, 1):
+                print(
+                    f"🔄 Processing QA pair {idx}/{total_pairs}: {qa_pair['message_id']}"
+                )
                 yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total_pairs, 'qa_id': qa_pair['message_id']})}\n\n"
                 await asyncio.sleep(0.05)
 
@@ -1271,7 +1283,11 @@ async def run_framework_analysis():
                 await asyncio.sleep(0.05)
 
                 # Process this QA pair
+                print(f"📞 Calling process_qa_pair for {qa_pair['message_id']}")
                 result = process_qa_pair(qa_pair)
+                print(
+                    f"✅ Got result for {qa_pair['message_id']}: status={result.get('status')}"
+                )
 
                 if result["status"] == "success":
                     # Read the most recent analysis from the output file
@@ -1282,18 +1298,99 @@ async def run_framework_analysis():
                         "psychological_analysis_master.txt",
                     )
 
+                    sys.stderr.write(f"📖 Reading analysis from: {output_path}\n")
+                    sys.stderr.write(f"📖 File exists: {os.path.exists(output_path)}\n")
+                    sys.stderr.flush()
+
                     if os.path.exists(output_path):
                         with open(output_path, "r", encoding="utf-8") as f:
                             content = f.read()
-                            # Get last entry (most recent)
-                            entries = content.split("=" * 80)
+                            sys.stderr.write(
+                                f"📖 File content length: {len(content)}\n"
+                            )
+
+                            # Split by the full separator pattern
+                            separator = "=" * 80
+                            # Look for entries starting with separator + "ANALYSIS ENTRY"
+                            pattern = f"{separator}\nANALYSIS ENTRY"
+                            entries = content.split(pattern)
+
+                            sys.stderr.write(f"📖 Found {len(entries)} entries\n")
+
                             if len(entries) > 1:
+                                # Get the last entry (most recent)
+                                # It will include everything after "ANALYSIS ENTRY - timestamp"
                                 last_entry = entries[-1].strip()
-                                yield f"data: {json.dumps({'type': 'analysis_result', 'qa_id': qa_pair['message_id'], 'content': last_entry})}\n\n"
+
+                                sys.stderr.write(
+                                    f"📖 Last entry length: {len(last_entry)}\n"
+                                )
+                                sys.stderr.write(
+                                    f"📖 Last entry first 300 chars: {last_entry[:300]}\n"
+                                )
+
+                                # Extract just the analysis part (skip timestamp header)
+                                lines = last_entry.split("\n")
+
+                                # The entry structure after enhancement is:
+                                # Line 0: " - 2025-11-07 07:39:12"
+                                # Line 1: "===============..."  (first separator)
+                                # Line 2: "QA ID: qa_pair_001"
+                                # Line 3-N: Original Q&A and Analysis content
+                                # Last line: "===============..." (closing separator)
+
+                                # Find the first separator (after timestamp)
+                                first_separator_idx = -1
+                                for i, line in enumerate(lines):
+                                    if line.strip() == separator:
+                                        first_separator_idx = i
+                                        break
+
+                                sys.stderr.write(
+                                    f"📖 First separator at line: {first_separator_idx}\n"
+                                )
+
+                                if first_separator_idx >= 0:
+                                    # Content starts after the first separator
+                                    # and goes until the last separator
+                                    content_lines = lines[first_separator_idx + 1 :]
+
+                                    # Remove the trailing separator if it exists
+                                    if (
+                                        content_lines
+                                        and content_lines[-1].strip() == separator
+                                    ):
+                                        content_lines = content_lines[:-1]
+
+                                    analysis_content = "\n".join(content_lines).strip()
+                                else:
+                                    # Fallback: skip first 2 lines and last line if it's a separator
+                                    content_lines = lines[2:]
+                                    if (
+                                        content_lines
+                                        and content_lines[-1].strip() == separator
+                                    ):
+                                        content_lines = content_lines[:-1]
+                                    analysis_content = "\n".join(content_lines).strip()
+
+                                sys.stderr.write(
+                                    f"📖 Final analysis content length: {len(analysis_content)}\n"
+                                )
+                                sys.stderr.write(
+                                    f"📖 Final content first 200 chars: {analysis_content[:200]}\n"
+                                )
+                                sys.stderr.flush()
+
+                                yield f"data: {json.dumps({'type': 'analysis_result', 'qa_id': qa_pair['message_id'], 'content': analysis_content})}\n\n"
                                 await asyncio.sleep(0.05)
                 else:
                     yield f"data: {json.dumps({'type': 'error', 'qa_id': qa_pair['message_id'], 'message': result.get('error', 'Unknown error')})}\n\n"
                     await asyncio.sleep(0.05)
+
+                # Wait 10 seconds between QA pairs to respect Google API rate limits
+                if idx < total_pairs:  # Don't wait after the last one
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'Waiting 10 seconds before next QA pair (Google API rate limit)...', 'step': 'waiting'})}\n\n"
+                    await asyncio.sleep(10)
 
             yield f"data: {json.dumps({'type': 'complete', 'message': f'Analyzed {total_pairs} QA pairs successfully!'})}\n\n"
 
@@ -1433,6 +1530,11 @@ async def run_kg_creation():
                 else:
                     yield f"data: {json.dumps({'type': 'error', 'qa_id': qa_id, 'message': result.get('error', 'Unknown error')})}\n\n"
                     await asyncio.sleep(0.05)
+
+                # Wait 10 seconds between analyses to respect Google API rate limits
+                if idx < total_analyses:  # Don't wait after the last one
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'Waiting 10 seconds before next analysis (Google API rate limit)...', 'step': 'waiting'})}\n\n"
+                    await asyncio.sleep(10)
 
             yield f"data: {json.dumps({'type': 'complete', 'message': f'Generated Cypher for {total_analyses} analyses successfully!'})}\n\n"
 

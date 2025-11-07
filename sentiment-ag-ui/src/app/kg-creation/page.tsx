@@ -237,8 +237,8 @@ export default function KGCreationPage() {
           </div>
 
           {/* Output Section */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 overflow-hidden">
-            <div className="bg-slate-700/50 px-6 py-3 border-b border-slate-600 flex items-center justify-between">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-slate-700 px-6 py-3 border-b border-slate-600 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">📄 Cypher Output</h3>
               {cypherEntries.length > 0 && (
                 <button
@@ -252,7 +252,7 @@ export default function KGCreationPage() {
             
             <div className="h-[600px] overflow-y-auto p-6">
               {cypherEntries.length === 0 ? (
-                <div className="text-gray-500 text-center py-20">
+                <div className="text-gray-400 text-center py-20">
                   No Cypher generated yet. Click &quot;Start Generation&quot; to begin.
                 </div>
               ) : (
@@ -260,14 +260,14 @@ export default function KGCreationPage() {
                   {cypherEntries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="bg-slate-700/30 rounded-lg p-4 border border-slate-600"
+                      className="bg-slate-900 rounded-lg p-4 border border-slate-600"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <span className="text-indigo-400 font-semibold">
                             {entry.qa_id}
                           </span>
-                          <span className="text-gray-500 text-sm">
+                          <span className="text-gray-400 text-sm">
                             {entry.timestamp.toLocaleTimeString()}
                           </span>
                           {entry.chunks_created > 0 && (
@@ -278,7 +278,7 @@ export default function KGCreationPage() {
                         </div>
                       </div>
                       
-                      <pre className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed font-mono bg-slate-900/50 p-4 rounded overflow-x-auto">
+                      <pre className="text-white whitespace-pre-wrap text-sm leading-relaxed font-mono bg-slate-950/80 p-4 rounded overflow-x-auto">
                         {entry.content}
                       </pre>
                     </div>

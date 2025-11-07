@@ -235,8 +235,8 @@ export default function FrameworkAnalysisPage() {
           </div>
 
           {/* Output Section */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 overflow-hidden">
-            <div className="bg-slate-700/50 px-6 py-3 border-b border-slate-600 flex items-center justify-between">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-slate-700 px-6 py-3 border-b border-slate-600 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">📄 Analysis Output</h3>
               {analyses.length > 0 && (
                 <button
@@ -250,7 +250,7 @@ export default function FrameworkAnalysisPage() {
             
             <div className="h-[600px] overflow-y-auto p-6">
               {analyses.length === 0 ? (
-                <div className="text-gray-500 text-center py-20">
+                <div className="text-gray-400 text-center py-20">
                   No analyses yet. Click "Start Analysis" to begin processing QA pairs.
                 </div>
               ) : (
@@ -258,20 +258,20 @@ export default function FrameworkAnalysisPage() {
                   {analyses.map((analysis) => (
                     <div
                       key={analysis.id}
-                      className="bg-slate-700/30 rounded-lg p-4 border border-slate-600"
+                      className="bg-slate-900 rounded-lg p-4 border border-slate-600"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-indigo-400 font-semibold">
                             {analysis.qa_id}
                           </span>
-                          <span className="text-gray-500 text-sm">
+                          <span className="text-gray-400 text-sm">
                             {analysis.timestamp.toLocaleTimeString()}
                           </span>
                         </div>
                       </div>
                       
-                      <pre className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed font-sans">
+                      <pre className="text-white whitespace-pre-wrap text-sm leading-relaxed font-sans bg-slate-950/40 p-3 rounded">
                         {analysis.content}
                       </pre>
                     </div>

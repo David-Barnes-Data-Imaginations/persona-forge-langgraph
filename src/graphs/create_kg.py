@@ -27,6 +27,16 @@ from ..io_py.edge.config import LLMConfigGraphs
 # Load environment variables
 load_dotenv()
 
+# Force use of GOOGLE_APPLICATION_CREDENTIALS by unsetting API keys
+# This ensures the service uses OAuth2 credentials like the voice service does
+if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    print(
+        f"🔐 Using Google Cloud credentials file: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}"
+    )
+    # Temporarily unset API keys to force credential file usage
+    os.environ.pop("GOOGLE_API_KEY", None)
+    os.environ.pop("GEMINI_API_KEY", None)
+
 # Add LangSmith tracking
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "cypher-generation"
@@ -46,12 +56,12 @@ if LLM_PROVIDER == "anthropic":
         f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}"
     )
 if LLM_PROVIDER == "gemini":
-    # Use Anthropic Claude for Cypher generation
+    # Use Google Gemini for Cypher generation
+    # Note: Removing api_key parameter allows automatic detection of GOOGLE_APPLICATION_CREDENTIALS
     llm = ChatGoogleGenerativeAI(
         model=os.getenv("CYPHER_GEMINI_MODEL", "google_genai:gemini-2.5-flash"),
         temperature=0.0,
         max_tokens=16000,
-        api_key=os.getenv("GEMINI_API_KEY"),
     )
     print(
         f"Using Gemini model: {os.getenv('CYPHER_GEMINI_MODEL', 'google_genai:gemini-2.5-flash')}"
@@ -620,16 +630,19 @@ Output ONE UNWIND Cypher query with all data. Use double quotes for strings. Rep
         print(f"Processing analysis #{analysis['entry_number']}...")
 
         # Create a properly formatted message input for the prompt template
-        result = qa_pair_runnable.invoke({"messages": [HumanMessage(content=prompt_text)]})
+        result = qa_pair_runnable.invoke(
+            {"messages": [HumanMessage(content=prompt_text)]}
+        )
 
         # Extract Cypher from LLM response
-        cypher_query = result.content if hasattr(result, 'content') else str(result)
+        cypher_query = result.content if hasattr(result, "content") else str(result)
 
         # Clean up the Cypher query (remove markdown code blocks if present)
         if "```" in cypher_query:
             # Extract content between ```cypher or ``` blocks
             import re
-            match = re.search(r'```(?:cypher)?\s*\n(.*?)\n```', cypher_query, re.DOTALL)
+
+            match = re.search(r"```(?:cypher)?\s*\n(.*?)\n```", cypher_query, re.DOTALL)
             if match:
                 cypher_query = match.group(1)
 

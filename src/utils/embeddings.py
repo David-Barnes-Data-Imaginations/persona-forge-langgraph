@@ -5,7 +5,9 @@ import requests
 import json
 
 _backend = os.getenv("EMBED_BACKEND", "ollama")
-_model = os.getenv("EMBED_MODEL", os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest"))
+_model = os.getenv(
+    "EMBED_MODEL", os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
+)
 
 
 def embed_texts(texts: List[str], model_name: str = None) -> List[List[float]]:
@@ -43,6 +45,30 @@ def embed_texts(texts: List[str], model_name: str = None) -> List[List[float]]:
         # replace with your preferred embedding model
         emb = client.embeddings.create(model="text-embedding-3-large", input=texts)
         return [d.embedding for d in emb.data]
+
+    elif _backend == "gemini":
+        # Use langchain's GoogleGenerativeAIEmbeddings which properly handles credentials
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+        # Force use of GOOGLE_APPLICATION_CREDENTIALS by unsetting API keys
+        # This ensures embeddings use OAuth2 credentials like the voice service
+        if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+            # Temporarily unset API keys to force credential file usage
+            os.environ.pop("GOOGLE_API_KEY", None)
+            os.environ.pop("GEMINI_API_KEY", None)
+
+        try:
+            embeddings_model = GoogleGenerativeAIEmbeddings(
+                model="models/text-embedding-004", task_type="retrieval_document"
+            )
+            # Use langchain's embed_documents method which handles batching
+            embeddings = embeddings_model.embed_documents(texts)
+            return embeddings
+        except Exception as e:
+            print(f"Error getting Gemini embeddings: {e}")
+            # Return zero vectors as fallback
+            return [[0.0] * 768 for _ in texts]
+
     else:
         raise ValueError(f"Unknown EMBED_BACKEND: {_backend}")
 

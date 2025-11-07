@@ -22,6 +22,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Force use of GOOGLE_APPLICATION_CREDENTIALS by unsetting API keys
+# This ensures the service uses OAuth2 credentials like the voice service does
+if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    print(
+        f"🔐 Using Google Cloud credentials file: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}"
+    )
+    # Temporarily unset API keys to force credential file usage
+    os.environ.pop("GOOGLE_API_KEY", None)
+    os.environ.pop("GEMINI_API_KEY", None)
+
 # Add LangSmith tracking
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "cypher-generation"
@@ -41,12 +51,12 @@ if LLM_PROVIDER == "anthropic":
         f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}"
     )
 if LLM_PROVIDER == "gemini":
-    # Use Anthropic Claude for Cypher generation
+    # Use Google Gemini for psychological tagging
+    # Note: Removing api_key parameter allows automatic detection of GOOGLE_APPLICATION_CREDENTIALS
     llm = ChatGoogleGenerativeAI(
         model=os.getenv("TAGGING_GEMINI_MODEL", "google_genai:gemini-2.5-flash"),
         temperature=0.0,
         max_tokens=16000,
-        api_key=os.getenv("GEMINI_API_KEY"),
     )
     print(
         f"Using Gemini model: {os.getenv('TAGGING_GEMINI_MODEL', 'google_genai:gemini-2.5-flash')}"
@@ -188,14 +198,18 @@ def parse_therapy_csv(csv_content: str) -> list:
         # Try to read CSV with more robust error handling
         try:
             # Use python engine which is more forgiving with quoting issues
+            import csv as csv_module
+
             df = pd.read_csv(
                 StringIO(csv_content),
                 quotechar='"',
-                escapechar="\\",
+                escapechar=None,  # Let pandas handle escaping
                 skipinitialspace=True,
                 encoding="utf-8",
                 engine="python",  # More forgiving parser
-                on_bad_lines="warn",  # Show warnings instead of crashing
+                on_bad_lines="skip",  # Skip malformed lines instead of warning
+                quoting=csv_module.QUOTE_MINIMAL,  # Less strict quoting
+                doublequote=True,  # Interpret "" as a literal "
             )
         except Exception as parse_error:
             # If that fails, try to give more helpful error message
@@ -426,8 +440,71 @@ def process_qa_pair(qa_pair: dict) -> dict:
         # Run the graph with increased recursion limit
         result = framework_graph.invoke(initial_state, config=graph_config)
 
+        # Fallback: If the LLM didn't call submit_analysis, manually save the response
+        master_file = os.path.join(
+            os.getcwd(),
+            "output",
+            "psychological_analysis",
+            "psychological_analysis_master.txt",
+        )
+
+        # Check if file was created/updated by this run
+        import time
+
+        current_time = time.time()
+        file_was_updated = False
+
+        if os.path.exists(master_file):
+            file_mod_time = os.path.getmtime(master_file)
+            # If file was modified within last 5 seconds, assume it was updated by this run
+            if (current_time - file_mod_time) < 5:
+                file_was_updated = True
+
+        # If file wasn't updated, manually save the LLM's response
+        if not file_was_updated:
+            # Extract the LLM's response from the result
+            analysis_text = None
+
+            if "messages" in result and len(result["messages"]) > 0:
+                # Find the last AI message (skip tool messages)
+                for message in reversed(result["messages"]):
+                    # Check if it's an AI message with content
+                    if hasattr(message, "content") and message.content:
+                        # Skip if it's a tool call request (no actual content)
+                        if hasattr(message, "tool_calls") and message.tool_calls:
+                            continue
+                        analysis_text = message.content
+                        break
+
+                # Debug: print what we found
+                print(
+                    f"🔍 Extracted analysis text length: {len(analysis_text) if analysis_text else 0}"
+                )
+                if analysis_text:
+                    print(f"🔍 First 200 chars: {analysis_text[:200]}")
+
+                if analysis_text and len(analysis_text) > 50:
+                    # Manually call submit_analysis
+                    from ..tools.text_graph_tools import submit_analysis
+
+                    submit_result = submit_analysis.invoke(
+                        {"analysis_data": analysis_text}
+                    )
+                    print(f"📝 Manually saved analysis: {submit_result}")
+                else:
+                    print(
+                        f"⚠️  No valid analysis text found in result. Messages: {len(result.get('messages', []))}"
+                    )
+                    # Print message types for debugging
+                    for i, msg in enumerate(result.get("messages", [])):
+                        print(
+                            f"  Message {i}: {type(msg).__name__} - has content: {hasattr(msg, 'content')} - content length: {len(msg.content) if hasattr(msg, 'content') and msg.content else 0}"
+                        )
+
         # Post-process: Add original question, answer, and QA ID to the analysis file
-        enhance_analysis_with_qa(qa_pair["question"], qa_pair["answer"], qa_pair["message_id"])
+        enhance_analysis_with_qa(
+            qa_pair["question"], qa_pair["answer"], qa_pair["message_id"]
+        )
 
         return {
             "qa_id": qa_pair["message_id"],
