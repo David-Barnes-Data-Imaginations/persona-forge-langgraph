@@ -51,7 +51,8 @@ def setup_sandbox():
         if value:
             sandbox.commands.run(f"export {key}='{value}'")
 
-    # Create workspace directories
+    # Create workspace directories. These load the files into the e2b, only individual-
+    # -files can be loaded in or exported out, no directories on the e2b version I use
     sandbox.commands.run("mkdir -p ~/workspace/data")
     sandbox.commands.run("mkdir -p ~/workspace/reports")
     sandbox.commands.run("mkdir -p ~/workspace/research")
