@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from typing import Annotated, Optional
 from typing_extensions import TypedDict
 from langchain_openai import ChatOpenAI
@@ -13,15 +14,53 @@ from langgraph.prebuilt import tools_condition
 from ..prompts.text_prompts import SYSTEM_PROMPT
 from ..tools.text_graph_tools import submit_analysis
 from ..io_py.edge.config import LLMConfigGraphs
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from dotenv import load_dotenv
 
-# LLM - LM Studio configuration using config
-llm = ChatOpenAI(
-    model=LLMConfigGraphs.model_name,
-    temperature=LLMConfigGraphs.temperature,
-    max_tokens=LLMConfigGraphs.max_tokens,
-    base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
-    api_key="lm-studio",  # LM Studio doesn't require a real key
-)
+# Load environment variables
+load_dotenv()
+
+# Add LangSmith tracking
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = "cypher-generation"
+
+# LLM configuration - supports both Ollama and Anthropic
+LLM_PROVIDER = os.getenv("TAGGING_LLM_PROVIDER", "ollama").lower()
+
+if LLM_PROVIDER == "anthropic":
+    # Use Anthropic Claude for Cypher generation
+    llm = ChatAnthropic(
+        model=os.getenv("TAGGING_ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
+        temperature=0.1,
+        max_tokens=8192,
+        api_key=os.getenv("ANTHROPIC_API_KEY"),
+    )
+    print(
+        f"Using Anthropic model: {os.getenv('CYPHER_ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')}"
+    )
+if LLM_PROVIDER == "gemini":
+    # Use Anthropic Claude for Cypher generation
+    llm = ChatGoogleGenerativeAI(
+        model=os.getenv("TAGGING_GEMINI_MODEL", "google_genai:gemini-2.5-flash"),
+        temperature=0.0,
+        max_tokens=16000,
+        api_key=os.getenv("GEMINI_API_KEY"),
+    )
+    print(
+        f"Using Gemini model: {os.getenv('TAGGING_GEMINI_MODEL', 'google_genai:gemini-2.5-flash')}"
+    )
+else:
+    # Use LM Studio (default) - using config
+    llm = ChatOpenAI(
+        model=LLMConfigGraphs.model_name,
+        temperature=LLMConfigGraphs.temperature,
+        max_tokens=LLMConfigGraphs.max_tokens,
+        base_url="http://localhost:1234/v1",  # LM Studio's OpenAI-compatible endpoint
+        api_key="lm-studio",  # LM Studio doesn't require a real key
+    )
+    print(f"Using LM Studio model: {LLMConfigGraphs.model_name}")
 
 
 class State(TypedDict):

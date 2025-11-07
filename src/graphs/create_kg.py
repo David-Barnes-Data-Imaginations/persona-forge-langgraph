@@ -50,7 +50,7 @@ if LLM_PROVIDER == "gemini":
     llm = ChatGoogleGenerativeAI(
         model=os.getenv("CYPHER_GEMINI_MODEL", "google_genai:gemini-2.5-flash"),
         temperature=0.0,
-        max_tokens=8192,
+        max_tokens=16000,
         api_key=os.getenv("GEMINI_API_KEY"),
     )
     print(

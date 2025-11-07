@@ -1201,6 +1201,254 @@ async def synthesize_speech(text: str, provider: str = "local"):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@app.get("/api/framework-analysis/status")
+async def framework_analysis_status():
+    """Check if framework analysis workflow is ready"""
+    try:
+        # Check if therapy CSV exists
+        csv_path = os.path.join(
+            os.getcwd(), "output", "data", "therapy_csvs", "therapy_WORKING.csv"
+        )
+        csv_exists = os.path.exists(csv_path)
+
+        # Check if Gemini API key is set
+        gemini_available = bool(os.getenv("GEMINI_API_KEY"))
+
+        return {
+            "csv_available": csv_exists,
+            "gemini_available": gemini_available,
+            "csv_path": csv_path if csv_exists else None,
+            "status": "ready" if csv_exists and gemini_available else "degraded",
+        }
+    except Exception as e:
+        return {"error": str(e), "status": "error"}
+
+
+@app.post("/api/framework-analysis/run")
+async def run_framework_analysis():
+    """
+    Run the framework analysis workflow and stream results
+    Processes each QA pair through Gemini to identify psychological patterns
+    """
+    from fastapi.responses import StreamingResponse
+    import asyncio
+    from src.graphs.framework_analysis import parse_therapy_csv, process_qa_pair
+
+    async def generate_analysis_stream():
+        """Generate streaming JSON events for framework analysis"""
+        try:
+            # Read CSV file
+            csv_path = os.path.join(
+                os.getcwd(), "output", "data", "therapy_csvs", "therapy_WORKING.csv"
+            )
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Reading therapy CSV...', 'step': 'init'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            if not os.path.exists(csv_path):
+                yield f"data: {json.dumps({'type': 'error', 'message': f'CSV file not found: {csv_path}'})}\n\n"
+                return
+
+            with open(csv_path, "r", encoding="utf-8") as f:
+                csv_content = f.read()
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Parsing QA pairs...', 'step': 'parsing'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Parse QA pairs
+            qa_pairs = parse_therapy_csv(csv_content)
+            total_pairs = len(qa_pairs)
+
+            yield f"data: {json.dumps({'type': 'status', 'message': f'Found {total_pairs} QA pairs to analyze', 'step': 'ready'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Process each QA pair
+            for idx, qa_pair in enumerate(qa_pairs, 1):
+                yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total_pairs, 'qa_id': qa_pair['message_id']})}\n\n"
+                await asyncio.sleep(0.05)
+
+                yield f"data: {json.dumps({'type': 'processing', 'qa_id': qa_pair['message_id'], 'question': qa_pair['question'][:100] + '...'})}\n\n"
+                await asyncio.sleep(0.05)
+
+                # Process this QA pair
+                result = process_qa_pair(qa_pair)
+
+                if result["status"] == "success":
+                    # Read the most recent analysis from the output file
+                    output_path = os.path.join(
+                        os.getcwd(),
+                        "output",
+                        "psychological_analysis",
+                        "psychological_analysis_master.txt",
+                    )
+
+                    if os.path.exists(output_path):
+                        with open(output_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            # Get last entry (most recent)
+                            entries = content.split("=" * 80)
+                            if len(entries) > 1:
+                                last_entry = entries[-1].strip()
+                                yield f"data: {json.dumps({'type': 'analysis_result', 'qa_id': qa_pair['message_id'], 'content': last_entry})}\n\n"
+                                await asyncio.sleep(0.05)
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'qa_id': qa_pair['message_id'], 'message': result.get('error', 'Unknown error')})}\n\n"
+                    await asyncio.sleep(0.05)
+
+            yield f"data: {json.dumps({'type': 'complete', 'message': f'Analyzed {total_pairs} QA pairs successfully!'})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate_analysis_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+@app.get("/api/kg-creation/status")
+async def kg_creation_status():
+    """Check if KG creation workflow is ready"""
+    try:
+        # Check if master analysis file exists
+        master_path = os.path.join(
+            os.getcwd(),
+            "output",
+            "psychological_analysis",
+            "psychological_analysis_master.txt",
+        )
+        master_exists = os.path.exists(master_path)
+
+        # Check if Gemini API key is set
+        gemini_available = bool(os.getenv("GEMINI_API_KEY"))
+
+        # Check Neo4j config
+        neo4j_available = bool(os.getenv("NEO4J_URI"))
+
+        return {
+            "master_file_available": master_exists,
+            "gemini_available": gemini_available,
+            "neo4j_available": neo4j_available,
+            "master_path": master_path if master_exists else None,
+            "status": "ready" if master_exists and gemini_available else "degraded",
+        }
+    except Exception as e:
+        return {"error": str(e), "status": "error"}
+
+
+@app.post("/api/kg-creation/run")
+async def run_kg_creation():
+    """
+    Run the knowledge graph creation workflow and stream results
+    Generates Cypher and embeddings for each QA pair
+    """
+    from fastapi.responses import StreamingResponse
+    import asyncio
+    from src.graphs.create_kg import (
+        extract_analyses_from_master_file,
+        create_client_session_setup,
+        process_analysis_to_cypher,
+    )
+
+    async def generate_kg_stream():
+        """Generate streaming JSON events for KG creation"""
+        try:
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Loading master analysis file...', 'step': 'init'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Extract analyses from master file
+            analyses = extract_analyses_from_master_file()
+
+            if not analyses:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'No analyses found in master file'})}\n\n"
+                return
+
+            total_analyses = len(analyses)
+
+            yield f"data: {json.dumps({'type': 'status', 'message': f'Found {total_analyses} analyses to process', 'step': 'found'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Step 1: Create Client/Session setup
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Creating Client/Session setup...', 'step': 'setup'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            setup_result = create_client_session_setup()
+
+            if setup_result["status"] != "success":
+                error_msg = setup_result.get("error", "Unknown error")
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Setup failed: {error_msg}'})}\n\n"
+                return
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Setup complete! Processing analyses...', 'step': 'processing'})}\n\n"
+            await asyncio.sleep(0.1)
+
+            # Step 2: Process each analysis
+            for idx, analysis in enumerate(analyses, 1):
+                qa_id = f"qa_pair_{str(analysis['entry_number']).zfill(3)}"
+
+                yield f"data: {json.dumps({'type': 'progress', 'current': idx, 'total': total_analyses, 'qa_id': qa_id})}\n\n"
+                await asyncio.sleep(0.05)
+
+                yield f"data: {json.dumps({'type': 'processing', 'qa_id': qa_id, 'entry': analysis['entry_number']})}\n\n"
+                await asyncio.sleep(0.05)
+
+                # Process this analysis
+                result = process_analysis_to_cypher(analysis)
+
+                if result["status"] == "success":
+                    # Read the generated Cypher (last entry in the file)
+                    output_dir = os.path.join(
+                        os.getcwd(), "output", "psychological_analysis", "graph_output"
+                    )
+
+                    # Find the latest cypher file
+                    cypher_files = [
+                        f for f in os.listdir(output_dir) if f.endswith(".cypher")
+                    ]
+                    if cypher_files:
+                        latest_file = max(
+                            cypher_files,
+                            key=lambda f: os.path.getmtime(os.path.join(output_dir, f)),
+                        )
+                        cypher_path = os.path.join(output_dir, latest_file)
+
+                        with open(cypher_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            # Get last cypher entry
+                            entries = content.split(
+                                "// ============================================================================"
+                            )
+                            if (
+                                len(entries) >= 3
+                            ):  # Need at least 3 parts for a complete entry
+                                last_entry = (
+                                    entries[-2] + entries[-1]
+                                )  # Combine last two parts
+                                yield f"data: {json.dumps({'type': 'cypher_result', 'qa_id': qa_id, 'content': last_entry.strip(), 'chunks_created': result.get('chunks_created', 0)})}\n\n"
+                                await asyncio.sleep(0.05)
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'qa_id': qa_id, 'message': result.get('error', 'Unknown error')})}\n\n"
+                    await asyncio.sleep(0.05)
+
+            yield f"data: {json.dumps({'type': 'complete', 'message': f'Generated Cypher for {total_analyses} analyses successfully!'})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate_kg_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 @app.get("/api/deep-agent/status")
 async def deep_agent_status():
     """Check if deep agent dependencies are available"""
